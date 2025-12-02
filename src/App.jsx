@@ -189,7 +189,6 @@ function AppContent() {
     }
 }, []);
 
-
   // ✅ Define PUBLIC WEBSITE ROUTES (show Navbar + Footer)
   const publicWebsiteRoutes = [
     "/",

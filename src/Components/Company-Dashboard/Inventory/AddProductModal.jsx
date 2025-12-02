@@ -1705,8 +1705,22 @@ const AddProductModal = ({
       formData.append("discount", localNewItem.discount || "0");
       formData.append("tax_account", localNewItem.taxAccount || "");
       formData.append("remarks", localNewItem.remarks || "");
-      formData.append("initial_qty", localNewItem.initial_qty.toString());
-      formData.append("min_order_qty", localNewItem.min_order_qty.toString());
+      // formData.append("initial_qty", localNewItem.initial_qty.toString());
+
+      formData.append(
+  "initial_qty",
+  localNewItem?.initial_qty?.toString() || "0"
+);
+
+
+      // formData.append("min_order_qty", localNewItem.min_order_qty.toString());
+
+      formData.append(
+  "min_order_qty",
+  localNewItem?.min_order_qty?.toString() || "0"
+);
+
+
       if (localNewItem.image) formData.append("image", localNewItem.image);
 
       if (localNewItem.image) {
