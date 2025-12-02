@@ -15,8 +15,10 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import "./Pages.css";
 import axiosInstance from "../../../Api/axiosInstance";
+import GetCompanyId from "../../../Api/GetCompanyId";
 
 const Pricing = () => {
+  const companyId = GetCompanyId(); // Get the company ID
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -152,20 +154,20 @@ const Pricing = () => {
     setSubmitting(true);
     
     try {
-      // Prepare data for API call
+      // Prepare data for API call - Updated to match the expected response format
       const requestData = {
-        company_id: formData.companyName, // This might need to be an actual company ID
+        company_name: formData.companyName, // Send company name from form
+        company_email: formData.email, // Send email from form
         plan_id: selectedPlan.id,
         billing_cycle: billingDuration,
-        // startdate: formData.startDate,
-        request_date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+        request_date: formData.startDate, // Use the selected start date
         status: "Pending" // Default status
       };
       
-      // Make API call to request plan
-      const response = await axiosInstance.post('planreq', requestData);
+      // Make API call to request plan - Updated endpoint
+      const response = await axiosInstance.post('/planreq', requestData);
       
-      if (response.data.success) {
+      if (response.data) {
         alert("Plan request submitted successfully! We'll contact you shortly.");
         handleCloseModal();
       } else {
@@ -212,7 +214,7 @@ const Pricing = () => {
           {plans.map((plan, idx) => (
             <Col
               md={6}
-              lg={3}
+              lg={4}
               key={idx}
               className="mb-4"
               data-aos="zoom-in"
@@ -270,7 +272,50 @@ const Pricing = () => {
             </Col>
           ))}
 
-     
+          {/* Enterprise Plan */}
+          {/* <Col md={12} lg={4} className="mb-4" data-aos="fade-left" data-aos-delay="650">
+            <div
+              className="border rounded p-4 h-100 shadow-lg position-relative"
+              style={{
+                backgroundColor: "#ffffff",
+                borderLeft: "8px solid #2b2e4a",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.02)";
+                e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)";
+              }}
+            >
+              <div className="text-center mb-3">
+                <FaPhoneAlt size={20} className="text-dark mb-2" />
+                <h5 className="fw-bold text-dark mt-2 mb-1">Enterprise Version</h5>
+                <p className="text-muted mb-2" style={{ fontSize: "0.95rem" }}>
+                  Tailored solutions. High volume access. Premium support.
+                </p>
+              </div>
+              <div className="d-grid">
+                <a
+                  href="tel:+919999999999"
+                  className="btn btn-sm"
+                  style={{
+                    backgroundColor: "#2b2e4a",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    padding: "0.5rem 1.2rem",
+                    fontSize: "14px",
+                    borderRadius: "30px",
+                    textAlign: "center",
+                  }}
+                >
+                  <FaPhoneAlt className="me-2" /> Contact Sales
+                </a>
+              </div>
+            </div>
+          </Col> */}
         </Row>
 
         <hr data-aos="fade-in" />
