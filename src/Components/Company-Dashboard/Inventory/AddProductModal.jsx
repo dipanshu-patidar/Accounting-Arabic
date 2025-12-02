@@ -527,12 +527,6 @@ const AddProductModal = ({
       formData.append("discount", localNewItem.discount || "0");
       formData.append("tax_account", localNewItem.taxAccount || "");
       formData.append("remarks", localNewItem.remarks || "");
-<<<<<<< HEAD
-      formData.append("initial_qty", localNewItem.initial_qty.toString());
-      formData.append("min_order_qty", localNewItem.min_order_qty.toString());
-      if (localNewItem.image) formData.append("image", localNewItem.image);
-=======
->>>>>>> caeff2f1e8ff15909927ad154df96da4f174a372
 
       // Add image if exists
       if (localNewItem.image) {
@@ -1283,8 +1277,6 @@ const AddProductModal = ({
 };
 
 export default AddProductModal;
-
-
 
 
 // ✅ Full Updated Code – Compatible with your actual API response structure
