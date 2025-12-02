@@ -1,0 +1,184 @@
+/* Tabs ko equally distribute karega */
+.nav-fill .nav-item {
+      flex-grow: 1 !important;
+    }
+    
+    /* Tab header ki styling */
+    .nav-tabs .nav-link {
+      text-align: center;
+      font-weight: 500;
+      padding: 10px 0;
+      background-color: #f8f9fa;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      color: #495057;
+      font-size: 15px;
+    }
+    
+    /* Active tab pe green border */
+    .nav-tabs .nav-link.active {
+      background-color: white;
+      border-bottom: none;
+      border-top: 3px solid #008000;
+      color: #000;
+      font-weight: 600;
+    }
+    
+    /* Hover effect */
+    .nav-tabs .nav-link:hover {
+      background-color: #e9ecef;
+      color: #000;
+    }
+
+
+
+    
+/* General Styling */
+body {
+      font-family: Arial, sans-serif;
+    }
+    
+    /* Header */
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    /* Bill From and Bill To Sections */
+    .bill-section {
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    
+    .bill-from {
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    
+    .bill-to {
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    
+    /* Items Table */
+    .table-bordered td,
+    .table-bordered th {
+      border: 1px solid #dee2e6 !important;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Totals Section */
+    .total-row {
+      background-color: #008000;
+      color: white;
+      font-weight: bold;
+    }
+    
+    /* Buttons */
+    button {
+      margin-right: 10px;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .table-responsive {
+        overflow-x: auto;
+      }
+    }
+
+
+
+
+    .full-width-form {
+      margin-left: 0;
+      margin-right: 0;
+      padding-left: 1px;
+      padding-right: 1px;
+      width: 120vw;
+      max-width: none;
+    }
+    
+    .full-width-form .tab-content > .tab-pane {
+      padding: 1px 0;
+    }
+    
+    .full-width-form .table {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    
+    .full-width-form .form-control,
+    .full-width-form .form-control:focus {
+      border-radius: 4px;
+    }
+    
+    .full-width-form .row {
+      margin-left: 0;
+      margin-right: 0;
+    }
+    
+    .full-width-form .col-md-6 {
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+    .form-control-no-border {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      background-color: transparent !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      /* Remove bottom border completely */
+      border-bottom: none !important;
+    }
+    
+    /* Remove focus styles completely */
+    .form-control-no-border:focus {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      border-bottom: none !important;
+      background-color: transparent !important;
+    }
+    .dark-bordered-table,
+    .dark-bordered-table th,
+    .dark-bordered-table td {
+      border: 1px solid #343a40 !important; /* Dark gray or black border */
+    }
+
+
+    /* Tabs Container */
+.custom-tabs .nav-link {
+  color: #555;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: 8px;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+/* Hover Effect */
+.custom-tabs .nav-link:hover {
+  background: #f2f2f2;
+  color: #000;
+}
+
+/* Active Tab Style */
+.custom-tabs .nav-link.active {
+  background: #007bff !important;
+  color: white !important;
+  font-weight: bold;
+  border-radius: 8px;
+  box-shadow: 0 3px 8px rgba(0, 123, 255, 0.4);
+  border: 1px solid #006ae6 !important;
+}
+
+    

@@ -1,0 +1,52 @@
+/* Image preview for layout selection */
+.layout-img {
+  width: 70px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Color picker circles */
+.color-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  cursor: pointer;
+}
+
+/* Background image preview (if used for other purposes) */
+.bg-img {
+  width: 60px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+
+.sidebar-bg-default {
+  background-color: #032d45 !important;
+}
+
+.sidebar-bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.sidebar-bg-purple {
+  background-color: #6f42c1 !important;
+}
+
+.sidebar-bg-pink {
+  background-color: #d63384 !important;
+}
+
+.sidebar-bg-green {
+  background-color: #198754 !important;
+}
+
+.sidebar-bg-blue {
+  background-color: #032d45 !important; /* Custom dark blue */
+}

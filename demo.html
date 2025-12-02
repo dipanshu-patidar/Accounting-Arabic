@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Motorlogical Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f8f9fa;
+    }
+
+    .motolog-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .motolog-left {
+      flex: 1;
+      background: #ffffff;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .motolog-logo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #023047;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+    }
+
+    .motolog-logo-icon {
+      margin-right: 10px;
+      color: #FFB703;
+      font-size: 34px;
+    }
+
+    .motolog-heading {
+      font-size: 26px;
+      margin-bottom: 20px;
+      color: #023047;
+    }
+
+    .motolog-btn-google {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      width: 100%;
+      margin-bottom: 20px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .motolog-divider {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .motolog-form-group {
+      margin-bottom: 16px;
+    }
+
+    .motolog-form-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #333;
+    }
+
+    .motolog-form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .motolog-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .motolog-btn-login {
+      background-color: #023047;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .motolog-footer-text {
+      margin-top: 20px;
+      font-size: 13px;
+      text-align: center;
+      color: #777;
+    }
+
+    .motolog-footer-text a {
+      color: #023047;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .motolog-right {
+      flex: 1;
+      background-color: #023047;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+
+    .motolog-right h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .motolog-right p {
+      font-size: 14px;
+      max-width: 300px;
+      text-align: center;
+    }
+
+    .motolog-right button {
+      background-color: #FFB703;
+      color: #023047;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      margin-top: 20px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .motolog-illustration {
+      max-width: 300px;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .motolog-container {
+        flex-direction: column;
+      }
+      .motolog-right {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="motolog-container">
+    <div class="motolog-left">
+      <div class="motolog-logo">
+        <span class="motolog-logo-icon">|||</span>
+        Motorlogical
+      </div>
+      <h2 class="motolog-heading">Welcome Back</h2>
+
+      <button class="motolog-btn-google">Log in with Google</button>
+
+      <div class="motolog-divider">OR LOGIN WITH EMAIL</div>
+
+      <form>
+        <div class="motolog-form-group">
+          <label for="email">Your Email</label>
+          <input type="email" id="email" placeholder="Enter email" />
+        </div>
+        <div class="motolog-form-group">
+          <label for="password">Your Password</label>
+          <input type="password" id="password" placeholder="Enter password" />
+        </div>
+        <div class="motolog-options">
+          <label><input type="checkbox" /> Keep me logged in</label>
+          <a href="#" style="color: #023047; text-decoration: none;">Forgot password?</a>
+        </div>
+        <button type="submit" class="motolog-btn-login">Log in →</button>
+      </form>
+
+      <div class="motolog-footer-text">
+        Don’t have an account yet? <a href="#">Sign up</a>
+      </div>
+    </div>
+    <div class="motolog-right">
+      <h3>New Update Available</h3>
+      <p>We have added some new awesome features in the Motorlogical platform.</p>
+      <button>Learn More</button>
+      <img src="https://i.imgur.com/0y8Ftya.png" class="motolog-illustration" alt="Illustration" />
+    </div>
+  </div>
+</body>
+</html>

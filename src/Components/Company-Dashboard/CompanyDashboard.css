@@ -1,0 +1,103 @@
+/* Summary Cards & Stats Cards Hover */
+.card.shadow-sm {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+    border: 1px solid transparent;
+  }
+  
+  .card.shadow-sm:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+  }
+  
+  /* Center-align numbers and labels in stats cards */
+  .row.my-4 .card .d-flex {
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  /* Fix inner padding for consistent alignment */
+  .card.p-3, .card.p-4 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+  
+  /* Table inside cards – remove extra bottom margin */
+  .table.mt-3.mb-0 {
+    margin-bottom: 0 !important;
+  }
+  
+  /* “Recently Added Products” scroll container */
+  .overflow-auto {
+    padding-right: 0.5rem; /* give breathing room for scrollbar */
+  }
+  
+  /* Expired products card hover */
+  .card.bg-white.shadow-sm:hover {
+    border: 1px solid #e0e0e0;
+    transform: translateY(-2px);
+  }
+  
+  /* Ensure consistent rounding */
+  .rounded-3 {
+    border-radius: 0.75rem !important;
+  }
+  
+  .rounded-4 {
+    border-radius: 1rem !important;
+  }
+  
+  .pagination .page-link {
+    color: #3daaaa;
+    border: 1px solid #3daaaa;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #3daaaa;
+    color: #fff;
+    border-color: #3daaaa;
+}
+
+.pagination .page-link:focus {
+    box-shadow: none;
+}
+.bg-purple {
+  background-color: #8e44ad;
+}
+
+.bg-red {
+  background-color: #e74c3c;
+}
+
+.bg-blue {
+  background-color: #3498db;
+}
+
+.bg-green {
+  background-color: #2ecc71;
+}
+
+.bg-gray {
+  background-color: #95a5a6;
+}
+.bg-red-100 {
+  background-color: #ffebee;
+}
+
+.bg-red-600 {
+  color: #c62828;
+}
+
+.bg-pink-100 {
+  background-color: #f3e5f5;
+}
+
+.bg-pink-600 {
+  color: #b3367c;
+}
+
+.bi {
+  display: inline-block;
+  font-size: 0.8rem;
+  margin-right: 0.25rem;
+}

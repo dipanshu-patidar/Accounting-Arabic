@@ -1,0 +1,58 @@
+/* Optional but can help refine spacing */
+.requested-plans-wrapper {
+    padding: 1rem;
+  }
+  
+  .requested-plans-table th,
+  .requested-plans-table td {
+    vertical-align: middle;
+  }
+  .request-plan-page {
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .card {
+    border-radius: 1rem;
+  }
+  
+  .table th,
+  .table td {
+    vertical-align: middle !important;
+  }
+  
+  .table thead th {
+    font-size: 15px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  
+  .table tbody tr:hover {
+    background-color: #f1f9ff;
+
+  }
+  
+  .table td {
+    font-size: 14px;
+  }
+  
+  .badge {
+    font-size: 13px;
+  }
+  
+  .btn-sm {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+  
+  
+  @media (max-width: 767px) {
+    .requested-plans-table {
+      font-size: 14px;
+    }
+  
+    .requested-plans-table th,
+    .requested-plans-table td {
+      white-space: nowrap;
+    }
+  }
+  

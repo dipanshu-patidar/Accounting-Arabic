@@ -1,0 +1,59 @@
+body,
+.offcanvas {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.offcanvas-backdrop.show {
+  opacity: 0 !important;
+  /* no dark overlay */
+}
+
+.custom-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.custom-toggle-checkbox {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.custom-toggle-label {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  border-radius: 34px;
+  width: 100%;
+  height: 100%;
+  transition: background-color 0.3s;
+}
+
+.custom-toggle-label::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+/* When checked */
+.custom-toggle-checkbox:checked+.custom-toggle-label {
+  background-color: #28a745;
+  /* green */
+}
+
+.custom-toggle-checkbox:checked+.custom-toggle-label::before {
+  transform: translateX(24px);
+}
+
+
+
+

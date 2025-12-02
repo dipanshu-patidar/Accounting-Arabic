@@ -1,0 +1,87 @@
+.card-hover {
+    transition: transform 0.2s ease-in-out, border 0.2s ease-in-out;
+    height: 100%;
+    min-height: 340px;
+    background-color: #fff;
+    border-radius: 1rem;
+    padding: 1.2rem;
+    font-family: 'Segoe UI', sans-serif;
+    border: 2px solid transparent;
+    /* Default border to maintain spacing */
+}
+
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border: 2px solid #000;
+    /* Black border on hover */
+}
+
+/* Title font */
+.card-hover h6 {
+    font-size: 1.1rem;
+}
+
+/* Email */
+.card-hover small {
+    font-size: 0.92rem;
+    color: #6c757d;
+}
+
+/* Date and time row */
+.card-hover .text-muted {
+    font-size: 0.92rem;
+}
+
+/* Buttons */
+.card-hover .btn {
+    font-size: 0.95rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+/* Expired text */
+.card-hover p {
+    font-size: 0.9rem;
+}
+
+/* Badges at bottom */
+.card-hover .badge {
+    font-size: 0.9rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+.modal-content {
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header .btn-danger {
+    font-size: 1.2rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-dropdown {
+    position: absolute;
+    top: 25px;
+    right: 0;
+    background-color: #fff;
+    z-index: 10;
+    width: 180px;
+    padding: 8px 0;
+    border: 1px solid #eaeaea;
+}
+
+.custom-dropdown .dropdown-item {
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.custom-dropdown .dropdown-item:hover {
+    background-color: #f8f9fa;
+}

@@ -1,0 +1,229 @@
+/* ===== YOUR EXISTING STYLES (unchanged) ===== */
+:root {
+  --brand: #2a8e9c !important;
+  --brand-hover: #2a8e9c !important;
+  --brand-tint: #d2f5e8 !important;
+  --navbar-bg: #ffffff !important;
+  --navbar-text: #023347 !important;
+  --navbar-text-hover: var(--brand-hover);
+}
+
+.custom-navbar {
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text) !important;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-animate {
+  opacity: 0;
+  transform: translateY(-16px);
+  animation: navbarFadeSlide 0.6s ease-out forwards;
+}
+
+@keyframes navbarFadeSlide {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar-logo-img {
+  margin-right: 0.75rem;
+  transition: transform 0.25s ease;
+}
+
+.navbar-logo-img:hover {
+  transform: scale(1.05);
+}
+
+/* ===== NAV LINK STYLING ===== */
+.nav-link-strong {
+  color: var(--navbar-text) !important;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.nav-link-strong:hover {
+  color: var(--navbar-text-hover) !important;
+}
+
+.nav-link-mobile {
+  color: var(--navbar-text) !important;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  padding: 10px 0;
+  display: block;
+}
+
+.nav-link-mobile:hover {
+  color: var(--navbar-text-hover) !important;
+}
+
+/* ===== CUSTOM TOGGLE STYLING ===== */
+.custom-toggle {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+.custom-hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 18px;
+}
+
+.custom-hamburger span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background-color: var(--navbar-text);
+  transition: all 0.3s ease;
+}
+
+/* ===== CUSTOM BUTTON STYLING ===== */
+.btn-brand {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: white !important;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.btn-brand:hover {
+  background-color: var(--brand-hover) !important;
+  border-color: var(--brand-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-brand-outline {
+  background-color: transparent !important;
+  border: 1px solid var(--brand) !important;
+  color: var(--brand) !important;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.btn-brand-outline:hover {
+  background-color: var(--brand) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== MOBILE MENU STYLING ===== */
+.custom-navbar-collapse {
+  background-color: var(--navbar-bg);
+  padding: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-nav-mobile {
+  margin-bottom: 1rem;
+}
+
+/* ===== CUSTOM LANGUAGE SELECTOR STYLING (NEW) ===== */
+.language-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.language-selector-mobile {
+  position: relative;
+  display: inline-block;
+}
+
+.language-toggle-btn {
+  background-color: #e6f3f5 !important; /* Light blue background from screenshot */
+  border: none !important;
+  color: var(--navbar-text) !important;
+  font-weight: 500;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  margin: 0 auto;
+}
+
+.language-toggle-btn:hover {
+  background-color: var(--brand) !important;
+  color: white !important;
+}
+
+/* Custom Dropdown Styling */
+.custom-translate-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 5px;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.custom-translate-dropdown-mobile {
+  position: relative; /* Changed for mobile */
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+  min-width: 150px;
+  display: inline-block; /* Changed for mobile */
+  overflow: hidden;
+}
+
+.lang-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--navbar-text);
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.lang-option:hover {
+  background-color: #f8f9fa;
+}
+
+/* ===== HIDE ALL GOOGLE TRANSLATE UI ELEMENTS ===== */
+/* This is crucial. We hide everything Google creates and control it ourselves. */
+#google_translate_element_hidden,
+.goog-te-banner-frame,
+.goog-te-banner,
+.skiptranslate,
+.goog-te-gadget,
+.goog-te-combo {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* Prevent Google's script from adding a top margin to the body */
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+/* Hide Google Tooltip */
+.goog-tooltip,
+.goog-te-balloon-frame {
+  display: none !important;
+}

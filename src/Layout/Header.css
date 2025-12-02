@@ -1,0 +1,184 @@
+body {
+  top: 0px !important;
+  position: relative !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+/* 🌐 Language Icon Style */
+.lang-dropdown-icon {
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  /* On Hover - Icon Highlight */
+  .lang-dropdown-icon:hover {
+    color: #ffc107; /* Yellow on hover */
+  }
+  
+  /* 📋 Dropdown Container */
+  .lang-dropdown-menu {
+    position: absolute;
+    right: 0;
+    background-color: #ffffff;
+    color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    z-index: 999;
+    min-width: 130px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    padding: 5px 0;
+  }
+  
+  /* 🔤 Language Items */
+  .lang-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+  }
+  
+  /* Hover Effect on Each Item */
+  .lang-item:hover {
+    background-color: #f1f1f1;
+  }
+  
+  /* ✅ Active/Selected Language Highlight */
+  .active-lang {
+    background-color: #ffc107;
+    font-weight: 600;
+  }
+  
+ /* === SINGLE-BOX Google Translate: keep only outer box visible === */
+
+/* Make the container the single visible box */
+#google_translate_element {
+  display: inline-block !important;
+  border: 1px solid rgba(230,243,245,0.25) !important; /* outer single box */
+  border-radius: 6px !important;
+  padding: 6px 6px !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+}
+
+/* Remove any borders/background/padding from Google's injected gadget so only outer container shows */
+#google_translate_element .goog-te-gadget,
+#google_translate_element .goog-te-gadget-simple,
+#google_translate_element .goog-te-gadget-icon,
+#google_translate_element .goog-te-menu-value {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep items inline and aligned */
+#google_translate_element .goog-te-gadget,
+#google_translate_element .goog-te-gadget-simple {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Flag / G icon sizing */
+#google_translate_element img,
+#google_translate_element .goog-te-gadget img {
+  display: inline-block !important;
+  width: 20px !important;
+  height: auto !important;
+  margin: 0 8px 0 0 !important;
+  vertical-align: middle !important;
+}
+
+.goog-te-gadget {
+  color: white !important;
+  font-size: 14px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.goog-te-gadget span {
+  display: none !important; /* Hides the 'Powered by Google' text */
+}
+
+.goog-te-combo {
+  background-color: #023347 !important; /* Same as your header */
+  color: white !important;
+  border: 1px solid rgba(230, 243, 245, 0.4) !important;
+  border-radius: 6px !important;
+  padding: 4px 6px !important;
+  font-size: 14px !important;
+  width: 110px !important; /* Reduce width here */
+  outline: none !important;
+  appearance: none !important;
+  cursor: pointer !important;
+}
+
+.goog-te-combo option {
+  background-color: white !important;
+  color: white !important;
+}
+
+/* Optional: change dropdown arrow color */
+.goog-te-combo::-ms-expand {
+  color: white !important;
+  background-color: transparent !important;
+}
+
+
+/* Ensure the menu-value text and arrow are inline */
+#google_translate_element .goog-te-menu-value {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  white-space: nowrap !important;
+}
+
+/* Style visible text */
+#google_translate_element .goog-te-menu-value span:nth-child(2) {
+  color: #023347 !important;
+  font-weight: 600 !important;
+  display: inline-block !important;
+}
+
+/* Keep arrow aligned and small */
+#google_translate_element .goog-te-menu-value span:nth-child(3) {
+  display: inline-block !important;
+  margin-left: 8px !important;
+  transform: translateY(1px) !important;
+  color: #023347 !important;
+}
+
+/* Defensive: remove any remaining borders from all children */
+#google_translate_element * {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* === Force-hide Google Translate banner and fix body offset === */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner,
+.goog-te-balloon-frame,
+.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+.goog-tooltip,
+#goog-gt-tt,
+.goog-tooltip:hover {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Ensure iframe from translate doesn’t overlay */
+iframe.goog-te-banner-frame {
+  display: none !important;
+  height: 0 !important;
+  visibility: hidden !important;
+}

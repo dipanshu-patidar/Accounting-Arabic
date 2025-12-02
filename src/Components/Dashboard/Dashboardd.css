@@ -1,0 +1,106 @@
+/* Dashboard Container */
+.dashboard {
+    background-color: #f8f9fb;
+  }
+  
+  /* Stat Cards Layout */
+  .dashboard-cards .stat-card {
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: #fff;
+    cursor: pointer;
+  }
+  
+  .dashboard-cards .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Icon Circle */
+  .icon-box {
+    background-color: #53b2a5;
+    color: #ffffff;
+    padding: 12px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+  }
+  
+  /* Growth Label (percentage or text) */
+  .growth-box {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  /* Value in Card */
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 4px;
+  }
+  
+  /* Label under value */
+  .stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+  
+  /* Chart Card */
+  .growth-chart {
+    border-radius: 16px;
+    background-color: #ffffff;
+  }
+  
+  .growth-chart .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #e9ecef;
+  }
+  
+  .growth-chart .btn {
+    font-size: 0.85rem;
+  }
+  .stat-card {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .icon-box {
+    background-color: #f3f4f6;
+    padding: 10px;
+    border-radius: 0.75rem;
+  }
+  
+  /* Responsive Tweaks */
+  @media (max-width: 768px) {
+    .stat-value {
+      font-size: 1.25rem;
+    }
+  
+    .stat-label {
+      font-size: 0.85rem;
+    }
+  
+    .growth-box {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+    }
+  
+    .icon-box {
+      width: 40px;
+      height: 40px;
+      font-size: 1.2rem;
+    }
+  }
+  

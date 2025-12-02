@@ -1,0 +1,12 @@
+/* Ensures dropdown shows on top */
+.top-navbar-wrapper {
+  position: relative;
+  z-index: 1030; /* Higher than most navbars */
+}
+
+.support-dropdown .dropdown-menu,
+.signin-dropdown .dropdown-menu {
+  z-index: 1050; /* Ensure dropdown appears over all */
+  position: absolute;
+  min-width: 250px;
+}

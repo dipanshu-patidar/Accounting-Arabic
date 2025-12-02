@@ -1,0 +1,408 @@
+import React, { useState, useEffect } from "react";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Table,
+  Form,
+  Button,
+  Modal,
+} from "react-bootstrap";
+import {
+  FaClock,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaFilePdf,
+  FaTimes,
+} from "react-icons/fa";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
+// Mock employees (replace with real API data)
+const mockEmployees = [
+  { id: 1, name: "John Doe", employeeId: "EMP-001" },
+  { id: 2, name: "Jane Smith", employeeId: "EMP-002" },
+  { id: 3, name: "Robert Johnson", employeeId: "EMP-003" },
+];
+
+const STATUS_OPTIONS = ["Present", "Absent", "Leave", "Late"];
+
+const emptyRecord = {
+  id: null,
+  employeeId: "",
+  date: "",
+  checkIn: "",
+  checkOut: "",
+  status: "Present",
+  notes: "",
+};
+
+const calculateHours = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return "–";
+  const [h1, m1] = checkIn.split(":").map(Number);
+  const [h2, m2] = checkOut.split(":").map(Number);
+  const totalMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+  if (totalMinutes <= 0) return "–";
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return `${hours}h ${mins}m`;
+};
+
+const Attendance = () => {
+  const [records, setRecords] = useState([]);
+  const [employees] = useState(mockEmployees);
+  const [loading, setLoading] = useState(true);
+
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState("add"); // 'add' or 'edit'
+  const [form, setForm] = useState(emptyRecord);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
+
+  // Load mock data
+  useEffect(() => {
+    const mockData = [
+      {
+        id: 1,
+        employeeId: "1",
+        date: "2025-11-01",
+        checkIn: "09:00",
+        checkOut: "17:30",
+        status: "Present",
+        notes: "On time",
+      },
+      {
+        id: 2,
+        employeeId: "2",
+        date: "2025-11-01",
+        checkIn: "",
+        checkOut: "",
+        status: "Absent",
+        notes: "Sick leave",
+      },
+      {
+        id: 3,
+        employeeId: "1",
+        date: "2025-11-02",
+        checkIn: "10:15",
+        checkOut: "18:00",
+        status: "Late",
+        notes: "Traffic delay",
+      },
+    ];
+    setTimeout(() => {
+      setRecords(mockData);
+      setLoading(false);
+    }, 300);
+  }, []);
+
+  const getEmployeeName = (empId) => {
+    const emp = employees.find(e => e.id === parseInt(empId));
+    return emp ? emp.name : "–";
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleAdd = () => {
+    setForm(emptyRecord);
+    setModalType("add");
+    setShowModal(true);
+  };
+
+  const handleEdit = (record) => {
+    setForm({ ...record });
+    setModalType("edit");
+    setShowModal(true);
+  };
+
+  const handleSave = () => {
+    if (!form.employeeId || !form.date || !form.status) {
+      alert("Please fill required fields.");
+      return;
+    }
+
+    if (form.status === "Present" && (!form.checkIn || !form.checkOut)) {
+      alert("Check-In and Check-Out are required for 'Present' status.");
+      return;
+    }
+
+    if (modalType === "add") {
+      const newRecord = { ...form, id: Date.now().toString() };
+      setRecords((prev) => [newRecord, ...prev]);
+    } else {
+      setRecords((prev) =>
+        prev.map((r) => (r.id === form.id ? { ...form } : r))
+      );
+    }
+
+    setShowModal(false);
+    setForm(emptyRecord);
+  };
+
+  const confirmDelete = (record) => {
+    setRecordToDelete(record);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = () => {
+    setRecords((prev) => prev.filter((r) => r.id !== recordToDelete.id));
+    setShowDeleteModal(false);
+    setRecordToDelete(null);
+  };
+
+  const handlePDF = () => {
+    const doc = new jsPDF();
+    doc.text("Attendance Report", 14, 16);
+    doc.autoTable({
+      startY: 22,
+      head: [
+        ["Date", "Employee", "Check-In", "Check-Out", "Total Hours", "Status"],
+      ],
+      body: records.map((r) => [
+        r.date,
+        getEmployeeName(r.employeeId),
+        r.checkIn || "–",
+        r.checkOut || "–",
+        calculateHours(r.checkIn, r.checkOut),
+        r.status,
+      ]),
+    });
+    doc.save("attendance.pdf");
+  };
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: '#f0f7f8' }}>
+        <div className="spinner-border" style={{ color: '#023347' }} role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Container fluid className="py-3" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
+      <Card className="border-0 shadow-sm" style={{ backgroundColor: '#e6f3f5' }}>
+        <Card.Body>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 className="mb-1" style={{ color: '#023347' }}>
+                <FaClock className="me-2" style={{ color: '#2a8e9c' }} />
+                Attendance
+              </h4>
+              <p className="text-muted">Track daily employee attendance</p>
+            </div>
+            <div className="d-flex gap-2">
+              <Button variant="outline-secondary" onClick={handlePDF} size="sm" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }} className="d-flex align-items-center justify-content-center">
+                <FaFilePdf className="me-1" /> Export PDF
+              </Button>
+              <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleAdd} size="sm" className="d-flex align-items-center justify-content-center">
+                <FaPlus className="me-1" /> Add Record
+              </Button>
+            </div>
+          </div>
+
+          <div style={{ overflowX: "auto" }}>
+            <Table hover responsive>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Employee</th>
+                  <th>Check-In</th>
+                  <th>Check-Out</th>
+                  <th>Total Hours</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.length > 0 ? (
+                  records.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.date}</td>
+                      <td>{getEmployeeName(r.employeeId)}</td>
+                      <td>{r.checkIn || "–"}</td>
+                      <td>{r.checkOut || "–"}</td>
+                      <td>{calculateHours(r.checkIn, r.checkOut)}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            r.status === "Present"
+                              ? "bg-success"
+                              : r.status === "Absent"
+                              ? "bg-danger"
+                              : r.status === "Leave"
+                              ? "bg-info"
+                              : "bg-warning"
+                          } text-dark`}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                      <td>
+                        <Button
+                          size="sm"
+                          variant="light"
+                          className="me-1"
+                          onClick={() => handleEdit(r)}
+                          style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
+                        >
+                          <FaEdit />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="light"
+                          onClick={() => confirmDelete(r)}
+                          style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
+                        >
+                          <FaTrash />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="text-center text-muted">
+                      No attendance records found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* Add/Edit Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="md">
+        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+          <Modal.Title>
+            {modalType === "edit" ? "Edit Attendance" : "Add Attendance Record"}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Employee *</Form.Label>
+              <Form.Select
+                name="employeeId"
+                value={form.employeeId}
+                onChange={handleInputChange}
+                required
+                style={{ border: '1px solid #ced4da' }}
+              >
+                <option value="">Select Employee</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Date *</Form.Label>
+              <Form.Control
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleInputChange}
+                required
+                style={{ border: '1px solid #ced4da' }}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Check-In Time</Form.Label>
+              <Form.Control
+                type="time"
+                name="checkIn"
+                value={form.checkIn}
+                onChange={handleInputChange}
+                disabled={form.status !== "Present"}
+                style={{ border: '1px solid #ced4da' }}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Check-Out Time</Form.Label>
+              <Form.Control
+                type="time"
+                name="checkOut"
+                value={form.checkOut}
+                onChange={handleInputChange}
+                disabled={form.status !== "Present"}
+                style={{ border: '1px solid #ced4da' }}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Status *</Form.Label>
+              <Form.Select
+                name="status"
+                value={form.status}
+                onChange={handleInputChange}
+                required
+                style={{ border: '1px solid #ced4da' }}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Notes</Form.Label>
+              <Form.Control
+                as="textarea"
+                name="notes"
+                value={form.notes}
+                onChange={handleInputChange}
+                rows={2}
+                style={{ border: '1px solid #ced4da' }}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
+          <Button variant="secondary" onClick={() => setShowModal(false)} style={{ border: '1px solid #ced4da' }}>
+            Cancel
+          </Button>
+          <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleSave}>
+            {modalType === "edit" ? "Update" : "Add"} Record
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+          <Modal.Title>Delete Record</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+          Are you sure you want to delete this attendance record for{" "}
+          <strong>{getEmployeeName(recordToDelete?.employeeId)}</strong> on{" "}
+          <strong>{recordToDelete?.date}</strong>?
+        </Modal.Body>
+        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)} style={{ border: '1px solid #ced4da' }}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Container>
+  );
+};
+
+export default Attendance;

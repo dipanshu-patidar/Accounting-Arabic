@@ -1,0 +1,44 @@
+.payments-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 12px;
+  }
+  
+  .payments-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+  }
+  
+  .payments-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  .payments-dashboard .payments-card {
+    border-radius: 12px;
+  }
+  
+  .payments-dashboard .payments-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  /* Optional: Custom Background Colors */
+  .bg-orange {
+    background-color: #FFA64D;
+  }
+  
+  .bg-purple {
+    background-color: #7B61FF;
+  }
+  
+ 

@@ -1,0 +1,383 @@
+:root {
+    /* Default light theme colors */
+    --bs-primary: #023347;
+    --bs-secondary: #6c757d;
+    --bs-success: #198754;
+    --bs-danger: #dc3545;
+    --bs-warning: #ffc107;
+    --bs-info: #0dcaf0;
+    --bs-light: #f8f9fa;
+    --bs-dark: #212529;
+    
+    
+    /* Layout colors */
+    --sidebar-bg: #032d45;
+    --topbar-bg: #032d45;
+    
+    /* Theme-specific variables */
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #212529;
+    --bs-card-bg: #ffffff;
+    --bs-border-color: #dee2e6;
+    --bs-table-bg: #ffffff;
+    --bs-table-striped-bg: #f8f9fa;
+    --bs-table-hover-bg: #f5f5f5;
+    --bs-form-control-bg: #ffffff;
+    --bs-form-control-color: #212529;
+    --bs-modal-bg: #ffffff;
+    --bs-modal-color: #212529;
+}
+
+/* Light theme */
+:root[data-theme="light"] {
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #212529;
+    --bs-card-bg: #ffffff;
+    --bs-border-color: #dee2e6;
+    --bs-table-bg: #ffffff;
+    --bs-table-striped-bg: #f8f9fa;
+    --bs-table-hover-bg: #f5f5f5;
+    --bs-form-control-bg: #ffffff;
+    --bs-form-control-color: #212529;
+    --bs-modal-bg: #ffffff;
+    --bs-modal-color: #212529;
+}
+
+/* Dark theme */
+:root[data-theme="dark"] {
+    --bs-body-bg: #1a1a1a;
+    --bs-body-color: #ffffff;
+    --bs-card-bg: #2d2d2d;
+    --bs-border-color: #404040;
+    --bs-table-bg: #2d2d2d;
+    --bs-table-striped-bg: #363636;
+    --bs-table-hover-bg: #404040;
+    --bs-form-control-bg: #2d2d2d;
+    --bs-form-control-color: #ffffff;
+    --bs-modal-bg: #2d2d2d;
+    --bs-modal-color: #ffffff;
+}
+
+/* Apply theme variables to body */
+body {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Cards */
+.card {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Tables */
+.table {
+    --bs-table-bg: var(--bs-table-bg);
+    --bs-table-striped-bg: var(--bs-table-striped-bg);
+    --bs-table-hover-bg: var(--bs-table-hover-bg);
+    color: var(--bs-body-color) !important;
+}
+
+.table-light {
+    background-color: var(--bs-table-striped-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Form controls */
+.form-control, .form-select {
+    background-color: var(--bs-form-control-bg) !important;
+    color: var(--bs-form-control-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--bs-form-control-bg) !important;
+    color: var(--bs-form-control-color) !important;
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(83, 178, 165, 0.25) !important;
+}
+
+/* Modals */
+.modal-content {
+    background-color: var(--bs-modal-bg) !important;
+    color: var(--bs-modal-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.modal-header {
+    border-bottom-color: var(--bs-border-color) !important;
+}
+
+.modal-footer {
+    border-top-color: var(--bs-border-color) !important;
+}
+
+/* Buttons with custom colors */
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    opacity: 0.9;
+}
+
+.btn-secondary {
+    background-color: var(--bs-secondary) !important;
+    border-color: var(--bs-secondary) !important;
+}
+
+.btn-success {
+    background-color: var(--bs-success) !important;
+    border-color: var(--bs-success) !important;
+}
+
+.btn-danger {
+    background-color: var(--bs-danger) !important;
+    border-color: var(--bs-danger) !important;
+}
+
+.btn-warning {
+    background-color: var(--bs-warning) !important;
+    border-color: var(--bs-warning) !important;
+}
+
+.btn-info {
+    background-color: var(--bs-info) !important;
+    border-color: var(--bs-info) !important;
+}
+
+/* Sidebar theming */
+.sidebar {
+    background-color: var(--sidebar-bg) !important;
+}
+
+/* Header theming */
+.header {
+    background-color: var(--topbar-bg) !important;
+}
+
+/* Background utilities */
+.bg-light {
+    background-color: var(--bs-light) !important;
+}
+
+.bg-dark {
+    background-color: var(--bs-dark) !important;
+}
+
+/* Text utilities */
+.text-dark {
+    color: var(--bs-body-color) !important;
+}
+
+.text-light {
+    color: var(--bs-body-color) !important;
+}
+
+/* Borders */
+.border {
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.dropdown-item {
+    color: var(--bs-body-color) !important;
+}
+
+.dropdown-item:hover {
+    background-color: var(--bs-table-hover-bg) !important;
+}
+
+/* Pagination */
+.page-link {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+/* Badges */
+.badge {
+    color: #ffffff !important;
+}
+
+/* Input groups */
+.input-group-text {
+    background-color: var(--bs-form-control-bg) !important;
+    color: var(--bs-form-control-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Alerts */
+.alert {
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--topbar-bg);
+}
+
+/* Offcanvas */
+.offcanvas {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* List groups */
+.list-group-item {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.list-group-item:hover {
+    background-color: var(--bs-table-hover-bg) !important;
+}
+
+/* Accordion */
+.accordion-item {
+    background-color: var(--bs-card-bg) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.accordion-button {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: var(--bs-table-striped-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Tabs */
+.nav-tabs .nav-link {
+    color: var(--bs-body-color) !important;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Progress bars */
+.progress {
+    background-color: var(--bs-table-striped-bg) !important;
+}
+
+/* Tooltips and popovers */
+.tooltip-inner {
+    background-color: var(--bs-dark) !important;
+}
+
+.popover {
+    background-color: var(--bs-card-bg) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.popover-body {
+    color: var(--bs-body-color) !important;
+}
+
+/* Custom scrollbar for dark theme */
+:root[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Special handling for specific components */
+.bg-white {
+    background-color: var(--bs-card-bg) !important;
+}
+
+.text-white {
+    color: #ffffff !important;
+}
+
+.text-muted {
+    color: var(--bs-secondary) !important;
+}
+
+/* Company specific styling */
+.company-dashboard {
+    background-color: var(--bs-body-bg) !important;
+}
+
+/* Ensure proper contrast for text on colored backgrounds */
+.bg-primary, .bg-success, .bg-danger, .bg-warning, .bg-info {
+    color: #ffffff !important;
+}
+
+/* Custom theme classes for specific components */
+.theme-card {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border: 1px solid var(--bs-border-color) !important;
+}
+
+.theme-text {
+    color: var(--bs-body-color) !important;
+}
+
+.theme-border {
+    border-color: var(--bs-border-color) !important;
+}
+
+.theme-bg {
+    background-color: var(--bs-body-bg) !important;
+}
+
+/* Layout specific styles */
+.layout-default .main-content {
+    margin-left: 250px;
+}
+
+.layout-mini .main-content {
+    margin-left: 80px;
+}
+
+.layout-no-header .main-content {
+    padding-top: 0;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+    .layout-default .main-content,
+    .layout-mini .main-content {
+        margin-left: 0;
+    }
+}

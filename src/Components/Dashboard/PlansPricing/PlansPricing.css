@@ -1,0 +1,49 @@
+
+  
+  .plans-table th,
+  .plans-table td {
+    vertical-align: middle;
+    font-size: 0.95rem;
+  }
+  
+  .plans-table .badge {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    border-radius: 12px;
+  }
+  
+  @media (max-width: 576px) {
+    .plans-page .header-section h4 {
+      font-size: 1.25rem;
+    }
+    .plans-table th,
+    .plans-table td {
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .table-responsive table {
+      min-width: 600px;
+    }
+  
+    .custom-pagination-orange {
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+  
+    .input-group {
+      flex-direction: column;
+    }
+  
+    .input-group .form-control {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  
+    .input-group .btn {
+      width: 100%;
+    }
+  }
+  
