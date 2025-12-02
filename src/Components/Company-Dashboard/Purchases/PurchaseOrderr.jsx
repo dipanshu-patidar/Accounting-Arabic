@@ -102,13 +102,40 @@ const PurchaseOrderr = () => {
     fetchPurchaseOrders();
   }, [companyId]);
 // ✅ HANDLE "CREATE" or "CONTINUE"
+const getFirstIncompleteStep = (order) => {
+  if (!order) return "purchaseQuotation";
+  const sequence = [
+    { key: "purchaseQuotationStatus", ui: "purchaseQuotation" },
+    { key: "purchaseOrderStatus", ui: "purchaseOrder" },
+    { key: "goodsReceiptStatus", ui: "goodsReceipt" },
+    { key: "billStatus", ui: "bill" },
+    { key: "paymentStatus", ui: "payment" },
+  ];
+
+  for (const s of sequence) {
+    // Treat any status other than 'Done' as incomplete
+    if (!order[s.key] || order[s.key] !== "Done") return s.ui;
+  }
+
+  // If all steps are done, default to quotation (or you can choose to open the final step)
+  return "purchaseQuotation";
+};
+
 const handleCreateNewPurchase = async (order = null) => {
   if (order) {
-  
+    const initialStep = getFirstIncompleteStep(order);
+
     setSelectedOrder({
       id: order.id,
-      initialStep: "purchaseQuotation" // Default step
+      initialStep,
+      purchaseQuotation: order.purchaseQuotation || {},
+      purchaseOrder: order.purchaseOrder || {},
+      goodsReceipt: order.goodsReceipt || {},
+      bill: order.bill || {},
+      payment: order.payment || {},
+      fullOrderData: order.fullOrderData || {},
     });
+
     setStepModal(true);
   } else {
     // New order
@@ -658,18 +685,22 @@ const handleCreateNewPurchase = async (order = null) => {
         <Modal.Body>
           <MultiStepPurchaseForm
             initialData={{
+              poId: selectedOrder?.id,
               purchaseQuotation: selectedOrder?.purchaseQuotation || {},
               purchaseOrder: selectedOrder?.purchaseOrder || {},
               goodsReceipt: selectedOrder?.goodsReceipt || {},
               bill: selectedOrder?.bill || {},
               payment: selectedOrder?.payment || {},
-              
+              company_info: selectedOrder?.fullOrderData?.company_info || {},
+              shipping_details: selectedOrder?.fullOrderData?.shipping_details || {},
+              additional_info: selectedOrder?.fullOrderData?.additional_info || {},
+              items: selectedOrder?.fullOrderData?.items || [],
             }}
             initialStep={selectedOrder?.initialStep || "purchaseQuotation"}
             onClose={handleFormClose}
             onRefresh={fetchPurchaseOrders}
             onSubmit={handleFormSubmit}
-             selectedOrder={selectedOrder} // ✅ ADD THIS LINE
+            selectedOrder={selectedOrder}
           />
         </Modal.Body>
       </Modal>

@@ -1,25 +1,26 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Form, Button, Table, Row, Col, InputGroup, FormControl, Tabs, Tab, Alert,} from "react-bootstrap";
+import { Form, Button, Table, Row, Col, InputGroup, FormControl, Tabs, Tab, Alert, } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUpload, faTrash, faSearch, faPlus,} from "@fortawesome/free-solid-svg-icons";
+import { faUpload, faTrash, faSearch, faPlus, } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import AddProductModal from "../Inventory/AddProductModal";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
 
-const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose,selectedOrder }) => {
+const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, selectedOrder }) => {
   const companyId = GetCompanyId();
   const navigate = useNavigate();
   const location = useLocation();
   const pdfRef = useRef();
   const [isSubmitting, setIsSubmitting] = useState(false);
-    console.log(selectedOrder)
+  console.log(selectedOrder)
   // State
   const [activeTab, setActiveTab] = useState(initialStep || "purchaseQuotation");
   const [poId, setPoId] = useState(null); // Critical: ID from POST
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [invalidSteps, setInvalidSteps] = useState({}); // track which steps have missing manual no
 
   // ===============================
   // MASTER FORM DATA
@@ -129,7 +130,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose,sel
       manualPaymentNo: "",
       billNo: "",
       manualBillNo: "",
-      Manual_payment_no:"",
+      Manual_payment_no: "",
       paymentDate: "",
       amount: "",
       paymentMethod: "",
@@ -389,25 +390,39 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose,sel
     }
   };
   console.log(selectedOrder)
-   useEffect(() => {
-  // Check if we have a PO ID from props
-  if (selectedOrder?.id) {
-    loadPurchaseOrder(selectedOrder.id);
-  }
-}, [selectedOrder?.id]);
+  useEffect(() => {
+    // Check if we have a PO ID from props
+    if (selectedOrder?.id) {
+      loadPurchaseOrder(selectedOrder.id);
+    }
+  }, [selectedOrder?.id]);
 
- 
+  const markInvalid = (tab) => {
+    setInvalidSteps((p) => ({ ...p, [tab]: true }));
+    setError("Manual number is required for this step.");
+  };
+
+  const clearInvalid = (tab) => {
+    setInvalidSteps((p) => {
+      const copy = { ...p };
+      delete copy[tab];
+      return copy;
+    });
+    setError(null);
+  };
+
+
 
 
   const loadPurchaseOrder = async (id) => {
     try {
       const res = await axiosInstance.get(`purchase-orders/${id}`);
       if (res.data) {
-         setPoId(id);
+        setPoId(id);
         const apiData = res.data.data;
         console.log("API Data", apiData);
-        
-     
+
+
         const formatDate = (iso) => (iso ? iso.split("T")[0] : "");
 
         const newFormData = {
@@ -597,7 +612,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose,sel
     // Check if we have a PO ID from URL or props
     const urlParams = new URLSearchParams(location.search);
     const poIdFromUrl = urlParams.get('poId') || initialData?.poId;
-    
+
     if (poIdFromUrl) {
       setPoId(poIdFromUrl);
       loadPurchaseOrder(poIdFromUrl);
@@ -610,169 +625,187 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose,sel
     }
   }, [activeTab, poId]);
 
-const handleSaveStep = async () => {
-  setError(null);
-  setSuccess(null);
-  const currentApiStep = uiStepToApiStep[activeTab];
-  if (!currentApiStep) return;
+  const handleSaveStep = async () => {
+    setError(null);
+    setSuccess(null);
+    const currentApiStep = uiStepToApiStep[activeTab];
+    if (!currentApiStep) return false;
 
-  if (!poId) {
-    // STEP 1: POST
-    const pq = formData.purchaseQuotation;
-    const items = pq.items.map((i) => ({
-      item_name: i.name,
-      qty: i.qty,
-      rate: i.rate,
-      tax_percent: i.tax,
-      discount: i.discount,
-      amount: (parseFloat(i.rate) || 0) * (parseInt(i.qty) || 0),
-    }));
+    // Validation: require manual number for the current step
+    const currentManualValue =
+      (activeTab === "purchaseQuotation" && (formData.purchaseQuotation.manualRefNo || formData.purchaseQuotation.manualQuotationNo)) ||
+      (activeTab === "purchaseOrder" && formData.purchaseOrder.manualOrderNo) ||
+      (activeTab === "goodsReceipt" && formData.goodsReceipt.manualReceiptNo) ||
+      (activeTab === "bill" && formData.bill.manualBillNo) ||
+      (activeTab === "payment" && (formData.payment.Manual_payment_no || formData.payment.manualPaymentNo));
 
-    // Get ship to data from the current active tab
-    const getShipToData = () => {
-      if (activeTab === "goodsReceipt") {
-        return {
-          ship_to_attention_name: formData.goodsReceipt.shipToName || "",
-          ship_to_company_name: formData.goodsReceipt.shipToName || "",
-          ship_to_company_address: formData.goodsReceipt.shipToAddress || "",
-          ship_to_company_email: formData.goodsReceipt.shipToEmail || "",
-          ship_to_company_phone: formData.goodsReceipt.shipToPhone || "",
+    if (!currentManualValue || currentManualValue.toString().trim() === "") {
+      markInvalid(activeTab);
+      return false;
+    }
+
+    if (!poId) {
+      // STEP 1: POST
+      const pq = formData.purchaseQuotation;
+      const items = pq.items.map((i) => ({
+        item_name: i.name,
+        qty: i.qty,
+        rate: i.rate,
+        tax_percent: i.tax,
+        discount: i.discount,
+        amount: (parseFloat(i.rate) || 0) * (parseInt(i.qty) || 0),
+      }));
+
+      // Get ship to data from the current active tab
+      const getShipToData = () => {
+        if (activeTab === "goodsReceipt") {
+          return {
+            ship_to_attention_name: formData.goodsReceipt.shipToName || "",
+            ship_to_company_name: formData.goodsReceipt.shipToName || "",
+            ship_to_company_address: formData.goodsReceipt.shipToAddress || "",
+            ship_to_company_email: formData.goodsReceipt.shipToEmail || "",
+            ship_to_company_phone: formData.goodsReceipt.shipToPhone || "",
+          };
+        } else if (activeTab === "bill") {
+          return {
+            ship_to_attention_name: formData.bill.shipToName || "",
+            ship_to_company_name: formData.bill.shipToName || "",
+            ship_to_company_address: formData.bill.shipToAddress || "",
+            ship_to_company_email: formData.bill.shipToEmail || "",
+            ship_to_company_phone: formData.bill.shipToPhone || "",
+          };
+        } else {
+          // Default empty values for other tabs
+          return {
+            ship_to_attention_name: "",
+            ship_to_company_name: "",
+            ship_to_company_address: "",
+            ship_to_company_email: "",
+            ship_to_company_phone: "",
+          };
+        }
+      };
+
+      const payload = {
+        company_info: {
+          company_id: companyId,
+          company_name: pq.companyName,
+          company_address: pq.companyAddress,
+          company_email: pq.companyEmail,
+          company_phone: pq.companyPhone,
+          bank_name: pq.bankName,
+          account_no: pq.accountNo,
+          account_holder: pq.accountHolder,
+          ifsc_code: pq.ifsc,
+          terms: pq.terms_and_conditions,
+          notes: pq.notes,
+        },
+        shipping_details: {
+          bill_to_attention_name: pq.vendorName,
+          bill_to_company_name: pq.vendorName,
+          bill_to_company_address: pq.vendorAddress,
+          bill_to_company_email: pq.vendorEmail,
+          bill_to_company_phone: pq.vendorPhone,
+          // Use ship to data from the current active tab
+          ...getShipToData(),
+        },
+        items,
+        steps: {
+          quotation: {
+            quotation_from_vendor_name: pq.vendorName,
+            quotation_from_vendor_address: pq.vendorAddress,
+            quotation_from_vendor_email: pq.vendorEmail,
+            quotation_from_vendor_phone: pq.vendorPhone,
+            ref_no: pq.referenceId,
+            manual_ref_ro: pq.manualRefNo,
+            quotation_no: pq.quotationNo,
+            manual_quo_no: pq.manualRefNo,
+            quotation_date: pq.quotationDate,
+            valid_till: pq.validDate,
+          },
+          purchase_order: {},
+          goods_receipt: {},
+          bill: {},
+          payment: {},
+        },
+        sub_total: calculateTotalAmount(items),
+        tax: items.reduce((s, i) => {
+          const sub = (parseFloat(i.rate) || 0) * (parseInt(i.qty) || 0);
+          return s + (sub * (parseFloat(i.tax_percent) || 0)) / 100;
+        }, 0),
+        discount: items.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0),
+        total: calculateTotalWithTaxAndDiscount(items),
+      };
+
+      const id = await createPurchaseOrder(payload);
+      if (id) {
+        // created successfully
+        clearInvalid("purchaseQuotation");
+        return true;
+      }
+      return false;
+    } else {
+      // STEPS 2–5: PUT
+      const currentData = formData[activeTab];
+      let apiStepData = {};
+
+      if (activeTab === "purchaseOrder") {
+        apiStepData = {
+          PO_no: currentData.orderNo,
+          Manual_PO_ref: currentData.manualOrderNo,
+        };
+      } else if (activeTab === "goodsReceipt") {
+        apiStepData = {
+          GR_no: currentData.receiptNo,
+          Manual_GR_no: currentData.manualReceiptNo,
+          vehicle_no: currentData.vehicleNo,
+          driver_name: currentData.driverName,
+          driver_phone: currentData.driverPhone,
+          // Include ship to details in goods receipt step
+          ship_to_attention_name: currentData.shipToName,
+          ship_to_company_name: currentData.shipToName,
+          ship_to_company_address: currentData.shipToAddress,
+          ship_to_company_email: currentData.shipToEmail,
+          ship_to_company_phone: currentData.shipToPhone,
         };
       } else if (activeTab === "bill") {
-        return {
-          ship_to_attention_name: formData.bill.shipToName || "",
-          ship_to_company_name: formData.bill.shipToName || "",
-          ship_to_company_address: formData.bill.shipToAddress || "",
-          ship_to_company_email: formData.bill.shipToEmail || "",
-          ship_to_company_phone: formData.bill.shipToPhone || "",
+        apiStepData = {
+          Bill_no: currentData.billNo,
+          Manual_Bill_no: currentData.manualBillNo,
+          due_date: currentData.dueDate,
+          // Include ship to details in bill step
+          ship_to_attention_name: currentData.shipToName,
+          ship_to_company_name: currentData.shipToName,
+          ship_to_company_address: currentData.shipToAddress,
+          ship_to_company_email: currentData.shipToEmail,
+          ship_to_company_phone: currentData.shipToPhone,
         };
-      } else {
-        // Default empty values for other tabs
-        return {
-          ship_to_attention_name: "",
-          ship_to_company_name: "",
-          ship_to_company_address: "",
-          ship_to_company_email: "",
-          ship_to_company_phone: "",
+      } else if (activeTab === "payment") {
+        const totalAmount = calculateTotalWithTaxAndDiscount(formData.purchaseQuotation.items);
+        apiStepData = {
+          Payment_no: currentData.paymentNo,
+          Manual_payment_no: currentData.Manual_payment_no,
+          amount_paid: parseFloat(currentData.amount) || 0,
+          total_amount: totalAmount,
+          total_bill: totalAmount,
+          balance: totalAmount - (parseFloat(currentData.amount) || 0),
+          payment_note: currentData.note,
+          payment_status: currentData.paymentStatus,
+          payment_made_vendor_name: currentData.vendorName,
+          payment_made_vendor_address: currentData.vendorAddress,
+          payment_made_vendor_email: currentData.vendorEmail,
+          payment_made_vendor_phone: currentData.vendorPhone,
         };
       }
-    };
 
-    const payload = {
-      company_info: {
-        company_id: companyId,
-        company_name: pq.companyName,
-        company_address: pq.companyAddress,
-        company_email: pq.companyEmail,
-        company_phone: pq.companyPhone,
-        bank_name: pq.bankName,
-        account_no: pq.accountNo,
-        account_holder: pq.accountHolder,
-        ifsc_code: pq.ifsc,
-        terms: pq.terms_and_conditions,
-        notes: pq.notes,
-      },
-      shipping_details: {
-        bill_to_attention_name: pq.vendorName,
-        bill_to_company_name: pq.vendorName,
-        bill_to_company_address: pq.vendorAddress,
-        bill_to_company_email: pq.vendorEmail,
-        bill_to_company_phone: pq.vendorPhone,
-        // Use ship to data from the current active tab
-        ...getShipToData(),
-      },
-      items,
-      steps: {
-        quotation: {
-          quotation_from_vendor_name: pq.vendorName,
-          quotation_from_vendor_address: pq.vendorAddress,
-          quotation_from_vendor_email: pq.vendorEmail,
-          quotation_from_vendor_phone: pq.vendorPhone,
-          ref_no: pq.referenceId,
-          manual_ref_ro: pq.manualRefNo,
-          quotation_no: pq.quotationNo,
-          manual_quo_no: pq.manualRefNo,
-          quotation_date: pq.quotationDate,
-          valid_till: pq.validDate,
-        },
-        purchase_order: {},
-        goods_receipt: {},
-        bill: {},
-        payment: {},
-      },
-      sub_total: calculateTotalAmount(items),
-      tax: items.reduce((s, i) => {
-        const sub = (parseFloat(i.rate) || 0) * (parseInt(i.qty) || 0);
-        return s + (sub * (parseFloat(i.tax_percent) || 0)) / 100;
-      }, 0),
-      discount: items.reduce((s, i) => s + (parseFloat(i.discount) || 0), 0),
-      total: calculateTotalWithTaxAndDiscount(items),
-    };
-
-    const id = await createPurchaseOrder(payload);
-    if (id) {
-      handleNext();
+      const payload = { [currentApiStep]: apiStepData };
+      await updatePurchaseOrder(poId, payload);
+      clearInvalid(activeTab);
+      return true;
     }
-  } else {
-    // STEPS 2–5: PUT
-    const currentData = formData[activeTab];
-    let apiStepData = {};
+  };
 
-    if (activeTab === "purchaseOrder") {
-      apiStepData = {
-        PO_no: currentData.orderNo,
-        Manual_PO_ref: currentData.manualOrderNo,
-      };
-    } else if (activeTab === "goodsReceipt") {
-      apiStepData = {
-        GR_no: currentData.receiptNo,
-        Manual_GR_no: currentData.manualReceiptNo,
-        vehicle_no: currentData.vehicleNo,
-        driver_name: currentData.driverName,
-        driver_phone: currentData.driverPhone,
-        // Include ship to details in goods receipt step
-        ship_to_attention_name: currentData.shipToName,
-        ship_to_company_name: currentData.shipToName,
-        ship_to_company_address: currentData.shipToAddress,
-        ship_to_company_email: currentData.shipToEmail,
-        ship_to_company_phone: currentData.shipToPhone,
-      };
-    } else if (activeTab === "bill") {
-      apiStepData = {
-        Bill_no: currentData.billNo,
-        Manual_Bill_no: currentData.manualBillNo,
-        due_date: currentData.dueDate,
-        // Include ship to details in bill step
-        ship_to_attention_name: currentData.shipToName,
-        ship_to_company_name: currentData.shipToName,
-        ship_to_company_address: currentData.shipToAddress,
-        ship_to_company_email: currentData.shipToEmail,
-        ship_to_company_phone: currentData.shipToPhone,
-      };
-    } else if (activeTab === "payment") {
-      const totalAmount = calculateTotalWithTaxAndDiscount(formData.purchaseQuotation.items);
-      apiStepData = {
-        Payment_no: currentData.paymentNo,
-        Manual_payment_no: currentData.Manual_payment_no,
-        amount_paid: parseFloat(currentData.amount) || 0,
-        total_amount: totalAmount,
-        total_bill: totalAmount,
-        balance: totalAmount - (parseFloat(currentData.amount) || 0),
-        payment_note: currentData.note,
-        payment_status: currentData.paymentStatus,
-        payment_made_vendor_name: currentData.vendorName,
-        payment_made_vendor_address: currentData.vendorAddress,
-        payment_made_vendor_email: currentData.vendorEmail,
-        payment_made_vendor_phone: currentData.vendorPhone,
-      };
-    }
 
-    const payload = { [currentApiStep]: apiStepData };
-    await updatePurchaseOrder(poId, payload);
-  }
-};
-
-  
   const renderPurchaseQuotationTab = () => {
     const tab = "purchaseQuotation";
     const data = formData[tab];
@@ -1106,11 +1139,17 @@ const handleSaveStep = async () => {
               <Form.Control value={data.referenceId} readOnly style={{ backgroundColor: "#f8f9fa" }} />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Manual Ref. No. (Optional)</Form.Label>
+              <Form.Label>Manual Ref. No. (Required)</Form.Label>
               <Form.Control
+                required
                 value={data.manualRefNo}
-                onChange={(e) => handleChange("manualRefNo", e.target.value)}
+                isInvalid={!!invalidSteps.purchaseQuotation && !(data.manualRefNo || data.manualQuotationNo)}
+                onChange={(e) => {
+                  handleChange("manualRefNo", e.target.value);
+                  if (e.target.value && e.target.value.toString().trim() !== "") clearInvalid("purchaseQuotation");
+                }}
               />
+              <Form.Control.Feedback type="invalid">Manual Ref No is required.</Form.Control.Feedback>
             </Form.Group>
             <Form.Group className="mb-2">
               <Form.Label>Quotation No.</Form.Label>
@@ -1803,12 +1842,19 @@ const handleSaveStep = async () => {
               />
             </Form.Group>
             <Form.Group className="mb-2">
-              <Form.Label>Manual Order No.</Form.Label>
+              <Form.Label>Manual Order No. (Required)</Form.Label>
               <Form.Control
+                required
                 value={data.manualOrderNo}
-                onChange={(e) => handleChange("manualOrderNo", e.target.value)}
+                isInvalid={!!invalidSteps.purchaseOrder && !data.manualOrderNo}
+                onChange={(e) => {
+                  handleChange("manualOrderNo", e.target.value);
+                  if (e.target.value && e.target.value.toString().trim() !== "") clearInvalid("purchaseOrder");
+                }}
               />
+              <Form.Control.Feedback type="invalid">Manual Order No is required.</Form.Control.Feedback>
             </Form.Group>
+
             <Form.Group className="mb-2">
               <Form.Label>Quotation No.</Form.Label>
               <Form.Control
@@ -2410,15 +2456,24 @@ const handleSaveStep = async () => {
             </Form.Group>
             <Form.Group className="mb-0">
               <div className="d-flex justify-content-between align-items-center text-nowrap">
-                <Form.Label className="mb-0">Manual GR No.</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={data.manualReceiptNo}
-                  onChange={(e) => handleChange("manualReceiptNo", e.target.value)}
-                  className="form-control-no-border text-end"
-                />
+                <Form.Label className="mb-0">Manual GR No. (Required)</Form.Label>
+                <div style={{ width: '60%' }}>
+                  <Form.Control
+                    required
+                    type="text"
+                    value={data.manualReceiptNo}
+                    isInvalid={!!invalidSteps.goodsReceipt && !data.manualReceiptNo}
+                    onChange={(e) => {
+                      handleChange("manualReceiptNo", e.target.value);
+                      if (e.target.value && e.target.value.toString().trim() !== "") clearInvalid("goodsReceipt");
+                    }}
+                    className="form-control-no-border text-end"
+                  />
+                  <Form.Control.Feedback type="invalid">Manual GR No is required.</Form.Control.Feedback>
+                </div>
               </div>
             </Form.Group>
+
             <Form.Group className="mb-0">
               <div className="d-flex justify-content-between align-items-center text-nowrap">
                 <Form.Label className="mb-0">Purchase Order No</Form.Label>
@@ -2703,7 +2758,7 @@ const handleSaveStep = async () => {
                             </InputGroup.Text>
                             <FormControl
                               placeholder="Search..."
-                         
+
                               value={rowSearchTerms[rowKey] || ""}
                               onChange={(e) => handleRowSearchChange(idx, e.target.value)}
                               autoFocus
@@ -3113,13 +3168,21 @@ const handleSaveStep = async () => {
             </Form.Group>
             <Form.Group className="mb-0">
               <div className="d-flex justify-content-between align-items-center text-nowrap">
-                <Form.Label className="mb-0">Manual Bill No.</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={data.manualBillNo || ""}
-                  onChange={(e) => handleChange("manualBillNo", e.target.value)}
-                  className="form-control-no-border text-end"
-                />
+                <Form.Label className="mb-0">Manual Bill No. (Required)</Form.Label>
+                <div style={{ width: '60%' }}>
+                  <Form.Control
+                    required
+                    type="text"
+                    value={data.manualBillNo || ""}
+                    isInvalid={!!invalidSteps.bill && !data.manualBillNo}
+                    onChange={(e) => {
+                      handleChange("manualBillNo", e.target.value);
+                      if (e.target.value && e.target.value.toString().trim() !== "") clearInvalid("bill");
+                    }}
+                    className="form-control-no-border text-end"
+                  />
+                  <Form.Control.Feedback type="invalid">Manual Bill No is required.</Form.Control.Feedback>
+                </div>
               </div>
             </Form.Group>
             <Form.Group className="mb-0">
@@ -3753,7 +3816,7 @@ const handleSaveStep = async () => {
                 />
               </div>
             </Form.Group>
-           
+
             <Form.Group className="mb-0">
               <div className="d-flex justify-content-between align-items-center text-nowrap">
                 <Form.Label className="mb-0">Bill No.</Form.Label>
@@ -3768,15 +3831,22 @@ const handleSaveStep = async () => {
             </Form.Group>
             <Form.Group className="mb-0">
               <div className="d-flex justify-content-between align-items-center text-nowrap">
-                <Form.Label className="mb-0">Payment No.</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={data.Manual_payment_no || ""}
-                    onChange={(e) => handleChange("Manual_payment_no", e.target.value)}
-
-                  className="form-control-no-border text-end"
-                  style={{ backgroundColor: "#f8f9fa" }}
-                />
+                <Form.Label className="mb-0">Payment No. (Required)</Form.Label>
+                <div style={{ width: '60%' }}>
+                  <Form.Control
+                    required
+                    type="text"
+                    value={data.Manual_payment_no || ""}
+                    isInvalid={!!invalidSteps.payment && !(data.Manual_payment_no || data.manualPaymentNo)}
+                    onChange={(e) => {
+                      handleChange("Manual_payment_no", e.target.value);
+                      if (e.target.value && e.target.value.toString().trim() !== "") clearInvalid("payment");
+                    }}
+                    className="form-control-no-border text-end"
+                    style={{ backgroundColor: "#f8f9fa" }}
+                  />
+                  <Form.Control.Feedback type="invalid">Payment No is required.</Form.Control.Feedback>
+                </div>
               </div>
             </Form.Group>
             <Form.Control
@@ -4057,7 +4127,8 @@ const handleSaveStep = async () => {
 
   // Save current step AND go to next step
   const handleSaveAndNext = async () => {
-    await handleSaveStep(); // First save
+    const ok = await handleSaveStep(); // First save
+    if (!ok) return; // abort if validation/save failed
     // Only go next if save was successful and we have poId
     if (activeTab !== "payment") {
       const tabs = ["purchaseQuotation", "purchaseOrder", "goodsReceipt", "bill", "payment"];
@@ -4074,24 +4145,46 @@ const handleSaveStep = async () => {
   };
 
   const handleSubmitAndClose = async () => {
-  
-    await handleSaveStep(); 
 
-  
+    await handleSaveStep();
+
+
     if (onClose && typeof onClose === "function") {
       onClose(); // Closes modal
     }
 
     if (onSubmit && typeof onSubmit === "function") {
-      onSubmit(formData, "payment"); 
+      onSubmit(formData, "payment");
     }
   };
-  
+
+  const handleTabSelect = (key) => {
+    if (!key || key === activeTab) return;
+    // prevent switching away if current step manual number is missing
+    const manualFilled =
+      (activeTab === "purchaseQuotation" && (formData.purchaseQuotation.manualRefNo || formData.purchaseQuotation.manualQuotationNo)) ||
+      (activeTab === "purchaseOrder" && formData.purchaseOrder.manualOrderNo) ||
+      (activeTab === "goodsReceipt" && formData.goodsReceipt.manualReceiptNo) ||
+      (activeTab === "bill" && formData.bill.manualBillNo) ||
+      (activeTab === "payment" && (formData.payment.Manual_payment_no || formData.payment.manualPaymentNo));
+
+    if (!manualFilled || manualFilled.toString().trim() === "") {
+      markInvalid(activeTab);
+      return;
+    }
+    setActiveTab(key);
+  };
+
   return (
     <div className="container-fluid mt-4 px-2">
       <h4 className="text-center mb-4">Purchase Process</h4>
-     
-      <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-4 custom-tabs" fill>
+      {error && (
+        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+          {error}
+        </Alert>
+      )}
+
+      <Tabs activeKey={activeTab} onSelect={handleTabSelect} className="mb-4 custom-tabs" fill>
         <Tab eventKey="purchaseQuotation" title="Purchase Quotation" />
         <Tab eventKey="purchaseOrder" title="Purchase Order" />
         <Tab eventKey="goodsReceipt" title="Goods Receipt" />
