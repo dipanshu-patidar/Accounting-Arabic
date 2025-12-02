@@ -170,6 +170,15 @@ const AddPlanModal = ({ show, handleClose, handleAdd }) => {
     try {
       setIsSubmitting(true);
       
+      // Calculate storage capacity in bytes
+      let storageCapacityBytes;
+      if (formData.storageCapacity === "unlimited") {
+        storageCapacityBytes = "-1"; // Send as string for unlimited
+      } else {
+        // Convert GB to bytes and then to string
+        storageCapacityBytes = gbToBytes(parseInt(formData.storageCapacity)).toString();
+      }
+      
       const payload = {
         plan_name: formData.name.trim(),
         base_price: parseFloat(formData.basePrice) || 0,
@@ -177,9 +186,8 @@ const AddPlanModal = ({ show, handleClose, handleAdd }) => {
         invoice_limit: formData.invoiceLimit === "unlimited" ? -1 : parseInt(formData.invoiceLimit),
         additional_invoice_price: formData.invoiceLimit === "unlimited" ? 0 : parseFloat(formData.additionalInvoicePrice) || 0,
         user_limit: formData.userLimit === "unlimited" ? -1 : parseInt(formData.userLimit),
-        storage_capacity: formData.storageCapacity === "unlimited" 
-          ? -1 
-          : gbToBytes(parseInt(formData.storageCapacity)),
+        // Convert storage_capacity to string
+        storage_capacity: storageCapacityBytes,
         billing_cycle: formData.billing,
         status: formData.status,
         description: formData.descriptions.filter(desc => desc.trim() !== "").join("\n"),
