@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ProfileModal from "./ProfileModal";
 import newlogo from "../assets/watheeq.jpeg";
 import "./Sidebar.css";
@@ -7,7 +7,7 @@ import "./header.css";
 
 const Header = ({ onToggleSidebar }) => {
   const [showProfileModal, setShowProfileModal] = useState(false);
-
+ const navigate= useNavigate()
   // 🌐 Google Translate setup + fix for banner hiding header
   useEffect(() => {
     // Inject Google Translate only once
@@ -53,6 +53,11 @@ const Header = ({ onToggleSidebar }) => {
     }
   }, []);
 
+
+    const HandleLogout=()=>{
+     localStorage.clear()
+     navigate("/")
+  }
   return (
     <header
       className="py-3 px-3 header text-light shadow-sm"
@@ -195,7 +200,7 @@ const Header = ({ onToggleSidebar }) => {
           />
 
           {/* 🔓 Logout */}
-          <Link to="/" className="text-decoration-none">
+          
             <button
               className="btn btn-outline"
               style={{
@@ -212,11 +217,11 @@ const Header = ({ onToggleSidebar }) => {
               onMouseOut={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent";
                 e.currentTarget.style.transform = "scale(1)";
-              }}
+              }} onClick={HandleLogout}
             >
               <i className="fas fa-sign-out-alt me-1"></i> Logout
             </button>
-          </Link>
+         
         </div>
       </div>
     </header>
