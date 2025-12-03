@@ -155,7 +155,7 @@ const CompanyDashboard = () => {
       {/* Company Name at Top */}
       <div className="mb-4">
         <h3 className="semi-bold text-left" style={{ color: "#53b2a5" }}>
-          ZirakBook Dashboard
+          Dashboard
         </h3>
       </div>
 

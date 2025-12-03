@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Form,
   Button,
@@ -57,6 +57,31 @@ const ContraVoucher = () => {
   const companyId = GetCompanyId();
   const accountFromRef = useRef(null);
   const accountToRef = useRef(null);
+  // ✅ Add a ref to track if the component is mounted
+  const isMountedRef = useRef(true);
+  
+  // ✅ Add a ref to store the abort controllers
+  const abortControllersRef = useRef([]);
+
+  // ✅ Add a cleanup effect to run when the component unmounts
+  useEffect(() => {
+    // This function will be called when the component is unmounted
+    return () => {
+      console.log("ContraVoucher component is unmounting. Aborting all pending requests and timeouts.");
+      isMountedRef.current = false;
+      
+      // Abort all pending requests
+      abortControllersRef.current.forEach(controller => {
+        if (controller) controller.abort();
+      });
+      
+      // Clean up any open dropdowns
+      const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+      dropdowns.forEach(dropdown => {
+        dropdown.classList.remove('show');
+      });
+    };
+  }, []);
 
   // Helpers
   const generateAutoVoucherNo = () => {
@@ -113,8 +138,15 @@ const ContraVoucher = () => {
     }
 
     const fetchAccounts = async () => {
+      // ✅ 1. Create a new AbortController for this specific request
+      const controller = new AbortController();
+      abortControllersRef.current.push(controller);
+
       try {
-        const response = await axiosInstance.get(`account/company/${companyId}`);
+        const response = await axiosInstance.get(`account/company/${companyId}`, {
+          // ✅ 2. Pass the signal to the axios request
+          signal: controller.signal
+        });
         let accountsArray = [];
 
         if (Array.isArray(response.data)) {
@@ -124,6 +156,12 @@ const ContraVoucher = () => {
         } else if (response.data && typeof response.data === 'object') {
           const firstArray = Object.values(response.data).find(val => Array.isArray(val));
           if (firstArray) accountsArray = firstArray;
+        }
+
+        // ✅ 3. Check if the component is still mounted before updating state
+        if (!isMountedRef.current) {
+          console.log("Fetch request finished, but component was unmounted.");
+          return;
         }
 
         setAccounts(accountsArray);
@@ -138,6 +176,11 @@ const ContraVoucher = () => {
         }
       } catch (err) {
         console.error('Accounts API Error:', err);
+        // ✅ 4. Check if the error is due to an abort
+        if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
+          console.log("Fetch request was canceled.");
+          return; // Don't set an error state for a cancelled request
+        }
         setFetchError(err.response?.data?.message || 'Failed to load accounts.');
       }
     };
@@ -151,21 +194,47 @@ const ContraVoucher = () => {
 
     const fetchContraVouchers = async () => {
       setTableLoading(true);
+      // ✅ 1. Create a new AbortController for this specific request
+      const controller = new AbortController();
+      abortControllersRef.current.push(controller);
+
       try {
-        const response = await axiosInstance.get(`contravouchers/company/${companyId}`);
+        const response = await axiosInstance.get(`contravouchers/company/${companyId}`, {
+          // ✅ 2. Pass the signal to the axios request
+          signal: controller.signal
+        });
         let data = [];
-        if (Array.isArray(response.data)) {
+        
+        // ✅ Fix: Check for the data structure based on the response you provided
+        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+          data = response.data.data;
+        } else if (Array.isArray(response.data)) {
           data = response.data;
         } else if (response.data && Array.isArray(response.data.data)) {
           data = response.data.data;
         } else if (response.data && Array.isArray(response.data.contra_vouchers)) {
           data = response.data.contra_vouchers;
         }
+        
+        // ✅ 3. Check if the component is still mounted before updating state
+        if (!isMountedRef.current) {
+          console.log("Fetch request finished, but component was unmounted.");
+          return;
+        }
+
         setContraVouchers(data);
       } catch (err) {
         console.error('Failed to fetch contra vouchers:', err);
+        // ✅ 4. Check if the error is due to an abort
+        if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
+          console.log("Vouchers fetch was canceled.");
+          return; // Don't set an error state for a cancelled request
+        }
       } finally {
-        setTableLoading(false);
+        // ✅ 5. Only set loading to false if the request wasn't aborted
+        if (!controller.signal.aborted) {
+          setTableLoading(false);
+        }
       }
     };
 
@@ -176,20 +245,30 @@ const ContraVoucher = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (accountFromRef.current && !accountFromRef.current.contains(event.target)) {
-        document.getElementById('accountFromDropdown')?.classList.remove('show');
+        const dropdown = document.getElementById('accountFromDropdown');
+        if (dropdown && dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+        }
       }
       if (accountToRef.current && !accountToRef.current.contains(event.target)) {
-        document.getElementById('accountToDropdown')?.classList.remove('show');
+        const dropdown = document.getElementById('accountToDropdown');
+        if (dropdown && dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const toggleDropdown = (dropdownId) => {
     const dropdown = document.getElementById(dropdownId);
-    dropdown?.classList.toggle('show');
+    if (dropdown) {
+      dropdown.classList.toggle('show');
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -269,7 +348,7 @@ const ContraVoucher = () => {
     }
 
     if (accountFromId === accountToId) {
-      setError('Account From and Account To cannot be the same.');
+      setError('Account From and Account To cannot be same.');
       setLoading(false);
       return;
     }
@@ -280,91 +359,99 @@ const ContraVoucher = () => {
       return;
     }
 
-    const formData = new FormData();
-    if (manualVoucherNo.trim()) {
-      formData.append('voucher_number', manualVoucherNo.trim());
-    }
-    formData.append('voucher_date', voucherDate);
-    formData.append('account_from_id', accountFromId);
-    formData.append('account_to_id', accountToId);
-    formData.append('amount', amount);
-    formData.append('narration', narration || '');
-    formData.append('company_id', companyId);
-
-    if (uploadedFile) {
-      formData.append('document', uploadedFile);
-    }
-
+    // ✅ Create a new AbortController for the save request
+    const controller = new AbortController();
+    abortControllersRef.current.push(controller);
+    
     try {
-      let response;
-      if (isEditing && currentVoucherId) {
-        response = await axiosInstance.put(`contravouchers/${currentVoucherId}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+      const formData = new FormData();
+      if (manualVoucherNo.trim()) {
+        formData.append('voucher_number', manualVoucherNo.trim());
+      }
+      formData.append('voucher_date', voucherDate);
+      formData.append('account_from_id', accountFromId);
+      formData.append('account_to_id', accountToId);
+      formData.append('amount', amount);
+      formData.append('narration', narration || '');
+      formData.append('company_id', companyId);
 
-        setContraVouchers((prev) =>
-          prev.map((v) =>
-            v.id === currentVoucherId
-              ? {
-                ...v,
-                voucher_number: manualVoucherNo.trim() || v.voucher_number,
-                voucher_date: voucherDate,
-                account_from_id: accountFromId,
-                account_to_id: accountToId,
-                amount,
-                narration: narration || '',
-                document: response.data?.document || v.document, // Preserve if not updated
-              }
-              : v
-          )
-        );
-        toast.success('Voucher updated successfully!');
-      } else {
-        response = await axiosInstance.post('contravouchers', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-
-        const newVoucher = {
-          id: response.data?.id || Date.now(),
-          voucher_no: manualVoucherNo.trim() || response.data?.voucher_no || autoVoucherNo,
-          voucher_number: manualVoucherNo.trim() || null,
-          voucher_date: voucherDate,
-          account_from_id: accountFromId,
-          account_to_id: accountToId,
-          amount,
-          narration: narration || '',
-          document: response.data?.document,
-        };
-        setContraVouchers((prev) => [newVoucher, ...prev]);
-        toast.success('Contra Voucher created successfully!');
+      if (uploadedFile) {
+        formData.append('document', uploadedFile);
       }
 
+      const response = await axiosInstance.put(
+        `contravouchers/${currentVoucherId}`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          // ✅ Pass the signal to the axios PUT request
+          signal: controller.signal,
+        }
+      );
+
+      // ✅ Check if the component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log("Save request finished, but component was unmounted.");
+        return;
+      }
+
+      setContraVouchers((prev) =>
+        prev.map((v) =>
+          v.id === currentVoucherId
+            ? { ...v, voucher_number: manualVoucherNo.trim() || v.voucher_number, voucher_date: voucherDate, account_from_id: accountFromId, account_to_id: accountToId, amount, narration: narration || '', document: response.data?.document || v.document, }
+            : v
+        )
+      );
+      toast.success('Voucher updated successfully!');
       setShowModal(false);
     } catch (err) {
       console.error('API Error:', err);
-      setError(
-        err.response?.data?.message ||
-        (isEditing ? 'Failed to update voucher.' : 'Failed to create voucher.')
-      );
-      toast.error(
-        err.response?.data?.message ||
-        (isEditing ? 'Failed to update voucher.' : 'Failed to create voucher.')
-      );
+      // ✅ Check for abort error
+      if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
+        console.log("Save request was canceled.");
+        return;
+      }
+      const errorMsg = err.response?.data?.message || 'Failed to update voucher.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setLoading(false);
+      // ✅ Only set loading to false if the request wasn't aborted
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm(`Are you sure you want to delete this voucher?`)) return;
 
+    // ✅ Create a new AbortController for the delete request
+    const controller = new AbortController();
+    abortControllersRef.current.push(controller);
+
     try {
-      await axiosInstance.delete(`contravouchers/${id}`);
+      await axiosInstance.delete(`contravouchers/${id}`, {
+        // ✅ Pass the signal to the axios DELETE request
+        signal: controller.signal
+      });
+      
+      // ✅ Check if the component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log("Delete request finished, but component was unmounted.");
+        return;
+      }
+      
       setContraVouchers((prev) => prev.filter((v) => v.id !== id));
       toast.success('Voucher deleted successfully!');
     } catch (err) {
       console.error('Delete error:', err);
-      toast.error(err.response?.data?.message || 'Failed to delete voucher.');
+      // ✅ Check for abort error
+      if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
+        console.log("Delete request was canceled.");
+        return;
+      }
+      const errorMsg = err.response?.data?.message || 'Failed to delete voucher.';
+      toast.error(errorMsg);
     }
   };
 
@@ -428,7 +515,7 @@ const ContraVoucher = () => {
               <Spinner animation="border" size="sm" /> Loading...
             </div>
           ) : filteredVouchers.length === 0 ? (
-            <Alert variant="info">No contra vouchers found matching the filters.</Alert>
+            <Alert variant="info">No contra vouchers found matching filters.</Alert>
           ) : (
             <div className='' style={{ maxHeight: '400px', overflowY: 'auto' }}>
               <Table striped bordered hover size="sm">
@@ -447,7 +534,7 @@ const ContraVoucher = () => {
                 <tbody>
                   {filteredVouchers.map((voucher) => (
                     <tr key={voucher.id}>
-                      {/* Display the auto-generated voucher no by default, manual if available */}
+                      {/* Display auto-generated voucher no by default, manual if available */}
                       <td>{voucher.voucher_no_auto || voucher.voucher_number || '—'}</td>
                       <td>{voucher.voucher_date ? voucher.voucher_date.split('T')[0] : '—'}</td>
                       <td>{getAccountDisplayName(voucher.account_from_id)}</td>

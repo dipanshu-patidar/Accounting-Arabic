@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Form, Button, Container, Image, Nav, Tab, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { FaBuilding, FaImage, FaMapMarkerAlt, FaGlobe, FaFileInvoice, FaCheck, FaExclamationTriangle, FaTimes } from 'react-icons/fa';
 import { CurrencySetting } from './CurrencySetting';
@@ -12,8 +12,10 @@ const CompanyInfo = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [showErrorAlert, setShowErrorAlert] = useState(true); // NEW: State to control error alert visibility
   const companyId = GetCompanyId();
+
+  // ✅ Create a ref to store the AbortController for cleanup
+  const abortControllerRef = useRef(null);
 
   const [formData, setFormData] = useState({
     // Company Info
@@ -71,175 +73,357 @@ const CompanyInfo = () => {
     invoiceImage: null
   });
 
-  // Fetch company data on component mount
+  // ✅ Add a cleanup effect to run when the component unmounts
   useEffect(() => {
-    fetchCompanyData();
+    // This function will be called when the component is unmounted
+    return () => {
+      console.log("CompanyInfo component is unmounting. Aborting any pending request.");
+      // Abort the pending request if it exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
-  const fetchCompanyData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axiosInstance.get(`/auth/Company/${companyId}`);
-      
-      if (response.data && response.data.success) {
-        const companyData = response.data.data;
+  // Fetch company data on component mount
+  useEffect(() => {
+    if (!companyId) {
+      setError('Company ID not found.');
+      return;
+    }
 
-        // Update form data with API response
-        setFormData(prev => ({
-          ...prev,
-          companyName: companyData.name || '',
-          companyEmail: companyData.email || '',
-          phoneNumber: companyData.phone || '',
-          address: companyData.address || '',
-          country: companyData.country || '',
-          state: companyData.state || '',
-          city: companyData.city || '',
-          portalCode: companyData.postal_code || '',
-          currency: companyData.currency || '',
-          bank_name: companyData.bank_details?.bank_name || '',
-          account_no: companyData.bank_details?.account_number || '',
-          account_holder: companyData.bank_details?.account_holder || '',
-          ifsc_code: companyData.bank_details?.ifsc_code || '',
-          footerTerms: companyData.terms_and_conditions || '',
-          footerNote: companyData.notes || '',
-          invoiceTemplateId: companyData.invoice_template || 'template1',
-          purchaseTemplateId: companyData.purchase_template || 'purchase1',
-          receiptTemplateId: companyData.receipt_template || 'receipt1',
-          headerLabel: companyData.header_label || 'Invoice No.',
-          showDescription: companyData.show_description !== false,
-          showItemName: companyData.show_item_name !== false,
-          showPrice: companyData.show_price !== false,
-          showQuantity: companyData.show_quantity !== false,
-          showTotal: companyData.show_total !== false
-        }));
+    const fetchAccounts = async () => {
+      // ✅ Create a new AbortController for this specific request
+      const controller = new AbortController();
+      abortControllerRef.current = controller; // Store it in the ref
 
-        // Update preview images if URLs are available
-        if (companyData.branding) {
-          setPreviewImages(prev => ({
-            ...prev,
-            companyIcon: companyData.branding.company_icon_url,
-            favicon: companyData.branding.favicon_url,
-            companyLogo: companyData.branding.company_logo_url,
-            companyDarkLogo: companyData.branding.company_dark_logo_url,
-            purchaseLogo: companyData.branding.purchase_logo_url,
-            purchaseDarkLogo: companyData.branding.purchase_dark_logo_url,
-            purchaseIcon: companyData.branding.purchase_icon_url,
-            invoiceImage: companyData.branding.invoice_image_url
-          }));
+      try {
+        const response = await axiosInstance.get(`account/company/${companyId}`, {
+          signal: controller.signal, // Pass the signal to axios
+        });
+        let accountsArray = [];
+
+        if (Array.isArray(response.data)) {
+          accountsArray = response.data;
+        } else if (response.data && Array.isArray(response.data.data)) {
+          accountsArray = response.data.data;
+        } else if (response.data && typeof response.data === 'object') {
+          const firstArray = Object.values(response.data).find(val => Array.isArray(val));
+          if (firstArray) accountsArray = firstArray;
         }
-        
-        setSuccess("Company data loaded successfully");
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        const errorMsg = response.data?.message || "Failed to fetch company data";
-        setError(errorMsg);
-        toast.error(errorMsg);
+
+        setAccounts(accountsArray);
+
+        if (accountsArray.length > 0) {
+          const first = accountsArray[0];
+          const second = accountsArray.length > 1 ? accountsArray[1] : first;
+          setAccountFromId(first.id);
+          setAccountFromDisplay(formatAccountName(first));
+          setAccountToId(second.id);
+          setAccountToDisplay(formatAccountName(second));
+        }
+      } catch (err) {
+        // ✅ Check if the error is from the abort
+        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+          console.log("Accounts fetch was canceled.");
+          return; // Do not set an error state
+        }
+        console.error('Accounts API Error:', err);
+        setError(err.response?.data?.message || 'Failed to load accounts.');
       }
-    } catch (error) {
-      console.error('Error fetching company data:', error);
-      const errorMsg = "An error occurred while fetching company data";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
+    };
+
+    fetchAccounts();
+  }, [companyId]);
+
+  // Fetch vouchers
+  useEffect(() => {
+    if (!companyId) return;
+
+    const fetchContraVouchers = async () => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller; // Store it in the ref
+
+      setTableLoading(true);
+      try {
+        const response = await axiosInstance.get(`contravouchers/company/${companyId}`, {
+          signal: controller.signal, // Pass the signal to axios
+        });
+        let data = [];
+        if (Array.isArray(response.data)) {
+          data = response.data;
+        } else if (response.data && Array.isArray(response.data.data)) {
+          data = response.data.data;
+        } else if (response.data && Array.isArray(response.data.contra_vouchers)) {
+          data = response.data.contra_vouchers;
+        }
+        setContraVouchers(data);
+      } catch (err) {
+        // ✅ Check if the error is from the abort
+        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+          console.log("Vouchers fetch was canceled.");
+          return; // Do not set an error state
+        }
+        console.error('Failed to fetch contra vouchers:', err);
+      } finally {
+        // ✅ Only set loading to false if the request wasn't aborted
+        if (!controller.signal.aborted) {
+          setTableLoading(false);
+        }
+      }
+    };
+
+    fetchContraVouchers();
+  }, [companyId]);
+
+  // Close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (accountFromRef.current && !accountFromRef.current.contains(event.target)) {
+        document.getElementById('accountFromDropdown')?.classList.remove('show');
+      }
+      if (accountToRef.current && !accountToRef.current.contains(event.target)) {
+        document.getElementById('accountToDropdown')?.classList.remove('show');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // ✅ Helper function to create a timeout and store its ID for cleanup
+  const createTimeout = (callback, delay) => {
+    const timeoutId = setTimeout(() => {
+      callback();
+    }, delay);
+    return timeoutId;
+  };
+
+  // Helpers
+  const formatAccountName = (acc) => {
+    const parent = acc.parent_account?.subgroup_name || 'Unknown';
+    const sub = acc.sub_of_subgroup?.name;
+    return sub ? `${parent} (${sub})` : parent;
+  };
+
+  const getAccountDisplayName = (accountId) => {
+    if (!accountId || !accounts.length) return '—';
+    const acc = accounts.find(a => a.id == accountId);
+    return acc ? formatAccountName(acc) : 'Unknown Account';
+  };
+
+  // Get full document URL
+  const getDocumentUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const baseUrl = axiosInstance.defaults.baseURL || '';
+    return baseUrl + (path.startsWith('/') ? path : `/${path}`);
+  };
+
+  const toggleDropdown = (dropdownId) => {
+    const dropdown = document.getElementById(dropdownId);
+    dropdown?.classList.toggle('show');
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) setUploadedFile(file);
+  };
+
+  const handleAddClick = () => {
+    setIsEditing(false);
+    setCurrentVoucherId(null);
+    setCurrentDocumentUrl('');
+    resetForm();
+    setAutoVoucherNo(generateAutoVoucherNo());
+    setShowModal(true);
+  };
+
+  const resetForm = () => {
+    setManualVoucherNo('');
+    setVoucherDate(new Date().toISOString().split('T')[0]);
+    setAmount('');
+    setNarration('');
+    setUploadedFile(null);
+    if (accounts.length > 0) {
+      const first = accounts[0];
+      const second = accounts.length > 1 ? accounts[1] : first;
+      setAccountFromId(first.id);
+      setAccountFromDisplay(formatAccountName(first));
+      setAccountToId(second.id);
+      setAccountToDisplay(formatAccountName(second));
     }
   };
 
-  const saveCompanyData = async (e) => {
+  const handleEdit = (voucher) => {
+    setIsEditing(true);
+    setCurrentVoucherId(voucher.id);
+    setManualVoucherNo(voucher.voucher_number || '');
+    const dateStr = voucher.voucher_date
+      ? voucher.voucher_date.split('T')[0]
+      : new Date().toISOString().split('T')[0];
+    setVoucherDate(dateStr);
+    setAmount(voucher.amount || '');
+    setNarration(voucher.narration || '');
+    setUploadedFile(null);
+    setCurrentDocumentUrl(voucher.document ? getDocumentUrl(voucher.document) : '');
+
+    const fromAcc = accounts.find(acc => acc.id == voucher.account_from_id);
+    const toAcc = accounts.find(acc => acc.id == voucher.account_to_id);
+
+    if (fromAcc) {
+      setAccountFromId(fromAcc.id);
+      setAccountFromDisplay(formatAccountName(fromAcc));
+    } else {
+      setAccountFromId(voucher.account_from_id || '');
+      setAccountFromDisplay('Unknown Account');
+    }
+
+    if (toAcc) {
+      setAccountToId(toAcc.id);
+      setAccountToDisplay(formatAccountName(toAcc));
+    } else {
+      setAccountToId(voucher.account_to_id || '');
+      setAccountToDisplay('Unknown Account');
+    }
+
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setError(null);
     setSuccess(null);
-    
-    try {
-      // Create FormData for file uploads
-      const formDataForUpload = new FormData();
 
-      // Add all company info fields
-      formDataForUpload.append("name", formData.companyName);
-      formDataForUpload.append("email", formData.companyEmail);
-      formDataForUpload.append("phone", formData.phoneNumber);
-      formDataForUpload.append("address", formData.address);
-      formDataForUpload.append("country", formData.country);
-      formDataForUpload.append("state", formData.state);
-      formDataForUpload.append("city", formData.city);
-      formDataForUpload.append("postal_code", formData.portalCode);
-      formDataForUpload.append("currency", formData.currency);
-      
-      // Add bank details
-      formDataForUpload.append("bank_name", formData.bank_name);
-      formDataForUpload.append("account_number", formData.account_no);
-      formDataForUpload.append("account_holder", formData.account_holder);
-      formDataForUpload.append("ifsc_code", formData.ifsc_code);
-      
-      // Add invoice settings
-      formDataForUpload.append("terms_and_conditions", formData.footerTerms);
-      formDataForUpload.append("notes", formData.footerNote);
-      formDataForUpload.append("invoice_template", formData.invoiceTemplateId);
-      formDataForUpload.append("purchase_template", formData.purchaseTemplateId);
-      formDataForUpload.append("receipt_template", formData.receiptTemplateId);
-      formDataForUpload.append("header_label", formData.headerLabel);
-      formDataForUpload.append("show_description", formData.showDescription);
-      formDataForUpload.append("show_item_name", formData.showItemName);
-      formDataForUpload.append("show_price", formData.showPrice);
-      formDataForUpload.append("show_quantity", formData.showQuantity);
-      formDataForUpload.append("show_total", formData.showTotal);
-
-      // Add image files if they exist
-      if (formData.companyIcon instanceof File) {
-        formDataForUpload.append("company_icon", formData.companyIcon);
-      }
-      if (formData.favicon instanceof File) {
-        formDataForUpload.append("favicon", formData.favicon);
-      }
-      if (formData.companyLogo instanceof File) {
-        formDataForUpload.append("company_logo", formData.companyLogo);
-      }
-      if (formData.companyDarkLogo instanceof File) {
-        formDataForUpload.append("company_dark_logo", formData.companyDarkLogo);
-      }
-      if (formData.purchaseLogo instanceof File) {
-        formDataForUpload.append("purchase_logo", formData.purchaseLogo);
-      }
-      if (formData.purchaseDarkLogo instanceof File) {
-        formDataForUpload.append("purchase_dark_logo", formData.purchaseDarkLogo);
-      }
-      if (formData.purchaseIcon instanceof File) {
-        formDataForUpload.append("purchase_icon", formData.purchaseIcon);
-      }
-      if (formData.invoiceImage instanceof File) {
-        formDataForUpload.append("invoice_image", formData.invoiceImage);
-      }
-
-      const response = await axiosInstance.put(
-        `auth/Company/${companyId}`,
-        formDataForUpload,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-
-      if (response.data && response.data.success) {
-        setSuccess("Company data saved successfully!");
-        toast.success("Company data saved successfully!");
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => setSuccess(null), 3000);
-        // Refresh data after save
-        fetchCompanyData();
-      } else {
-        const errorMsg = response.data?.message || "Failed to save company data";
-        setError(errorMsg);
-        toast.error(errorMsg);
-      }
-    } catch (error) {
-      console.error('Error saving company data:', error);
-      const errorMsg = "An error occurred while saving company data";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Please enter a valid amount.');
       setLoading(false);
+      return;
+    }
+
+    if (accountFromId === accountToId) {
+      setError('Account From and Account To cannot be same.');
+      setLoading(false);
+      return;
+    }
+
+    if (!accountFromId || !accountToId) {
+      setError('Please select both accounts.');
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Create a new AbortController for this specific request
+    const controller = new AbortController();
+    abortControllerRef.current = controller; // Store it in the ref
+
+    const formDataForUpload = new FormData();
+    if (manualVoucherNo.trim()) {
+      formDataForUpload.append('voucher_number', manualVoucherNo.trim());
+    }
+    formDataForUpload.append('voucher_date', voucherDate);
+    formDataForUpload.append('account_from_id', accountFromId);
+    formDataForUpload.append('account_to_id', accountToId);
+    formDataForUpload.append('amount', amount);
+    formDataForUpload.append('narration', narration || '');
+    formDataForUpload.append('company_id', companyId);
+
+    if (uploadedFile) {
+      formDataForUpload.append('document', uploadedFile);
+    }
+
+    try {
+      let response;
+      if (isEditing && currentVoucherId) {
+        response = await axiosInstance.put(`contravouchers/${currentVoucherId}`, formDataForUpload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          signal: controller.signal, // Pass the signal to axios
+        });
+
+        setContraVouchers((prev) =>
+          prev.map((v) =>
+            v.id === currentVoucherId
+              ? {
+                  ...v,
+                  voucher_number: manualVoucherNo.trim() || v.voucher_number,
+                  voucher_date: voucherDate,
+                  account_from_id: accountFromId,
+                  account_to_id: accountToId,
+                  amount,
+                  narration: narration || '',
+                  document: response.data?.document || v.document,
+                }
+              : v
+          )
+        );
+        toast.success('Voucher updated successfully!');
+      } else {
+        response = await axiosInstance.post('contravouchers', formDataForUpload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          signal: controller.signal, // Pass the signal to axios
+        });
+
+        const newVoucher = {
+          id: response.data?.id || Date.now(),
+          voucher_no: manualVoucherNo.trim() || response.data?.voucher_no || autoVoucherNo,
+          voucher_number: manualVoucherNo.trim() || null,
+          voucher_date: voucherDate,
+          account_from_id: accountFromId,
+          account_to_id: accountToId,
+          amount,
+          narration: narration || '',
+          document: response.data?.document,
+        };
+        setContraVouchers((prev) => [newVoucher, ...prev]);
+        toast.success('Contra Voucher created successfully!');
+      }
+
+      setShowModal(false);
+    } catch (err) {
+      // ✅ Check if the error is from the abort
+      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+        console.log("Save request was canceled.");
+        return; // Do not set an error state
+      }
+      console.error('API Error:', err);
+      setError(
+        err.response?.data?.message ||
+        (isEditing ? 'Failed to update voucher.' : 'Failed to create voucher.')
+      );
+      toast.error(
+        err.response?.data?.message ||
+        (isEditing ? 'Failed to update voucher.' : 'Failed to create voucher.')
+      );
+    } finally {
+      // ✅ Only set loading to false if the request wasn't aborted
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm(`Are you sure you want to delete this voucher?`)) return;
+
+    // ✅ Create a new AbortController for this specific request
+    const controller = new AbortController();
+    abortControllerRef.current = controller; // Store it in the ref
+
+    try {
+      await axiosInstance.delete(`contravouchers/${id}`, {
+        signal: controller.signal, // Pass the signal to axios
+      });
+      setContraVouchers((prev) => prev.filter((v) => v.id !== id));
+      toast.success('Voucher deleted successfully!');
+    } catch (err) {
+      // ✅ Check if the error is from the abort
+      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+        console.log("Delete request was canceled.");
+        return; // Do not set an error state
+      }
+      console.error('Delete error:', err);
+      toast.error(err.response?.data?.message || 'Failed to delete voucher.');
     }
   };
 
@@ -473,7 +657,6 @@ const CompanyInfo = () => {
   return (
     <div
       style={{
-      
         minHeight: '100vh',
         padding: '20px 0',
         direction: printLanguage === 'ar' ? 'rtl' : 'ltr',
@@ -530,7 +713,7 @@ const CompanyInfo = () => {
                   {t('companyInformation')}
                 </h2>
 
-                <Form onSubmit={saveCompanyData}>
+                <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-4">
                     <Form.Control
                       type="text"
@@ -740,7 +923,7 @@ const CompanyInfo = () => {
                   {t('invoiceSettings')}
                 </h2>
 
-                <Form onSubmit={saveCompanyData}>
+                <Form onSubmit={handleSubmit}>
                   {/* Template Selection */}
                   <Form.Group className="mb-4">
                     <Form.Label className="fw-bold">{t('invoiceTemplate')}</Form.Label>

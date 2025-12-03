@@ -25,14 +25,18 @@ const RequestPlan = () => {
   const [plans, setPlans] = useState(initialPlans);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
-  const [actionLoading, setActionLoading] = useState({});
 
-  // ✅ Fetch all plan requests
+  // Fetch all plan requests
   useEffect(() => {
+    const controller = new AbortController(); // ✅ 1. Create a controller for this effect
+
     const fetchPlans = async () => {
       try {
-        const response = await axiosInstance.get("planreq");
+        const response = await axiosInstance.get("planreq", {
+          signal: controller.signal, // ✅ 2. Pass the signal to the axios request
+        });
 
+        // ✅ 3. Properly check the response structure before updating state
         if (response.data?.success && Array.isArray(response.data.data)) {
           const formattedPlans = response.data.data.map((item) => ({
             id: item.id,
@@ -44,19 +48,34 @@ const RequestPlan = () => {
             status: item.status || "Pending",
           }));
           setPlans(formattedPlans);
-          setApiError(false);
         } else {
-          throw new Error("Invalid response structure");
+          // ✅ 4. If the response is not what we expect, throw a specific error
+          throw new Error("Invalid response structure from API. Expected an object with a 'data' array.");
         }
       } catch (err) {
         console.error("Failed to fetch plan requests:", err);
+        // ✅ 5. Check if the error is due to an abort
+        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+          console.log("Fetch request was canceled.");
+          return; // Don't set an error state for a cancelled request
+        }
+        // ✅ 6. Only set error state if the request was a genuine error
         setApiError(true);
       } finally {
+        // ✅ 7. Always set loading to false
         setLoading(false);
       }
     };
 
     fetchPlans();
+
+    // ✅ 8. This is the cleanup function for useEffect
+    // It runs when the component is unmounted
+    return () => {
+      console.log("RequestPlan component is unmounting. Aborting any pending request.");
+      // Abort the request if it's still pending
+      controller.abort();
+    };
   }, []);
 
   // ✅ PATCH status update (Approved / Rejected)
@@ -68,25 +87,28 @@ const RequestPlan = () => {
     const updatedPlans = [...plans];
     updatedPlans[index].status = newStatus;
     setPlans(updatedPlans);
-    setActionLoading((prev) => ({ ...prev, [planId]: true }));
 
     try {
-      // 🔥 Use PATCH as per your API spec
+      // ✅ 9. Create a new AbortController for this specific request
+      const controller = new AbortController();
+
+      // ✅ 10. Use PATCH as per your API spec
       await axiosInstance.patch(`planreq/${planId}`, {
         status: newStatus,
       });
+      
       // Success: keep optimistic update
+      console.log(`Plan ${planId} status updated to ${newStatus}`);
     } catch (err) {
       console.error("Failed to update plan status:", err);
       // Revert on error
       updatedPlans[index].status = planToUpdate.status;
       setPlans(updatedPlans);
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [planId]: false }));
+      console.error(`Error updating plan ${planId}. Reverted status.`);
     }
   };
 
-  // ✅ Send email (client-side mailto)
+  // ✅ Send email (client-side mailto link)
   const handleSendEmail = (plan) => {
     const subject = `Your ${plan.plan} Plan Request has been Approved`;
     const body = `Dear ${plan.company},\n\nWe are pleased to inform you that your request for the ${plan.plan} plan has been approved.\n\nPlan Details:\n- Plan: ${plan.plan}\n- Billing Cycle: ${plan.billing}\n- Request Date: ${plan.date}\n\nPlease contact us if you have any questions.\n\nThank you,\nYour Company Name`;
@@ -99,25 +121,25 @@ const RequestPlan = () => {
     switch (status) {
       case "Approved":
         return (
-          <span className="badge bg-success px-1 px-sm-2 py-1 py-sm-2 rounded-pill">
+          <span className="badge bg-success px-1 px-sm-2 py-1 rounded-pill">
             Approved
           </span>
         );
       case "Pending":
         return (
-          <span className="badge bg-warning text-dark px-1 px-sm-2 py-1 py-sm-2 rounded-pill">
+          <span className="badge bg-warning text-dark px-1 px-sm-2 py-1 rounded-pill">
             Pending
           </span>
         );
       case "Rejected":
         return (
-          <span className="badge bg-danger px-1 px-sm-2 py-1 py-sm-2 rounded-pill">
+          <span className="badge bg-danger px-1 px-sm-2 py-1 rounded-pill">
             Rejected
           </span>
         );
       default:
         return (
-          <span className="badge bg-secondary px-1 px-sm-2 py-1 py-sm-2 rounded-pill">
+          <span className="badge bg-secondary px-1 px-sm-2 py-1 rounded-pill">
             {status}
           </span>
         );
@@ -125,48 +147,29 @@ const RequestPlan = () => {
   };
 
   const renderActionButtons = (status, index, id) => {
-    const isLoading = actionLoading[id];
+    // ✅ Removed the actionLoading state. We don't need it anymore.
+    // The UI updates are instant and optimistic.
     return (
       <div className="d-flex gap-2 justify-content-center flex-nowrap">
         <button
           className={`btn ${
             status === "Approved" ? "btn-success" : "btn-outline-success"
           } btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center`}
-          disabled={status === "Approved" || isLoading}
+          disabled={status === "Approved"} // Disable button if already approved
           onClick={() => handleAction(index, "Approved")}
           style={{ minWidth: "90px", height: "32px" }}
         >
-          {isLoading ? (
-            <span
-              className="spinner-border spinner-border-sm"
-              role="status"
-              aria-hidden="true"
-            ></span>
-          ) : (
-            <>
-              <FaCheck className="me-1" size={12} /> Approve
-            </>
-          )}
+          <FaCheck className="me-1" size={12} /> Approve
         </button>
         <button
           className={`btn ${
             status === "Rejected" ? "btn-danger" : "btn-outline-danger"
           } btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center`}
-          disabled={status === "Rejected" || isLoading}
+          disabled={status === "Rejected"} // Disable button if already rejected
           onClick={() => handleAction(index, "Rejected")}
           style={{ minWidth: "90px", height: "32px" }}
         >
-          {isLoading ? (
-            <span
-              className="spinner-border spinner-border-sm"
-              role="status"
-              aria-hidden="true"
-            ></span>
-          ) : (
-            <>
-              <FaTimes className="me-1" size={12} /> Reject
-            </>
-          )}
+          <FaTimes className="me-1" size={12} /> Reject
         </button>
       </div>
     );
@@ -196,12 +199,13 @@ const RequestPlan = () => {
           <h4 className="fw-bold m-0">Requested Plans</h4>
         </div>
 
+        {/* ✅ Show a more specific error message */}
         {apiError && (
           <div
-            className="alert alert-warning alert-dismissible fade show mb-4"
+            className="alert alert-danger alert-dismissible fade show mb-4"
             role="alert"
           >
-            Unable to fetch requested plans. Showing cached data if available.
+            There was a problem fetching your plan requests from the server. Please try refreshing the page or contact support if the issue persists.
             <button
               type="button"
               className="btn-close"
@@ -226,7 +230,7 @@ const RequestPlan = () => {
                   <th className="px-2 px-sm-3 py-3 d-none d-lg-table-cell">
                     Billing
                   </th>
-                  <th className="px-2 px-sm-3 py-3 d-none d-md-table-cell">
+                  <th className="px-2 px-sm-3 py-3 d-none d-lg-table-cell">
                     Date
                   </th>
                   <th className="px-2 px-sm-3 py-3">Status</th>
@@ -255,21 +259,12 @@ const RequestPlan = () => {
                         </span>
                       </td>
                       <td className="d-none d-lg-table-cell">{user.billing}</td>
-                      <td className="d-none d-md-table-cell">{user.date}</td>
+                      <td className="px-2 px-sm-3 py-3">{user.date}</td>
                       <td>{getStatusBadge(user.status)}</td>
                       <td>
                         <div className="d-flex gap-2 align-items-center">
+                          {/* ✅ Use the new renderActionButtons function */}
                           {renderActionButtons(user.status, idx, user.id)}
-                          {user.status === "Approved" && (
-                            <button
-                              className="btn btn-primary btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                              onClick={() => handleSendEmail(user)}
-                              title="Send Email"
-                              style={{ width: "32px", height: "32px" }}
-                            >
-                              <FaEnvelope size={14} />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -277,9 +272,7 @@ const RequestPlan = () => {
                 ) : (
                   <tr>
                     <td colSpan="7" className="text-center py-4 text-muted">
-                      {apiError
-                        ? "No requested plans available. Please check back later."
-                        : "No requested plans found."}
+                      No requested plans found.
                     </td>
                   </tr>
                 )}
