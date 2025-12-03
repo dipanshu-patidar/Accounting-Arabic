@@ -57,13 +57,29 @@ const ContraVoucher = () => {
   const companyId = GetCompanyId();
   const accountFromRef = useRef(null);
   const accountToRef = useRef(null);
+  // ✅ Add a ref to track if the component is mounted
+  const isMountedRef = useRef(true);
+  
+  // ✅ Add a ref to store the abort controllers
+  const abortControllersRef = useRef([]);
 
   // ✅ Add a cleanup effect to run when the component unmounts
   useEffect(() => {
     // This function will be called when the component is unmounted
     return () => {
       console.log("ContraVoucher component is unmounting. Aborting all pending requests and timeouts.");
-      // This is a placeholder. The actual AbortController will be created inside the async functions.
+      isMountedRef.current = false;
+      
+      // Abort all pending requests
+      abortControllersRef.current.forEach(controller => {
+        if (controller) controller.abort();
+      });
+      
+      // Clean up any open dropdowns
+      const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+      dropdowns.forEach(dropdown => {
+        dropdown.classList.remove('show');
+      });
     };
   }, []);
 
@@ -124,6 +140,7 @@ const ContraVoucher = () => {
     const fetchAccounts = async () => {
       // ✅ 1. Create a new AbortController for this specific request
       const controller = new AbortController();
+      abortControllersRef.current.push(controller);
 
       try {
         const response = await axiosInstance.get(`account/company/${companyId}`, {
@@ -141,6 +158,12 @@ const ContraVoucher = () => {
           if (firstArray) accountsArray = firstArray;
         }
 
+        // ✅ 3. Check if the component is still mounted before updating state
+        if (!isMountedRef.current) {
+          console.log("Fetch request finished, but component was unmounted.");
+          return;
+        }
+
         setAccounts(accountsArray);
 
         if (accountsArray.length > 0) {
@@ -154,8 +177,8 @@ const ContraVoucher = () => {
       } catch (err) {
         console.error('Accounts API Error:', err);
         // ✅ 4. Check if the error is due to an abort
-        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
-          console.log("Accounts fetch was canceled.");
+        if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
+          console.log("Fetch request was canceled.");
           return; // Don't set an error state for a cancelled request
         }
         setFetchError(err.response?.data?.message || 'Failed to load accounts.');
@@ -173,6 +196,7 @@ const ContraVoucher = () => {
       setTableLoading(true);
       // ✅ 1. Create a new AbortController for this specific request
       const controller = new AbortController();
+      abortControllersRef.current.push(controller);
 
       try {
         const response = await axiosInstance.get(`contravouchers/company/${companyId}`, {
@@ -180,18 +204,29 @@ const ContraVoucher = () => {
           signal: controller.signal
         });
         let data = [];
-        if (Array.isArray(response.data)) {
+        
+        // ✅ Fix: Check for the data structure based on the response you provided
+        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+          data = response.data.data;
+        } else if (Array.isArray(response.data)) {
           data = response.data;
         } else if (response.data && Array.isArray(response.data.data)) {
           data = response.data.data;
         } else if (response.data && Array.isArray(response.data.contra_vouchers)) {
           data = response.data.contra_vouchers;
         }
+        
+        // ✅ 3. Check if the component is still mounted before updating state
+        if (!isMountedRef.current) {
+          console.log("Fetch request finished, but component was unmounted.");
+          return;
+        }
+
         setContraVouchers(data);
       } catch (err) {
         console.error('Failed to fetch contra vouchers:', err);
         // ✅ 4. Check if the error is due to an abort
-        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+        if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
           console.log("Vouchers fetch was canceled.");
           return; // Don't set an error state for a cancelled request
         }
@@ -210,20 +245,30 @@ const ContraVoucher = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (accountFromRef.current && !accountFromRef.current.contains(event.target)) {
-        document.getElementById('accountFromDropdown')?.classList.remove('show');
+        const dropdown = document.getElementById('accountFromDropdown');
+        if (dropdown && dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+        }
       }
       if (accountToRef.current && !accountToRef.current.contains(event.target)) {
-        document.getElementById('accountToDropdown')?.classList.remove('show');
+        const dropdown = document.getElementById('accountToDropdown');
+        if (dropdown && dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const toggleDropdown = (dropdownId) => {
     const dropdown = document.getElementById(dropdownId);
-    dropdown?.classList.toggle('show');
+    if (dropdown) {
+      dropdown.classList.toggle('show');
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -316,6 +361,7 @@ const ContraVoucher = () => {
 
     // ✅ Create a new AbortController for the save request
     const controller = new AbortController();
+    abortControllersRef.current.push(controller);
     
     try {
       const formData = new FormData();
@@ -343,6 +389,12 @@ const ContraVoucher = () => {
         }
       );
 
+      // ✅ Check if the component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log("Save request finished, but component was unmounted.");
+        return;
+      }
+
       setContraVouchers((prev) =>
         prev.map((v) =>
           v.id === currentVoucherId
@@ -355,7 +407,7 @@ const ContraVoucher = () => {
     } catch (err) {
       console.error('API Error:', err);
       // ✅ Check for abort error
-      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+      if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
         console.log("Save request was canceled.");
         return;
       }
@@ -375,18 +427,26 @@ const ContraVoucher = () => {
 
     // ✅ Create a new AbortController for the delete request
     const controller = new AbortController();
+    abortControllersRef.current.push(controller);
 
     try {
       await axiosInstance.delete(`contravouchers/${id}`, {
         // ✅ Pass the signal to the axios DELETE request
         signal: controller.signal
       });
+      
+      // ✅ Check if the component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log("Delete request finished, but component was unmounted.");
+        return;
+      }
+      
       setContraVouchers((prev) => prev.filter((v) => v.id !== id));
       toast.success('Voucher deleted successfully!');
     } catch (err) {
       console.error('Delete error:', err);
       // ✅ Check for abort error
-      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+      if (err.name === 'CanceledError' || (err.code && err.code === 'ERR_CANCELED')) {
         console.log("Delete request was canceled.");
         return;
       }
@@ -395,7 +455,6 @@ const ContraVoucher = () => {
     }
   };
 
-  // ... (The rest of your component's JSX return block remains the same)
   return (
     <div className="p-3">
       {/* Toast Container */}
