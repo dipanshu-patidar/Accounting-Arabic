@@ -18,71 +18,99 @@ import {
 } from "react-icons/fa";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
-// Mock employees
-const mockEmployees = [
-  { id: 1, name: "John Doe", employeeId: "EMP-001" },
-  { id: 2, name: "Jane Smith", employeeId: "EMP-002" },
-  { id: 3, name: "Robert Johnson", employeeId: "EMP-003" },
-];
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 
 const emptySettlement = {
   id: null,
   employeeId: "",
   resignDate: "",
   lastWorkingDay: "",
-  pendingLeaves: 0,
-  gratuityAmount: 0,
-  deductions: 0,
-  finalPayableAmount: 0,
+  pendingLeaves: "",
+  gratuityAmount: "",
+  deductions: "",
+  finalPayableAmount: "",
   notes: "",
-  status: "Pending", // Pending / Processed
+  status: "Pending",
 };
 
 const Settlement = () => {
   const [settlements, setSettlements] = useState([]);
-  const [employees] = useState(mockEmployees);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const companyId = GetCompanyId();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("add");
   const [form, setForm] = useState(emptySettlement);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [settlementToDelete, setSettlementToDelete] = useState(null);
 
-  // Load mock data
+  // Fetch employees list for dropdown
   useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        employeeId: "1",
-        resignDate: "2025-09-15",
-        lastWorkingDay: "2025-10-15",
-        pendingLeaves: 5,
-        gratuityAmount: 45000,
-        deductions: 2000,
-        finalPayableAmount: 43000,
-        notes: "Completed handover",
-        status: "Processed",
-      },
-    ];
-    setTimeout(() => {
-      setSettlements(mockData);
+    const fetchEmployees = async () => {
+      if (!companyId) return;
+      try {
+        const res = await axiosInstance.get(`employee?company_id=${companyId}`);
+        if (res?.data?.success) {
+          setEmployees(
+            res.data.data.employees.map((emp) => ({
+              id: emp.id,
+              name: emp.full_name || emp.employee_code || `Employee ${emp.id}`,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load employees", err);
+        setEmployees([]);
+      }
+    };
+    fetchEmployees();
+  }, [companyId]);
+
+  // Fetch settlements by company ID
+  const fetchSettlements = async () => {
+    if (!companyId) return;
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`settlements?companyId=${companyId}`);
+      if (res?.data?.success) {
+        const mapped = res.data.data.map((s) => ({
+          id: s.id,
+          employeeId: s.employee_id,
+          resignDate: s.resign_date ? s.resign_date.split("T")[0] : "",
+          lastWorkingDay: s.last_working_day ? s.last_working_day.split("T")[0] : "",
+          pendingLeaves: s.pending_leaves,
+          gratuityAmount: s.gratuity_amount,
+          deductions: s.deductions,
+          finalPayableAmount: s.final_payable_amount,
+          notes: s.notes || "",
+          status: s.status,
+          employee: s.employee,
+        }));
+        setSettlements(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to load settlements", err);
+      alert("Failed to load settlement records.");
+    } finally {
       setLoading(false);
-    }, 300);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchSettlements();
+    }
+  }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find((e) => e.id === parseInt(empId));
+    const emp = employees.find((e) => e.id === empId);
     return emp ? emp.name : "–";
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const numFields = ["pendingLeaves", "gratuityAmount", "deductions", "finalPayableAmount"];
-    const updatedValue = numFields.includes(name) ? (value === "" ? 0 : Number(value)) : value;
-    setForm({ ...form, [name]: updatedValue });
+    setForm({ ...form, [name]: value });
   };
 
   const handleAdd = () => {
@@ -91,34 +119,67 @@ const Settlement = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (record) => {
-    setForm({ ...record });
-    setModalType("edit");
-    setShowModal(true);
+  const handleEdit = async (record) => {
+    try {
+      const res = await axiosInstance.get(`settlements/${record.id}`);
+      if (res?.data?.success) {
+        const s = res.data.data;
+        setForm({
+          id: s.id,
+          employeeId: s.employee_id,
+          resignDate: s.resign_date ? s.resign_date.split("T")[0] : "",
+          lastWorkingDay: s.last_working_day ? s.last_working_day.split("T")[0] : "",
+          pendingLeaves: s.pending_leaves,
+          gratuityAmount: s.gratuity_amount,
+          deductions: s.deductions,
+          finalPayableAmount: s.final_payable_amount,
+          notes: s.notes || "",
+          status: s.status,
+        });
+        setModalType("edit");
+        setShowModal(true);
+      }
+    } catch (err) {
+      console.error("Failed to load settlement for edit", err);
+      alert("Failed to load settlement record.");
+    }
   };
 
-  const handleSave = () => {
-    const { employeeId, resignDate, lastWorkingDay } = form;
-    if (!employeeId || !resignDate || !lastWorkingDay) {
-      alert("Please fill required fields.");
+  const handleSave = async () => {
+    const { employeeId, resignDate, lastWorkingDay, finalPayableAmount } = form;
+    if (!employeeId || !resignDate || !lastWorkingDay || !finalPayableAmount) {
+      alert("Please fill all required fields.");
       return;
     }
 
-    const newRecord = {
-      ...form,
-      id: form.id || Date.now(),
+    const payload = {
+      companyId: companyId,
+      employee_id: parseInt(employeeId, 10),
+      resign_date: resignDate,
+      last_working_day: lastWorkingDay,
+      pending_leaves: form.pendingLeaves ? parseInt(form.pendingLeaves, 10) : 0,
+      gratuity_amount: parseFloat(form.gratuityAmount || 0),
+      deductions: parseFloat(form.deductions || 0),
+      final_payable_amount: parseFloat(finalPayableAmount),
+      notes: form.notes || "",
+      status: form.status,
     };
 
-    if (modalType === "add") {
-      setSettlements((prev) => [newRecord, ...prev]);
-    } else {
-      setSettlements((prev) =>
-        prev.map((s) => (s.id === form.id ? newRecord : s))
-      );
+    try {
+      if (modalType === "add") {
+        await axiosInstance.post("settlements", payload);
+        alert("Settlement record created successfully!");
+      } else {
+        await axiosInstance.put(`settlements/${form.id}`, payload);
+        alert("Settlement record updated successfully!");
+      }
+      await fetchSettlements();
+      setShowModal(false);
+      setForm(emptySettlement);
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save settlement record.");
     }
-
-    setShowModal(false);
-    setForm(emptySettlement);
   };
 
   const confirmDelete = (record) => {
@@ -126,15 +187,23 @@ const Settlement = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
-    setSettlements((prev) => prev.filter((s) => s.id !== settlementToDelete.id));
-    setShowDeleteModal(false);
-    setSettlementToDelete(null);
+  const handleDelete = async () => {
+    try {
+      await axiosInstance.delete(`settlements/${settlementToDelete.id}`);
+      alert("Settlement record deleted successfully!");
+      await fetchSettlements();
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete settlement record.");
+    } finally {
+      setShowDeleteModal(false);
+      setSettlementToDelete(null);
+    }
   };
 
   const handlePDF = () => {
     const doc = new jsPDF();
-    doc.text("End of Service Settlement", 14, 16);
+    doc.text("End of Service Settlement Report", 14, 16);
     doc.autoTable({
       startY: 22,
       head: [
@@ -144,19 +213,19 @@ const Settlement = () => {
         getEmployeeName(s.employeeId),
         s.resignDate,
         s.lastWorkingDay,
-        `₹${Number(s.gratuityAmount).toLocaleString()}`,
+        `₹${parseFloat(s.gratuityAmount).toLocaleString()}`,
         `${s.pendingLeaves} days`,
-        `₹${Number(s.finalPayableAmount).toLocaleString()}`,
+        `₹${parseFloat(s.finalPayableAmount).toLocaleString()}`,
         s.status,
       ]),
     });
-    doc.save("settlement.pdf");
+    doc.save("settlement_report.pdf");
   };
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
-        <div className="spinner-border" style={{ color: "#2a8e9c" }} role="status">
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
+        <div className="spinner-border" style={{ color: "#023347" }} role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -191,21 +260,18 @@ const Settlement = () => {
               <p className="text-muted">Manage employee final settlement</p>
             </div>
             <div className="d-flex gap-2">
-              <Button 
-                variant="outline-secondary" 
-                onClick={handlePDF} 
+              <Button
+                variant="outline-secondary"
+                onClick={handlePDF}
                 size="sm"
                 style={{ borderColor: "#023347", color: "#023347" }}
-                className="d-flex align-items-center justify-content-center"
               >
                 <FaFilePdf className="me-1" /> Export PDF
               </Button>
-              <Button 
-                variant="primary" 
-                onClick={handleAdd} 
+              <Button
+                style={{ backgroundColor: "#023347", border: "none" }}
+                onClick={handleAdd}
                 size="sm"
-                style={{ backgroundColor: "#023347", borderColor: "#023347" }}
-                className="d-flex align-items-center justify-content-center"
               >
                 <FaPlus className="me-1" /> Add Settlement
               </Button>
@@ -233,23 +299,24 @@ const Settlement = () => {
                       <td>{getEmployeeName(s.employeeId)}</td>
                       <td>{s.resignDate}</td>
                       <td>{s.lastWorkingDay}</td>
-                      <td>₹{Number(s.gratuityAmount).toLocaleString()}</td>
+                      <td>₹{parseFloat(s.gratuityAmount).toLocaleString()}</td>
                       <td>{s.pendingLeaves} days</td>
-                      <td>₹{Number(s.finalPayableAmount).toLocaleString()}</td>
+                      <td>₹{parseFloat(s.finalPayableAmount).toLocaleString()}</td>
                       <td>{statusBadge(s.status)}</td>
                       <td>
                         <Button
                           size="sm"
-                          variant="outline-primary"
+                          variant="light"
                           className="me-1"
+                          style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
                           onClick={() => handleEdit(s)}
-                          style={{ borderColor: "#023347", color: "#023347" }}
                         >
                           <FaEdit />
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline-danger"
+                          variant="light"
+                          style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
                           onClick={() => confirmDelete(s)}
                         >
                           <FaTrash />
@@ -273,9 +340,7 @@ const Settlement = () => {
       {/* Add/Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "white" }}>
-          <Modal.Title>
-            {modalType === "edit" ? "Edit Settlement" : "Add Settlement Record"}
-          </Modal.Title>
+          <Modal.Title>{modalType === "edit" ? "Edit Settlement" : "Add Settlement Record"}</Modal.Title>
         </Modal.Header>
         <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
           <Row>
@@ -330,7 +395,7 @@ const Settlement = () => {
                 <Form.Control
                   type="number"
                   name="pendingLeaves"
-                  value={form.pendingLeaves || ""}
+                  value={form.pendingLeaves}
                   onChange={handleInputChange}
                   min="0"
                 />
@@ -342,8 +407,9 @@ const Settlement = () => {
                 <Form.Label>Gratuity Amount</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="gratuityAmount"
-                  value={form.gratuityAmount || ""}
+                  value={form.gratuityAmount}
                   onChange={handleInputChange}
                 />
               </Form.Group>
@@ -354,8 +420,9 @@ const Settlement = () => {
                 <Form.Label>Deductions</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="deductions"
-                  value={form.deductions || ""}
+                  value={form.deductions}
                   onChange={handleInputChange}
                 />
               </Form.Group>
@@ -366,8 +433,9 @@ const Settlement = () => {
                 <Form.Label>Final Payable Amount *</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="finalPayableAmount"
-                  value={form.finalPayableAmount || ""}
+                  value={form.finalPayableAmount}
                   onChange={handleInputChange}
                   required
                 />
@@ -406,24 +474,16 @@ const Settlement = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowModal(false)}
-            style={{ backgroundColor: "#6c757d", borderColor: "#6c757d" }}
-          >
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleSave}
-            style={{ backgroundColor: "#023347", borderColor: "#023347" }}
-          >
+          <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
             {modalType === "edit" ? "Update" : "Save"} Settlement
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
         <Modal.Header closeButton style={{ backgroundColor: "#dc3545", color: "white" }}>
           <Modal.Title>Delete Settlement Record</Modal.Title>
@@ -433,18 +493,10 @@ const Settlement = () => {
           <strong>{getEmployeeName(settlementToDelete?.employeeId)}</strong>?
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowDeleteModal(false)}
-            style={{ backgroundColor: "#6c757d", borderColor: "#6c757d" }}
-          >
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
-            onClick={handleDelete}
-            style={{ backgroundColor: "#dc3545", borderColor: "#dc3545" }}
-          >
+          <Button variant="danger" onClick={handleDelete} style={{ backgroundColor: "#dc3545" }}>
             Delete
           </Button>
         </Modal.Footer>

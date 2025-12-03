@@ -15,17 +15,11 @@ import {
   FaEdit,
   FaTrash,
   FaFilePdf,
-  FaTimes,
 } from "react-icons/fa";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
-// Mock employees (replace with real API data)
-const mockEmployees = [
-  { id: 1, name: "John Doe", employeeId: "EMP-001" },
-  { id: 2, name: "Jane Smith", employeeId: "EMP-002" },
-  { id: 3, name: "Robert Johnson", employeeId: "EMP-003" },
-];
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 
 const STATUS_OPTIONS = ["Present", "Absent", "Leave", "Late"];
 
@@ -43,7 +37,7 @@ const calculateHours = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return "–";
   const [h1, m1] = checkIn.split(":").map(Number);
   const [h2, m2] = checkOut.split(":").map(Number);
-  const totalMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+  const totalMinutes = h2 * 60 + m2 - (h1 * 60 + m1);
   if (totalMinutes <= 0) return "–";
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
@@ -52,55 +46,88 @@ const calculateHours = (checkIn, checkOut) => {
 
 const Attendance = () => {
   const [records, setRecords] = useState([]);
-  const [employees] = useState(mockEmployees);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [saving, setSaving] = useState(false);
+  const companyId = GetCompanyId();
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("add"); // 'add' or 'edit'
+  const [modalType, setModalType] = useState("add");
   const [form, setForm] = useState(emptyRecord);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState(null);
 
-  // Load mock data
+  // Fetch employees by company_id
   useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        employeeId: "1",
-        date: "2025-11-01",
-        checkIn: "09:00",
-        checkOut: "17:30",
-        status: "Present",
-        notes: "On time",
-      },
-      {
-        id: 2,
-        employeeId: "2",
-        date: "2025-11-01",
-        checkIn: "",
-        checkOut: "",
-        status: "Absent",
-        notes: "Sick leave",
-      },
-      {
-        id: 3,
-        employeeId: "1",
-        date: "2025-11-02",
-        checkIn: "10:15",
-        checkOut: "18:00",
-        status: "Late",
-        notes: "Traffic delay",
-      },
-    ];
-    setTimeout(() => {
-      setRecords(mockData);
-      setLoading(false);
-    }, 300);
-  }, []);
+    const fetchEmployees = async () => {
+      if (!companyId) return;
+      try {
+        const res = await axiosInstance.get(`employee?company_id=${companyId}`);
+        if (res?.data?.success) {
+          setEmployees(
+            res.data.data.employees.map((emp) => ({
+              id: emp.id,
+              name: emp.full_name || emp.employee_code || `Employee ${emp.id}`,
+            }))
+          );
+        } else {
+          setEmployees([]);
+        }
+      } catch (err) {
+        console.error("Failed to load employees", err);
+        setEmployees([]);
+      }
+    };
+
+    fetchEmployees();
+  }, [companyId]);
+
+  // Fetch attendance records
+  useEffect(() => {
+    const fetchAttendances = async () => {
+      if (!companyId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get(`attendance/company/${companyId}`);
+        if (res?.data?.success) {
+          const data = res.data.data || [];
+          const mapped = data.map((item) => {
+            const parseTime = (iso) => {
+              if (!iso) return "";
+              const d = new Date(iso);
+              return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            };
+            return {
+              id: item.id,
+              employeeId: item.employee_id,
+              date: item.date ? item.date.split("T")[0] : "",
+              checkIn: parseTime(item.check_in_time),
+              checkOut: parseTime(item.check_out_time),
+              status: item.status,
+              notes: item.notes || "",
+              employee: item.employee,
+            };
+          });
+          setRecords(mapped);
+        } else {
+          setRecords([]);
+        }
+      } catch (err) {
+        console.error("Fetch attendances error", err);
+        alert("Failed to load attendance data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendances();
+  }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find(e => e.id === parseInt(empId));
+    const emp = employees.find((e) => e.id === empId);
     return emp ? emp.name : "–";
   };
 
@@ -121,7 +148,36 @@ const Attendance = () => {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const refreshAttendance = async () => {
+    try {
+      const res = await axiosInstance.get(`attendance/company/${companyId}`);
+      if (res?.data?.success) {
+        const data = res.data.data || [];
+        const mapped = data.map((item) => {
+          const parseTime = (iso) => {
+            if (!iso) return "";
+            const d = new Date(iso);
+            return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          };
+          return {
+            id: item.id,
+            employeeId: item.employee_id,
+            date: item.date ? item.date.split("T")[0] : "",
+            checkIn: parseTime(item.check_in_time),
+            checkOut: parseTime(item.check_out_time),
+            status: item.status,
+            notes: item.notes || "",
+            employee: item.employee,
+          };
+        });
+        setRecords(mapped);
+      }
+    } catch (err) {
+      console.error("Refresh error", err);
+    }
+  };
+
+  const handleSave = async () => {
     if (!form.employeeId || !form.date || !form.status) {
       alert("Please fill required fields.");
       return;
@@ -132,17 +188,39 @@ const Attendance = () => {
       return;
     }
 
-    if (modalType === "add") {
-      const newRecord = { ...form, id: Date.now().toString() };
-      setRecords((prev) => [newRecord, ...prev]);
-    } else {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === form.id ? { ...form } : r))
-      );
-    }
+    const timeToISO = (dateStr, timeStr) => {
+      if (!timeStr) return null;
+      const [year, month, day] = dateStr.split("-");
+      const [hour, minute] = timeStr.split(":");
+      const dt = new Date(Date.UTC(year, month - 1, day, hour, minute));
+      return dt.toISOString();
+    };
 
-    setShowModal(false);
-    setForm(emptyRecord);
+    const payload = {
+      employee_id: parseInt(form.employeeId, 10),
+      date: form.date,
+      check_in_time: timeToISO(form.date, form.checkIn) || null,
+      check_out_time: timeToISO(form.date, form.checkOut) || null,
+      status: form.status,
+      notes: form.notes || "",
+    };
+
+    try {
+      setSaving(true);
+      if (modalType === "add") {
+        await axiosInstance.post("attendance", payload);
+      } else {
+        await axiosInstance.put(`attendance/${form.id}`, payload);
+      }
+      await refreshAttendance();
+      setShowModal(false);
+      setForm(emptyRecord);
+    } catch (err) {
+      console.error("Save error", err);
+      alert("Error saving attendance record");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const confirmDelete = (record) => {
@@ -150,10 +228,18 @@ const Attendance = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
-    setRecords((prev) => prev.filter((r) => r.id !== recordToDelete.id));
-    setShowDeleteModal(false);
-    setRecordToDelete(null);
+  const handleDelete = async () => {
+    try {
+      if (!recordToDelete?.id) return;
+      await axiosInstance.delete(`attendance/${recordToDelete.id}`);
+      await refreshAttendance();
+    } catch (err) {
+      console.error("Delete error", err);
+      alert("Failed to delete attendance record");
+    } finally {
+      setShowDeleteModal(false);
+      setRecordToDelete(null);
+    }
   };
 
   const handlePDF = () => {
@@ -161,9 +247,7 @@ const Attendance = () => {
     doc.text("Attendance Report", 14, 16);
     doc.autoTable({
       startY: 22,
-      head: [
-        ["Date", "Employee", "Check-In", "Check-Out", "Total Hours", "Status"],
-      ],
+      head: [["Date", "Employee", "Check-In", "Check-Out", "Total Hours", "Status"]],
       body: records.map((r) => [
         r.date,
         getEmployeeName(r.employeeId),
@@ -178,8 +262,8 @@ const Attendance = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: '#f0f7f8' }}>
-        <div className="spinner-border" style={{ color: '#023347' }} role="status">
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
+        <div className="spinner-border" style={{ color: "#023347" }} role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -187,22 +271,33 @@ const Attendance = () => {
   }
 
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: '#e6f3f5' }}>
+    <Container fluid className="py-3" style={{ backgroundColor: "#f0f7f8", minHeight: "100vh" }}>
+      <Card className="border-0 shadow-sm" style={{ backgroundColor: "#e6f3f5" }}>
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h4 className="mb-1" style={{ color: '#023347' }}>
-                <FaClock className="me-2" style={{ color: '#2a8e9c' }} />
+              <h4 className="mb-1" style={{ color: "#023347" }}>
+                <FaClock className="me-2" style={{ color: "#2a8e9c" }} />
                 Attendance
               </h4>
               <p className="text-muted">Track daily employee attendance</p>
             </div>
             <div className="d-flex gap-2">
-              <Button variant="outline-secondary" onClick={handlePDF} size="sm" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }} className="d-flex align-items-center justify-content-center">
+              <Button
+                variant="outline-secondary"
+                onClick={handlePDF}
+                size="sm"
+                style={{ borderColor: "#2a8e9c", color: "#2a8e9c" }}
+                className="d-flex align-items-center justify-content-center"
+              >
                 <FaFilePdf className="me-1" /> Export PDF
               </Button>
-              <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleAdd} size="sm" className="d-flex align-items-center justify-content-center">
+              <Button
+                style={{ backgroundColor: "#023347", border: "none" }}
+                onClick={handleAdd}
+                size="sm"
+                className="d-flex align-items-center justify-content-center"
+              >
                 <FaPlus className="me-1" /> Add Record
               </Button>
             </div>
@@ -251,7 +346,7 @@ const Attendance = () => {
                           variant="light"
                           className="me-1"
                           onClick={() => handleEdit(r)}
-                          style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
+                          style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
                         >
                           <FaEdit />
                         </Button>
@@ -259,7 +354,7 @@ const Attendance = () => {
                           size="sm"
                           variant="light"
                           onClick={() => confirmDelete(r)}
-                          style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
+                          style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
                         >
                           <FaTrash />
                         </Button>
@@ -281,12 +376,10 @@ const Attendance = () => {
 
       {/* Add/Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="md">
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-          <Modal.Title>
-            {modalType === "edit" ? "Edit Attendance" : "Add Attendance Record"}
-          </Modal.Title>
+        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#ffffff" }}>
+          <Modal.Title>{modalType === "edit" ? "Edit Attendance" : "Add Attendance Record"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Employee *</Form.Label>
@@ -295,7 +388,7 @@ const Attendance = () => {
                 value={form.employeeId}
                 onChange={handleInputChange}
                 required
-                style={{ border: '1px solid #ced4da' }}
+                style={{ border: "1px solid #ced4da" }}
               >
                 <option value="">Select Employee</option>
                 {employees.map((emp) => (
@@ -314,7 +407,7 @@ const Attendance = () => {
                 value={form.date}
                 onChange={handleInputChange}
                 required
-                style={{ border: '1px solid #ced4da' }}
+                style={{ border: "1px solid #ced4da" }}
               />
             </Form.Group>
 
@@ -326,7 +419,7 @@ const Attendance = () => {
                 value={form.checkIn}
                 onChange={handleInputChange}
                 disabled={form.status !== "Present"}
-                style={{ border: '1px solid #ced4da' }}
+                style={{ border: "1px solid #ced4da" }}
               />
             </Form.Group>
 
@@ -338,7 +431,7 @@ const Attendance = () => {
                 value={form.checkOut}
                 onChange={handleInputChange}
                 disabled={form.status !== "Present"}
-                style={{ border: '1px solid #ced4da' }}
+                style={{ border: "1px solid #ced4da" }}
               />
             </Form.Group>
 
@@ -349,7 +442,7 @@ const Attendance = () => {
                 value={form.status}
                 onChange={handleInputChange}
                 required
-                style={{ border: '1px solid #ced4da' }}
+                style={{ border: "1px solid #ced4da" }}
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -367,33 +460,45 @@ const Attendance = () => {
                 value={form.notes}
                 onChange={handleInputChange}
                 rows={2}
-                style={{ border: '1px solid #ced4da' }}
+                style={{ border: "1px solid #ced4da" }}
               />
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={() => setShowModal(false)} style={{ border: '1px solid #ced4da' }}>
+        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowModal(false)}
+            style={{ border: "1px solid #ced4da" }}
+          >
             Cancel
           </Button>
-          <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleSave}>
-            {modalType === "edit" ? "Update" : "Add"} Record
+          <Button
+            style={{ backgroundColor: "#023347", border: "none" }}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : modalType === "edit" ? "Update" : "Add"} Record
           </Button>
         </Modal.Footer>
       </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#ffffff" }}>
           <Modal.Title>Delete Record</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
           Are you sure you want to delete this attendance record for{" "}
           <strong>{getEmployeeName(recordToDelete?.employeeId)}</strong> on{" "}
           <strong>{recordToDelete?.date}</strong>?
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)} style={{ border: '1px solid #ced4da' }}>
+        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
+          <Button
+            variant="secondary"
+            onClick={() => setShowDeleteModal(false)}
+            style={{ border: "1px solid #ced4da" }}
+          >
             Cancel
           </Button>
           <Button variant="danger" onClick={handleDelete}>

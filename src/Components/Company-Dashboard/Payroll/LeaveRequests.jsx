@@ -8,6 +8,8 @@ import {
   Form,
   Button,
   Modal,
+  Spinner,
+  Alert,
 } from "react-bootstrap";
 import {
   FaCalendarAlt,
@@ -19,22 +21,16 @@ import {
 } from "react-icons/fa";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 
-// Mock employees (same as in Attendance)
-const mockEmployees = [
-  { id: 1, name: "John Doe", employeeId: "EMP-001" },
-  { id: 2, name: "Jane Smith", employeeId: "EMP-002" },
-  { id: 3, name: "Robert Johnson", employeeId: "EMP-003" },
-];
-
-const LEAVE_TYPES = ["Sick Leave", "Casual Leave", "Earned Leave", "Maternity/Paternity", "Other"];
 const STATUSES = ["Pending", "Approved", "Rejected"];
 
 const emptyLeave = {
   id: null,
   leaveId: "",
   employeeId: "",
-  leaveType: "",
+  leaveTypeId: "",
   fromDate: "",
   toDate: "",
   totalDays: 0,
@@ -44,72 +40,106 @@ const emptyLeave = {
   approver: "",
 };
 
-// Helper: Calculate total days between two dates (inclusive)
 const calculateTotalDays = (from, to) => {
   if (!from || !to) return 0;
   const startDate = new Date(from);
   const endDate = new Date(to);
   const diffTime = Math.abs(endDate - startDate);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 for inclusive
-  return diffDays;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 };
 
 const LeaveRequests = () => {
+  const companyId = GetCompanyId();
   const [leaves, setLeaves] = useState([]);
-  const [employees] = useState(mockEmployees);
+  const [employees, setEmployees] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("add");
   const [form, setForm] = useState(emptyLeave);
+  const [saving, setSaving] = useState(false);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [leaveToDelete, setLeaveToDelete] = useState(null);
 
-  // Load mock data
-  useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        leaveId: "LR-001",
-        employeeId: "1",
-        leaveType: "Sick Leave",
-        fromDate: "2025-11-05",
-        toDate: "2025-11-07",
-        totalDays: 3,
-        reason: "Fever and flu",
-        status: "Approved",
-        approver: "HR Manager",
-      },
-      {
-        id: 2,
-        leaveId: "LR-002",
-        employeeId: "2",
-        leaveType: "Casual Leave",
-        fromDate: "2025-11-10",
-        toDate: "2025-11-10",
-        totalDays: 1,
-        reason: "Family function",
-        status: "Pending",
-        approver: "",
-      },
-    ];
-    setTimeout(() => {
-      setLeaves(mockData);
+  // Fetch all data
+  const fetchData = async () => {
+    if (!companyId) {
+      setError("Company ID not found.");
       setLoading(false);
-    }, 300);
-  }, []);
+      return;
+    }
+
+    try {
+      const [leavesRes, employeesRes, typesRes] = await Promise.all([
+        axiosInstance.get(`leaveRequest/company/${companyId}`),
+        axiosInstance.get(`employee?company_id=${companyId}`),
+        axiosInstance.get("leaveType"), // Adjust if endpoint differs
+      ]);
+
+      if (leavesRes.data.success) {
+        const mappedLeaves = leavesRes.data.data.map((l) => ({
+          id: l.id,
+          leaveId: `LR-${String(l.id).padStart(3, "0")}`,
+          employeeId: l.employee_id,
+          leaveTypeId: l.leave_type_id,
+          leaveType: l.leave_type?.name || "Unknown",
+          fromDate: l.from_date ? new Date(l.from_date).toISOString().split("T")[0] : "",
+          toDate: l.to_date ? new Date(l.to_date).toISOString().split("T")[0] : "",
+          totalDays: l.total_days,
+          reason: l.reason,
+          status: l.status,
+          approver: l.approved_by || "",
+          attachment: l.attachment,
+        }));
+        setLeaves(mappedLeaves);
+      }
+
+      if (employeesRes.data.success) {
+        setEmployees(
+          employeesRes.data.data.map((emp) => ({
+            id: emp.id,
+            name: emp.full_name || emp.name,
+          }))
+        );
+      }
+
+      if (typesRes.data.success) {
+        setLeaveTypes(
+          typesRes.data.data.map((t) => ({
+            id: t.id,
+            name: t.name,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find(e => e.id === parseInt(empId));
-    return emp ? emp.name : "–";
+    const emp = employees.find((e) => e.id === Number(empId));
+    return emp ? emp.name : `Employee ${empId}`;
+  };
+
+  const getLeaveTypeName = (typeId) => {
+    const type = leaveTypes.find((t) => t.id === Number(typeId));
+    return type ? type.name : "Unknown";
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let updatedForm = { ...form, [name]: value };
 
-    // Auto-calculate total days when dates change
     if (name === "fromDate" || name === "toDate") {
       const days = calculateTotalDays(
         name === "fromDate" ? value : form.fromDate,
@@ -128,44 +158,70 @@ const LeaveRequests = () => {
   };
 
   const handleEdit = (leave) => {
-    setForm({ ...leave });
+    setForm({
+      ...leave,
+      leaveTypeId: leave.leaveTypeId,
+      fromDate: leave.fromDate,
+      toDate: leave.toDate,
+    });
     setModalType("edit");
     setShowModal(true);
   };
 
-  const handleSave = () => {
-    const {
-      employeeId,
-      leaveType,
-      fromDate,
-      toDate,
-      reason,
-      status,
-    } = form;
+  const handleSave = async () => {
+    const { employeeId, leaveTypeId, fromDate, toDate, reason, status } = form;
 
-    if (!employeeId || !leaveType || !fromDate || !toDate || !reason) {
+    if (!employeeId || !leaveTypeId || !fromDate || !toDate || !reason) {
       alert("Please fill all required fields.");
       return;
     }
 
-    const newLeave = {
-      ...form,
-      id: form.id || Date.now(),
-      leaveId: form.leaveId || `LR-${String(leaves.length + 1).padStart(3, "0")}`,
-      totalDays: calculateTotalDays(fromDate, toDate),
-      approver: status === "Approved" || status === "Rejected" ? "Admin" : "",
-    };
+    setSaving(true);
+    const formData = new FormData();
 
-    if (modalType === "add") {
-      setLeaves((prev) => [newLeave, ...prev]);
-    } else {
-      setLeaves((prev) =>
-        prev.map((l) => (l.id === form.id ? newLeave : l))
-      );
+    // Append all fields
+    formData.append("employee_id", employeeId);
+    formData.append("leave_type_id", leaveTypeId);
+    formData.append("from_date", fromDate);
+    formData.append("to_date", toDate);
+    formData.append("total_days", calculateTotalDays(fromDate, toDate));
+    formData.append("reason", reason);
+    formData.append("status", status);
+
+    if (form.attachment && typeof form.attachment !== "string") {
+      formData.append("attachment", form.attachment);
     }
 
-    setShowModal(false);
-    setForm(emptyLeave);
+    try {
+      let response;
+      if (modalType === "add") {
+        response = await axiosInstance.post("leaveRequest/request", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        response = await axiosInstance.patch(
+          `leaveRequest/request/${form.id}`,
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+      }
+
+      if (response.data.success) {
+        alert(modalType === "add" ? "Leave request created!" : "Leave request updated!");
+        fetchData();
+        setShowModal(false);
+        setForm(emptyLeave);
+      } else {
+        throw new Error(response.data.message || "Operation failed");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save leave request. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const confirmDelete = (leave) => {
@@ -173,8 +229,17 @@ const LeaveRequests = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
-    setLeaves((prev) => prev.filter((l) => l.id !== leaveToDelete.id));
+  const handleDelete = async () => {
+    try {
+      const res = await axiosInstance.delete(`leaveRequest/request/${leaveToDelete.id}`);
+      if (res.data.success) {
+        alert("Leave request deleted successfully!");
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete leave request.");
+    }
     setShowDeleteModal(false);
     setLeaveToDelete(null);
   };
@@ -184,13 +249,11 @@ const LeaveRequests = () => {
     doc.text("Leave Requests Report", 14, 16);
     doc.autoTable({
       startY: 22,
-      head: [
-        ["Leave ID", "Employee", "Type", "From", "To", "Days", "Status", "Approver"],
-      ],
+      head: [["Leave ID", "Employee", "Type", "From", "To", "Days", "Status", "Approver"]],
       body: leaves.map((l) => [
         l.leaveId,
         getEmployeeName(l.employeeId),
-        l.leaveType,
+        getLeaveTypeName(l.leaveTypeId),
         l.fromDate,
         l.toDate,
         l.totalDays,
@@ -204,16 +267,21 @@ const LeaveRequests = () => {
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <Spinner animation="border" variant="primary" />
       </div>
     );
   }
 
-  // Status badge style
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">{error}</Alert>
+      </Container>
+    );
+  }
+
   const statusBadge = (status) => {
-    let bg = "#6c757d"; // default gray
+    let bg = "#6c757d";
     if (status === "Approved") bg = "#28a745";
     else if (status === "Rejected") bg = "#dc3545";
     else if (status === "Pending") bg = "#ffc107";
@@ -248,9 +316,14 @@ const LeaveRequests = () => {
               <Button variant="outline-secondary" onClick={handlePDF} size="sm">
                 <FaFilePdf className="me-1" /> Export PDF
               </Button>
-              <Button variant="primary" onClick={handleAdd} size="sm"           className="btn text-white d-flex align-items-center gap-2"
-            style={{ backgroundColor: "#023347" }}>
-                <FaPlus className="me-1" /> New Request
+              <Button
+                variant="primary"
+                onClick={handleAdd}
+                size="sm"
+                className="d-flex align-items-center gap-2"
+                style={{ backgroundColor: "#023347", borderColor: "#023347" }}
+              >
+                <FaPlus /> New Request
               </Button>
             </div>
           </div>
@@ -276,7 +349,7 @@ const LeaveRequests = () => {
                     <tr key={l.id}>
                       <td>{l.leaveId}</td>
                       <td>{getEmployeeName(l.employeeId)}</td>
-                      <td>{l.leaveType}</td>
+                      <td>{getLeaveTypeName(l.leaveTypeId)}</td>
                       <td>{l.fromDate}</td>
                       <td>{l.toDate}</td>
                       <td>{l.totalDays}</td>
@@ -346,15 +419,15 @@ const LeaveRequests = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Leave Type *</Form.Label>
                 <Form.Select
-                  name="leaveType"
-                  value={form.leaveType}
+                  name="leaveTypeId"
+                  value={form.leaveTypeId}
                   onChange={handleInputChange}
                   required
                 >
                   <option value="">Select</option>
-                  {LEAVE_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                  {leaveTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
                     </option>
                   ))}
                 </Form.Select>
@@ -403,11 +476,7 @@ const LeaveRequests = () => {
             <Col md={6}>
               <Form.Group className="mb-3">
                 <Form.Label>Status</Form.Label>
-                <Form.Select
-                  name="status"
-                  value={form.status}
-                  onChange={handleInputChange}
-                >
+                <Form.Select name="status" value={form.status} onChange={handleInputChange}>
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -438,7 +507,9 @@ const LeaveRequests = () => {
                 </Form.Label>
                 <Form.Control
                   type="file"
-                  onChange={(e) => setForm({ ...form, attachment: e.target.files[0] })}
+                  onChange={(e) =>
+                    setForm({ ...form, attachment: e.target.files[0] || null })
+                  }
                 />
                 <Form.Text muted>Supporting documents (e.g., medical certificate)</Form.Text>
               </Form.Group>
@@ -449,8 +520,13 @@ const LeaveRequests = () => {
           <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave}     style={{ backgroundColor: "#023347" }}>
-            {modalType === "edit" ? "Update" : "Submit"} Request
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={saving}
+            style={{ backgroundColor: "#023347", borderColor: "#023347" }}
+          >
+            {saving ? "Saving..." : modalType === "edit" ? "Update" : "Submit"} Request
           </Button>
         </Modal.Footer>
       </Modal>
@@ -468,7 +544,11 @@ const LeaveRequests = () => {
           <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete}  style={{ backgroundColor: "#023347" }}>
+          <Button
+            variant="danger"
+            onClick={handleDelete}
+            style={{ backgroundColor: "#023347", borderColor: "#023347" }}
+          >
             Delete
           </Button>
         </Modal.Footer>

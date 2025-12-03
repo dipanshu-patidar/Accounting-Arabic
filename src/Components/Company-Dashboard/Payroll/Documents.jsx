@@ -16,18 +16,12 @@ import {
   FaEdit,
   FaTrash,
   FaFilePdf,
-  FaDownload,
   FaEye,
 } from "react-icons/fa";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
-// Mock employees
-const mockEmployees = [
-  { id: 1, name: "John Doe", employeeId: "EMP-001" },
-  { id: 2, name: "Jane Smith", employeeId: "EMP-002" },
-  { id: 3, name: "Robert Johnson", employeeId: "EMP-003" },
-];
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 
 const DOCUMENT_TYPES = [
   "Employment Contract",
@@ -52,69 +46,82 @@ const emptyDocument = {
 
 const Documents = () => {
   const [documents, setDocuments] = useState([]);
-  const [employees] = useState(mockEmployees);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const companyId = GetCompanyId();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("add");
   const [form, setForm] = useState(emptyDocument);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [docToDelete, setDocToDelete] = useState(null);
-
   const fileInputRef = useRef(null);
 
-  // Load mock data
+  // Fetch employees
   useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        employeeId: "1",
-        documentType: "Employment Contract",
-        fileName: "john_contract.pdf",
-        fileUrl: "#", // In real app, this would be a URL
-        issueDate: "2023-02-01",
-        expiryDate: "2026-02-01",
-        notes: "Signed on joining",
-      },
-      {
-        id: 2,
-        employeeId: "1",
-        documentType: "NDA",
-        fileName: "john_nda.pdf",
-        fileUrl: "#",
-        issueDate: "2023-02-01",
-        expiryDate: "2028-02-01",
-        notes: "Confidentiality agreement",
-      },
-      {
-        id: 3,
-        employeeId: "2",
-        documentType: "Offer Letter",
-        fileName: "jane_offer.pdf",
-        fileUrl: "#",
-        issueDate: "2024-06-10",
-        expiryDate: "", // No expiry
-        notes: "Initial offer",
-      },
-    ];
-    setTimeout(() => {
-      setDocuments(mockData);
+    const fetchEmployees = async () => {
+      if (!companyId) return;
+      try {
+        const res = await axiosInstance.get(`employee?company_id=${companyId}`);
+        if (res?.data?.success) {
+          setEmployees(
+            res.data.data.employees.map((emp) => ({
+              id: emp.id,
+              name: emp.full_name || emp.employee_code || `Employee ${emp.id}`,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load employees", err);
+        setEmployees([]);
+      }
+    };
+    fetchEmployees();
+  }, [companyId]);
+
+  // Fetch documents by company ID
+  const fetchDocuments = async () => {
+    if (!companyId) return;
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`documentsRequest/company/${companyId}`);
+      if (res?.data?.success) {
+        const mapped = res.data.data.map((doc) => ({
+          id: doc.id,
+          employeeId: doc.employee_id,
+          documentType: doc.document_type,
+          fileName: doc.file_name || "",
+          fileUrl: doc.file_url || "",
+          issueDate: doc.issue_date ? doc.issue_date.split("T")[0] : "",
+          expiryDate: doc.expiry_date ? doc.expiry_date.split("T")[0] : "",
+          notes: doc.notes || "",
+          employee: doc.employee,
+        }));
+        setDocuments(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to load documents", err);
+      alert("Failed to load documents.");
+    } finally {
       setLoading(false);
-    }, 300);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchDocuments();
+    }
+  }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find((e) => e.id === parseInt(empId));
+    const emp = employees.find((e) => e.id === empId);
     return emp ? emp.name : "–";
   };
 
   const getDocumentStatus = (issue, expiry) => {
+    if (!issue) return "Unknown";
     const today = new Date();
-    const issueDate = issue ? new Date(issue) : null;
+    const issueDate = new Date(issue);
     const expiryDate = expiry ? new Date(expiry) : null;
-
-    if (!issueDate) return "Unknown";
 
     if (expiryDate && today > expiryDate) return "Expired";
     if (today >= issueDate) return "Active";
@@ -163,40 +170,63 @@ const Documents = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (doc) => {
-    setForm({
-      ...doc,
-      file: null, // Don't re-upload unless changed
-    });
-    setModalType("edit");
-    setShowModal(true);
+  const handleEdit = async (doc) => {
+    try {
+      const res = await axiosInstance.get(`documentsRequest/${doc.id}`);
+      if (res?.data?.success) {
+        const d = res.data.data;
+        setForm({
+          id: d.id,
+          employeeId: d.employee_id,
+          documentType: d.document_type,
+          fileName: d.file_name || "",
+          fileUrl: d.file_url || "",
+          issueDate: d.issue_date ? d.issue_date.split("T")[0] : "",
+          expiryDate: d.expiry_date ? d.expiry_date.split("T")[0] : "",
+          notes: d.notes || "",
+          file: null,
+        });
+        setModalType("edit");
+        setShowModal(true);
+      }
+    } catch (err) {
+      console.error("Failed to load document for edit", err);
+      alert("Failed to load document.");
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const { employeeId, documentType, issueDate } = form;
     if (!employeeId || !documentType || !issueDate) {
-      alert("Please fill required fields.");
+      alert("Please fill Employee, Document Type, and Issue Date.");
       return;
     }
 
-    // In real app: upload file → get URL
-    // Here: just store file name
-    const newDoc = {
-      ...form,
-      id: form.id || Date.now(),
-      fileUrl: form.file ? URL.createObjectURL(form.file) : form.fileUrl,
+    // ⚠️ File upload not implemented – you can add FormData upload here later
+    const payload = {
+      employee_id: parseInt(employeeId, 10),
+      document_type: documentType,
+      issue_date: issueDate,
+      expiry_date: form.expiryDate || null,
+      notes: form.notes || "",
+      // file will be handled separately if needed
     };
 
-    if (modalType === "add") {
-      setDocuments((prev) => [newDoc, ...prev]);
-    } else {
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === form.id ? { ...newDoc, file: null } : d))
-      );
+    try {
+      if (modalType === "add") {
+        await axiosInstance.post(`documentsRequest/${companyId}`, payload);
+        alert("Document created successfully!");
+      } else {
+        await axiosInstance.put(`documentsRequest/${form.id}`, payload);
+        alert("Document updated successfully!");
+      }
+      await fetchDocuments();
+      setShowModal(false);
+      setForm(emptyDocument);
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save document.");
     }
-
-    setShowModal(false);
-    setForm(emptyDocument);
   };
 
   const confirmDelete = (doc) => {
@@ -204,20 +234,26 @@ const Documents = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
-    setDocuments((prev) => prev.filter((d) => d.id !== docToDelete.id));
-    setShowDeleteModal(false);
-    setDocToDelete(null);
+  const handleDelete = async () => {
+    try {
+      await axiosInstance.delete(`documentsRequest/${docToDelete.id}`);
+      alert("Document deleted successfully!");
+      await fetchDocuments();
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete document.");
+    } finally {
+      setShowDeleteModal(false);
+      setDocToDelete(null);
+    }
   };
 
   const handlePDF = () => {
     const doc = new jsPDF();
-    doc.text("Documents & Contracts", 14, 16);
+    doc.text("Employee Documents Report", 14, 16);
     doc.autoTable({
       startY: 22,
-      head: [
-        ["Employee", "Type", "File", "Issue Date", "Expiry Date", "Status"],
-      ],
+      head: [["Employee", "Type", "File", "Issue Date", "Expiry Date", "Status"]],
       body: documents.map((d) => [
         getEmployeeName(d.employeeId),
         d.documentType,
@@ -227,11 +263,11 @@ const Documents = () => {
         getDocumentStatus(d.issueDate, d.expiryDate),
       ]),
     });
-    doc.save("documents.pdf");
+    doc.save("employee_documents.pdf");
   };
 
   const handleViewFile = (url) => {
-    if (url && url !== "#") {
+    if (url) {
       window.open(url, "_blank");
     } else {
       alert("No file available to preview.");
@@ -240,8 +276,8 @@ const Documents = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
-        <div className="spinner-border" style={{ color: "#2a8e9c" }} role="status">
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
+        <div className="spinner-border" style={{ color: "#023347" }} role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -261,21 +297,18 @@ const Documents = () => {
               <p className="text-muted">Manage employee documents and agreements</p>
             </div>
             <div className="d-flex gap-2">
-              <Button 
-                variant="outline-secondary" 
-                onClick={handlePDF} 
+              <Button
+                variant="outline-secondary"
+                onClick={handlePDF}
                 size="sm"
                 style={{ borderColor: "#023347", color: "#023347" }}
-                className="d-flex align-items-center justify-content-center"
               >
                 <FaFilePdf className="me-1" /> Export List
               </Button>
-              <Button 
-                variant="primary" 
-                onClick={handleAdd} 
+              <Button
+                style={{ backgroundColor: "#023347", border: "none" }}
+                onClick={handleAdd}
                 size="sm"
-                style={{ backgroundColor: "#023347", borderColor: "#023347" }}
-                className="d-flex align-items-center justify-content-center"
               >
                 <FaPlus className="me-1" /> Add Document
               </Button>
@@ -302,7 +335,7 @@ const Documents = () => {
                       <td>{getEmployeeName(d.employeeId)}</td>
                       <td>{d.documentType}</td>
                       <td>
-                        {d.fileName ? (
+                        {d.fileUrl ? (
                           <Button
                             variant="link"
                             size="sm"
@@ -310,10 +343,10 @@ const Documents = () => {
                             className="p-0"
                             style={{ color: "#2a8e9c" }}
                           >
-                            <FaEye className="me-1" /> {d.fileName}
+                            <FaEye className="me-1" /> {d.fileName || "View"}
                           </Button>
                         ) : (
-                          "–"
+                          d.fileName || "–"
                         )}
                       </td>
                       <td>{d.issueDate || "–"}</td>
@@ -322,16 +355,17 @@ const Documents = () => {
                       <td>
                         <Button
                           size="sm"
-                          variant="outline-primary"
+                          variant="light"
                           className="me-1"
+                          style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
                           onClick={() => handleEdit(d)}
-                          style={{ borderColor: "#023347", color: "#023347" }}
                         >
                           <FaEdit />
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline-danger"
+                          variant="light"
+                          style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
                           onClick={() => confirmDelete(d)}
                         >
                           <FaTrash />
@@ -355,9 +389,7 @@ const Documents = () => {
       {/* Add/Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "white" }}>
-          <Modal.Title>
-            {modalType === "edit" ? "Edit Document" : "Add New Document"}
-          </Modal.Title>
+          <Modal.Title>{modalType === "edit" ? "Edit Document" : "Add New Document"}</Modal.Title>
         </Modal.Header>
         <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
           <Row>
@@ -428,7 +460,7 @@ const Documents = () => {
 
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Upload File</Form.Label>
+                <Form.Label>Upload File (Optional)</Form.Label>
                 <Form.Control
                   type="file"
                   ref={fileInputRef}
@@ -438,10 +470,13 @@ const Documents = () => {
                 {form.fileName && (
                   <div className="mt-1">
                     <Badge bg="light" text="dark">
-                      <FaFilePdf className="me-1" /> {form.fileName}
+                      {form.fileName}
                     </Badge>
                   </div>
                 )}
+                <Form.Text muted>
+                  File upload will be linked to document on save (not implemented in this version).
+                </Form.Text>
               </Form.Group>
             </Col>
 
@@ -460,24 +495,16 @@ const Documents = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowModal(false)}
-            style={{ backgroundColor: "#6c757d", borderColor: "#6c757d" }}
-          >
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleSave}
-            style={{ backgroundColor: "#023347", borderColor: "#023347" }}
-          >
+          <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
             {modalType === "edit" ? "Update" : "Save"} Document
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
         <Modal.Header closeButton style={{ backgroundColor: "#dc3545", color: "white" }}>
           <Modal.Title>Delete Document</Modal.Title>
@@ -487,18 +514,10 @@ const Documents = () => {
           <strong>{getEmployeeName(docToDelete?.employeeId)}</strong>?
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowDeleteModal(false)}
-            style={{ backgroundColor: "#6c757d", borderColor: "#6c757d" }}
-          >
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
-            onClick={handleDelete}
-            style={{ backgroundColor: "#dc3545", borderColor: "#dc3545" }}
-          >
+          <Button variant="danger" onClick={handleDelete} style={{ backgroundColor: "#dc3545" }}>
             Delete
           </Button>
         </Modal.Footer>

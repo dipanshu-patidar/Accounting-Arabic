@@ -7,6 +7,8 @@ import {
     FaPlus, FaEdit, FaTrash, FaSave, FaTimes,
     FaMoneyBillWave, FaPercentage, FaUserAlt, FaChevronDown, FaChevronUp
 } from 'react-icons/fa';
+import GetCompanyId from '../../../Api/GetCompanyId';
+import axiosInstance from '../../../Api/axiosInstance';
 
 const SalaryStructure = () => {
     const [structures, setStructures] = useState([]);
@@ -16,7 +18,7 @@ const SalaryStructure = () => {
     const [selectedStructure, setSelectedStructure] = useState(null);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [expandedStructureId, setExpandedStructureId] = useState(null);
-
+    const companyId = GetCompanyId();
     // Form state
     const [formData, setFormData] = useState({
         componentName: '',
@@ -228,7 +230,7 @@ const SalaryStructure = () => {
     return (
         <Container fluid className="salary-structure-container p-3 p-md-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
             <h2 className="mb-3 mb-md-4" style={{ color: '#023347' }}>Salary Structure Management</h2>
-            
+
             <Card className="mb-4" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
                 <Card.Body>
                     <Row className="mb-4">
@@ -404,15 +406,15 @@ const SalaryStructure = () => {
                                         </Button>
                                     </div>
                                 </Card.Header>
-                                
+
                                 {expandedStructureId === structure.id && (
                                     <Card.Body className="pt-0" style={{ backgroundColor: '#e6f3f5' }}>
                                         <h6 className="mt-3 mb-3" style={{ color: '#023347' }}>Components</h6>
                                         {structure.components.map(component => (
-                                            <ComponentCard 
-                                                key={component.id} 
-                                                component={component} 
-                                                structureId={structure.id} 
+                                            <ComponentCard
+                                                key={component.id}
+                                                component={component}
+                                                structureId={structure.id}
                                             />
                                         ))}
                                     </Card.Body>
@@ -517,14 +519,14 @@ const SalaryStructure = () => {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-                    <Button 
-                        variant="secondary" 
-                        onClick={handleCloseModal} 
+                    <Button
+                        variant="secondary"
+                        onClick={handleCloseModal}
                         style={{ backgroundColor: '#6c757d', borderColor: '#6c757d' }}
                     >
                         Cancel
                     </Button>
-                    <Button 
+                    <Button
                         style={{ backgroundColor: '#023347', border: 'none' }}
                         onClick={handleSaveComponent}
                     >

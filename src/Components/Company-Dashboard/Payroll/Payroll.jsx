@@ -18,109 +18,120 @@ import {
 } from "react-icons/fa";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
-// Mock employees (same as before)
-const mockEmployees = [
-  { id: 1, name: "John Doe", employeeId: "EMP-001" },
-  { id: 2, name: "Jane Smith", employeeId: "EMP-002" },
-  { id: 3, name: "Robert Johnson", employeeId: "EMP-003" },
-];
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 
 const emptyPayroll = {
   id: null,
   employeeId: "",
   month: "", // e.g., "2025-11"
-  basicSalary: 0,
-  allowances: 0,
-  overtime: 0,
-  bonus: 0,
-  deductions: 0,
-  netSalary: 0,
+  basicSalary: "",
+  allowances: "",
+  overtime: "",
+  bonus: "",
+  deductions: "",
+  netSalary: "",
   paymentDate: "",
   paymentStatus: "Pending",
 };
 
 const Payroll = () => {
   const [payrolls, setPayrolls] = useState([]);
-  const [employees] = useState(mockEmployees);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const companyId = GetCompanyId();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("add");
   const [form, setForm] = useState(emptyPayroll);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [payrollToDelete, setPayrollToDelete] = useState(null);
 
-  // Load mock data
+  // Fetch employees
   useEffect(() => {
-    const mockData = [
-      {
-        id: 1,
-        employeeId: "1",
-        month: "2025-10",
-        basicSalary: 30000,
-        allowances: 5000,
-        overtime: 2000,
-        bonus: 3000,
-        deductions: 2500,
-        netSalary: 37500,
-        paymentDate: "2025-10-30",
-        paymentStatus: "Paid",
-      },
-      {
-        id: 2,
-        employeeId: "2",
-        month: "2025-11",
-        basicSalary: 35000,
-        allowances: 6000,
-        overtime: 0,
-        bonus: 0,
-        deductions: 3000,
-        netSalary: 38000,
-        paymentDate: "",
-        paymentStatus: "Pending",
-      },
-    ];
-    setTimeout(() => {
-      setPayrolls(mockData);
+    const fetchEmployees = async () => {
+      if (!companyId) return;
+      try {
+        const res = await axiosInstance.get(`employee?company_id=${companyId}`);
+        if (res?.data?.success) {
+          setEmployees(
+            res.data.data.employees.map((emp) => ({
+              id: emp.id,
+              name: emp.full_name || emp.employee_code || `Employee ${emp.id}`,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load employees", err);
+        setEmployees([]);
+      }
+    };
+    fetchEmployees();
+  }, [companyId]);
+
+  // Fetch payroll records
+  const fetchPayrolls = async () => {
+    if (!companyId) return;
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`payrollRequest?companyId=${companyId}`);
+      if (Array.isArray(res.data)) {
+        const mapped = res.data.map((p) => ({
+          id: p.id,
+          employeeId: p.employee_id,
+          month: p.payroll_month, // "December, 2025"
+          basicSalary: p.basic_salary,
+          allowances: p.allowances,
+          overtime: p.overtime_pay,
+          bonus: p.bonus,
+          deductions: p.deductions,
+          netSalary: p.net_salary,
+          paymentStatus: p.payment_status,
+          paymentDate: p.payment_date ? p.payment_date.split("T")[0] : "",
+          employee: p.employee,
+        }));
+        setPayrolls(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to load payroll", err);
+      alert("Failed to load payroll records.");
+    } finally {
       setLoading(false);
-    }, 300);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchPayrolls();
+    }
+  }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find((e) => e.id === parseInt(empId));
+    const emp = employees.find((e) => e.id === empId);
     return emp ? emp.name : "–";
   };
 
-  const getMonthLabel = (yearMonth) => {
-    if (!yearMonth) return "–";
-    const [year, month] = yearMonth.split("-");
-    const date = new Date(year, month - 1);
-    return date.toLocaleString("default", { month: "long", year: "numeric" });
+  const getMonthLabel = (monthStr) => {
+    return monthStr || "–";
   };
 
-  // Auto-calculate net & gross
   const calculateSalaries = (data) => {
-    const gross = Number(data.basicSalary || 0) +
-                   Number(data.allowances || 0) +
-                   Number(data.overtime || 0) +
-                   Number(data.bonus || 0);
-    const net = gross - Number(data.deductions || 0);
+    const gross =
+      parseFloat(data.basicSalary || 0) +
+      parseFloat(data.allowances || 0) +
+      parseFloat(data.overtime || 0) +
+      parseFloat(data.bonus || 0);
+    const net = gross - parseFloat(data.deductions || 0);
     return { gross, net };
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const numFields = ["basicSalary", "allowances", "overtime", "bonus", "deductions"];
-    let updatedValue = numFields.includes(name) ? (value === "" ? 0 : Number(value)) : value;
+    const updatedValue = numFields.includes(name) ? (value === "" ? "" : value) : value;
 
     const updatedForm = { ...form, [name]: updatedValue };
-
-    // Auto-calculate net salary
     const { net } = calculateSalaries(updatedForm);
-    updatedForm.netSalary = net;
-
+    updatedForm.netSalary = net.toFixed(2);
     setForm(updatedForm);
   };
 
@@ -136,31 +147,54 @@ const Payroll = () => {
     setShowModal(true);
   };
 
-  const handleSave = () => {
-    const { employeeId, month, basicSalary, paymentStatus } = form;
+  const handleSave = async () => {
+    const { employeeId, month, basicSalary } = form;
 
-    if (!employeeId || !month || basicSalary === 0) {
-      alert("Please fill required fields.");
+    if (!employeeId || !month || !basicSalary) {
+      alert("Please fill Employee, Month, and Basic Salary.");
       return;
     }
 
-    const { gross, net } = calculateSalaries(form);
-    const newRecord = {
-      ...form,
-      id: form.id || Date.now(),
-      netSalary: net,
-    };
-
+    // Prevent duplicate (employee + month)
     if (modalType === "add") {
-      setPayrolls((prev) => [newRecord, ...prev]);
-    } else {
-      setPayrolls((prev) =>
-        prev.map((p) => (p.id === form.id ? newRecord : p))
+      const exists = payrolls.some(
+        (p) => p.employeeId === Number(employeeId) && p.month === month
       );
+      if (exists) {
+        alert("A payroll record for this employee and month already exists.");
+        return;
+      }
     }
 
-    setShowModal(false);
-    setForm(emptyPayroll);
+    const { gross, net } = calculateSalaries(form);
+    const payload = {
+      employee_id: parseInt(employeeId, 10),
+      payroll_month: month,
+      basic_salary: parseFloat(basicSalary),
+      allowances: parseFloat(form.allowances || 0),
+      overtime_pay: parseFloat(form.overtime || 0),
+      bonus: parseFloat(form.bonus || 0),
+      deductions: parseFloat(form.deductions || 0),
+      net_salary: net,
+      payment_status: form.paymentStatus,
+      payment_date: form.paymentDate || null,
+    };
+
+    try {
+      if (modalType === "add") {
+        await axiosInstance.post("payrollRequest", payload);
+        alert("Payroll record created successfully!");
+      } else {
+        await axiosInstance.put(`payrollRequest/${form.id}`, payload);
+        alert("Payroll record updated successfully!");
+      }
+      await fetchPayrolls();
+      setShowModal(false);
+      setForm(emptyPayroll);
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Failed to save payroll record.");
+    }
   };
 
   const confirmDelete = (record) => {
@@ -168,10 +202,18 @@ const Payroll = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
-    setPayrolls((prev) => prev.filter((p) => p.id !== payrollToDelete.id));
-    setShowDeleteModal(false);
-    setPayrollToDelete(null);
+  const handleDelete = async () => {
+    try {
+      await axiosInstance.delete(`payrollRequest/${payrollToDelete.id}`);
+      alert("Payroll record deleted successfully!");
+      await fetchPayrolls();
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete payroll record.");
+    } finally {
+      setShowDeleteModal(false);
+      setPayrollToDelete(null);
+    }
   };
 
   const handlePDF = () => {
@@ -179,17 +221,15 @@ const Payroll = () => {
     doc.text("Payroll Report", 14, 16);
     doc.autoTable({
       startY: 22,
-      head: [
-        ["Employee", "Month", "Gross Salary", "Deductions", "Net Salary", "Status"],
-      ],
+      head: [["Employee", "Month", "Gross Salary", "Deductions", "Net Salary", "Status"]],
       body: payrolls.map((p) => {
         const { gross } = calculateSalaries(p);
         return [
           getEmployeeName(p.employeeId),
           getMonthLabel(p.month),
           `₹${gross.toLocaleString()}`,
-          `₹${Number(p.deductions).toLocaleString()}`,
-          `₹${Number(p.netSalary).toLocaleString()}`,
+          `₹${parseFloat(p.deductions).toLocaleString()}`,
+          `₹${parseFloat(p.netSalary).toLocaleString()}`,
           p.paymentStatus,
         ];
       }),
@@ -199,8 +239,8 @@ const Payroll = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: '#f0f7f8' }}>
-        <div className="spinner-border" style={{ color: '#023347' }} role="status">
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
+        <div className="spinner-border" style={{ color: "#023347" }} role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -223,22 +263,33 @@ const Payroll = () => {
   };
 
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: '#e6f3f5' }}>
+    <Container fluid className="py-3" style={{ backgroundColor: "#f0f7f8", minHeight: "100vh" }}>
+      <Card className="border-0 shadow-sm" style={{ backgroundColor: "#e6f3f5" }}>
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
-              <h4 className="mb-1" style={{ color: '#023347' }}>
-                <FaMoneyBillWave className="me-2" style={{ color: '#2a8e9c' }} />
+              <h4 className="mb-1" style={{ color: "#023347" }}>
+                <FaMoneyBillWave className="me-2" style={{ color: "#2a8e9c" }} />
                 Payroll
               </h4>
               <p className="text-muted">Manage employee salary records</p>
             </div>
             <div className="d-flex gap-2">
-              <Button variant="outline-secondary" onClick={handlePDF} size="sm" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }} className="d-flex align-items-center justify-content-center">
+              <Button
+                variant="outline-secondary"
+                onClick={handlePDF}
+                size="sm"
+                style={{ borderColor: "#2a8e9c", color: "#2a8e9c" }}
+                className="d-flex align-items-center"
+              >
                 <FaFilePdf className="me-1" /> Export PDF
               </Button>
-              <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleAdd} size="sm" className="d-flex align-items-center justify-content-center">
+              <Button
+                style={{ backgroundColor: "#023347", border: "none" }}
+                onClick={handleAdd}
+                size="sm"
+                className="d-flex align-items-center"
+              >
                 <FaPlus className="me-1" /> Add Payroll
               </Button>
             </div>
@@ -266,24 +317,24 @@ const Payroll = () => {
                         <td>{getEmployeeName(p.employeeId)}</td>
                         <td>{getMonthLabel(p.month)}</td>
                         <td>₹{gross.toLocaleString()}</td>
-                        <td>₹{Number(p.deductions).toLocaleString()}</td>
-                        <td>₹{Number(p.netSalary).toLocaleString()}</td>
+                        <td>₹{parseFloat(p.deductions).toLocaleString()}</td>
+                        <td>₹{parseFloat(p.netSalary).toLocaleString()}</td>
                         <td>{paymentStatusBadge(p.paymentStatus)}</td>
                         <td>
                           <Button
                             size="sm"
                             variant="light"
                             className="me-1"
+                            style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
                             onClick={() => handleEdit(p)}
-                            style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
                           >
                             <FaEdit />
                           </Button>
                           <Button
                             size="sm"
                             variant="light"
+                            style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
                             onClick={() => confirmDelete(p)}
-                            style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
                           >
                             <FaTrash />
                           </Button>
@@ -306,12 +357,10 @@ const Payroll = () => {
 
       {/* Add/Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-          <Modal.Title>
-            {modalType === "edit" ? "Edit Payroll" : "Add Payroll Record"}
-          </Modal.Title>
+        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#fff" }}>
+          <Modal.Title>{modalType === "edit" ? "Edit Payroll" : "Add Payroll Record"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3">
@@ -321,7 +370,6 @@ const Payroll = () => {
                   value={form.employeeId}
                   onChange={handleInputChange}
                   required
-                  style={{ border: '1px solid #ced4da' }}
                 >
                   <option value="">Select Employee</option>
                   {employees.map((emp) => (
@@ -337,12 +385,12 @@ const Payroll = () => {
               <Form.Group className="mb-3">
                 <Form.Label>Month *</Form.Label>
                 <Form.Control
-                  type="month"
+                  type="text"
+                  placeholder="e.g., December, 2025"
                   name="month"
                   value={form.month}
                   onChange={handleInputChange}
                   required
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
@@ -352,11 +400,11 @@ const Payroll = () => {
                 <Form.Label>Basic Salary *</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="basicSalary"
-                  value={form.basicSalary || ""}
+                  value={form.basicSalary}
                   onChange={handleInputChange}
                   required
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
@@ -366,10 +414,10 @@ const Payroll = () => {
                 <Form.Label>Allowances</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="allowances"
-                  value={form.allowances || ""}
+                  value={form.allowances}
                   onChange={handleInputChange}
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
@@ -379,10 +427,10 @@ const Payroll = () => {
                 <Form.Label>Overtime</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="overtime"
-                  value={form.overtime || ""}
+                  value={form.overtime}
                   onChange={handleInputChange}
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
@@ -392,10 +440,10 @@ const Payroll = () => {
                 <Form.Label>Bonus</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="bonus"
-                  value={form.bonus || ""}
+                  value={form.bonus}
                   onChange={handleInputChange}
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
@@ -405,10 +453,10 @@ const Payroll = () => {
                 <Form.Label>Deductions</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
                   name="deductions"
-                  value={form.deductions || ""}
+                  value={form.deductions}
                   onChange={handleInputChange}
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
@@ -418,9 +466,9 @@ const Payroll = () => {
                 <Form.Label>Net Salary (Auto)</Form.Label>
                 <Form.Control
                   type="text"
-                  value={`₹${Number(form.netSalary).toLocaleString()}`}
+                  value={form.netSalary ? `₹${parseFloat(form.netSalary).toLocaleString()}` : "—"}
                   readOnly
-                  style={{ backgroundColor: '#e6f3f5', border: '1px solid #ced4da' }}
+                  style={{ backgroundColor: "#e6f3f5" }}
                 />
               </Form.Group>
             </Col>
@@ -432,7 +480,6 @@ const Payroll = () => {
                   name="paymentStatus"
                   value={form.paymentStatus}
                   onChange={handleInputChange}
-                  style={{ border: '1px solid #ced4da' }}
                 >
                   <option value="Pending">Pending</option>
                   <option value="Paid">Paid</option>
@@ -448,34 +495,33 @@ const Payroll = () => {
                   name="paymentDate"
                   value={form.paymentDate}
                   onChange={handleInputChange}
-                  style={{ border: '1px solid #ced4da' }}
                 />
               </Form.Group>
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={() => setShowModal(false)} style={{ border: '1px solid #ced4da' }}>
+        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleSave}>
+          <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
             {modalType === "edit" ? "Update" : "Save"} Payroll
           </Button>
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#fff" }}>
           <Modal.Title>Delete Payroll Record</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
           Are you sure you want to delete payroll for{" "}
           <strong>{getEmployeeName(payrollToDelete?.employeeId)}</strong> for{" "}
           <strong>{getMonthLabel(payrollToDelete?.month)}</strong>?
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)} style={{ border: '1px solid #ced4da' }}>
+        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Cancel
           </Button>
           <Button variant="danger" onClick={handleDelete}>

@@ -1,81 +1,107 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Row, Col, Card, Container, DropdownButton, Dropdown, Badge
+  Row, Col, Card, Container, Spinner, Alert
 } from 'react-bootstrap';
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
+import GetCompanyId from '../../../Api/GetCompanyId';
+import axiosInstance from '../../../Api/axiosInstance';
+import {
+  FaCheckCircle,
+  FaTasks,
+  FaExclamationTriangle,
+  FaUserFriends,
+  FaChartLine,
+  FaClock
+} from 'react-icons/fa';
 
 const DepartmentPerformanceSummary = () => {
-  const [selectedDept, setSelectedDept] = useState('IT Department');
-  const [departments] = useState([
-    'IT Department',
-    'HR Department',
-    'Finance Department',
-    'Operations'
-  ]);
+  const companyId = GetCompanyId();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [statusDistribution, setStatusDistribution] = useState(null);
+  const [monthlyCompletion, setMonthlyCompletion] = useState([]);
 
-  const [analyticsData] = useState({
-    'IT Department': { completed: 42, inProgress: 18, overdue: 7, activeEmployees: 12, totalTasks: 67, efficiency: Math.round((42 / 67) * 100), avgDuration: 4.2,
-      taskHistory: [{ month: 'Jun', completed: 8 }, { month: 'Jul', completed: 10 }, { month: 'Aug', completed: 9 }, { month: 'Sep', completed: 7 }, { month: 'Oct', completed: 8 }]
-    },
-    'HR Department': { completed: 28, inProgress: 12, overdue: 3, activeEmployees: 8, totalTasks: 43, efficiency: Math.round((28 / 43) * 100), avgDuration: 3.1,
-      taskHistory: [{ month: 'Jun', completed: 5 }, { month: 'Jul', completed: 6 }, { month: 'Aug', completed: 5 }, { month: 'Sep', completed: 6 }, { month: 'Oct', completed: 6 }]
-    },
-    'Finance Department': { completed: 35, inProgress: 9, overdue: 5, activeEmployees: 6, totalTasks: 49, efficiency: Math.round((35 / 49) * 100), avgDuration: 5.7,
-      taskHistory: [{ month: 'Jun', completed: 7 }, { month: 'Jul', completed: 8 }, { month: 'Aug', completed: 6 }, { month: 'Sep', completed: 7 }, { month: 'Oct', completed: 7 }]
-    },
-    'Operations': { completed: 50, inProgress: 22, overdue: 10, activeEmployees: 15, totalTasks: 82, efficiency: Math.round((50 / 82) * 100), avgDuration: 6.3,
-      taskHistory: [{ month: 'Jun', completed: 10 }, { month: 'Jul', completed: 12 }, { month: 'Aug', completed: 9 }, { month: 'Sep', completed: 10 }, { month: 'Oct', completed: 9 }]
-    }
-  });
+  // Fetch department summary by company ID
+  useEffect(() => {
+    const fetchSummary = async () => {
+      if (!companyId) {
+        setError('Company ID not found.');
+        setLoading(false);
+        return;
+      }
 
-  const data = analyticsData[selectedDept];
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get(`dashboard/departmentsSummary/${companyId}`);
+        if (res?.data) {
+          const data = res.data;
+          setSummary(data.summary);
+          setStatusDistribution(data.statusDistribution);
+          setMonthlyCompletion(data.monthlyCompletion || []);
+        } else {
+          setError('Unexpected response format.');
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError('Failed to load department performance data.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchSummary();
+  }, [companyId]);
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', backgroundColor: '#f0f7f8' }}>
+        <Spinner animation="border" style={{ color: '#023347' }} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh', backgroundColor: '#f0f7f8' }}>
+        <Alert variant="danger">{error}</Alert>
+      </div>
+    );
+  }
+
+  // Prepare cards data
   const cards = [
-    { icon: '✅', title: 'Completed Tasks', value: data?.completed || 0, color: '#2a8e9c' },
-    { icon: '⚙️', title: 'Tasks in Progress', value: data?.inProgress || 0, color: '#17a2b8' },
-    { icon: '⏰', title: 'Overdue Tasks', value: data?.overdue || 0, color: '#dc3545' },
-    { icon: '👥', title: 'Active Employees', value: data?.activeEmployees || 0, color: '#6f42c1' },
-    { icon: '📊', title: 'Efficiency', value: `${data?.efficiency || 0}%`, color: data?.efficiency >= 80 ? '#28a745' : data?.efficiency >= 60 ? '#ffc107' : '#dc3545' },
-    { icon: '🕒', title: 'Avg. Task Duration', value: `${data?.avgDuration || 0} days`, color: '#fd7e14' }
+    { icon: <FaCheckCircle size={24} />, title: 'Completed Tasks', value: summary?.completedTasks || 0, color: '#28a745' },
+    { icon: <FaTasks size={24} />, title: 'In Progress Tasks', value: summary?.inProgressTasks || 0, color: '#17a2b8' },
+    { icon: <FaExclamationTriangle size={24} />, title: 'Overdue Tasks', value: summary?.overdueTasks || 0, color: '#dc3545' },
+    { icon: <FaUserFriends size={24} />, title: 'Active Employees', value: summary?.activeEmployees || 0, color: '#6f42c1' },
+    { icon: <FaChartLine size={24} />, title: 'Efficiency', value: `${summary?.efficiency || 0}%`, color: summary?.efficiency >= 80 ? '#28a745' : summary?.efficiency >= 60 ? '#ffc107' : '#dc3545' },
+    { icon: <FaClock size={24} />, title: 'Avg. Task Duration', value: `${summary?.avgTaskDuration || 0} days`, color: '#fd7e14' }
   ];
 
-  const pieData = [
-    { name: 'Completed', value: data?.completed || 0 },
-    { name: 'In Progress', value: data?.inProgress || 0 },
-    { name: 'Overdue', value: data?.overdue || 0 }
-  ];
+  // Prepare pie chart data from statusDistribution
+  const pieData = statusDistribution
+    ? [
+      { name: 'Completed', value: statusDistribution.Completed || 0 },
+      { name: 'In Progress', value: statusDistribution.InProgress || 0 },
+      { name: 'Overdue', value: statusDistribution.Overdue || 0 },
+    ]
+    : [];
 
-  const COLORS = ['#2a8e9c', '#89c3cf', '#dc3545'];
+  const COLORS = ['#28a745', '#17a2b8', '#dc3545'];
 
   return (
     <Container fluid className="p-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
       {/* Header */}
       <div className="mb-4 text-center text-md-start">
         <h2 style={{ color: '#023347', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-          Department-wise Performance Summary
+          Department Performance Summary
         </h2>
-        <p style={{ color: '#2a8e9c' }} className='text-center'>Track productivity and efficiency across departments.</p>
-      </div>
-
-      {/* Department Selector */}
-      <div className="mb-4 d-flex justify-content-end">
-        <DropdownButton
-          title={`Department: ${selectedDept}`}
-          onSelect={(dept) => setSelectedDept(dept)}
-          size="sm"
-          style={{
-            borderRadius: '10px',
-            border: '2px solid #2a8e9c',
-            backgroundColor: '#023347',
-            color: '#023347'
-          }}
-        >
-          {departments.map((dept) => (
-            <Dropdown.Item key={dept} eventKey={dept}>{dept}</Dropdown.Item>
-          ))}
-        </DropdownButton>
+        <p style={{ color: '#2a8e9c' }} className="text-center">
+          Real-time productivity and efficiency metrics for your company.
+        </p>
       </div>
 
       {/* Cards */}
@@ -89,10 +115,7 @@ const DepartmentPerformanceSummary = () => {
                 borderRadius: '16px',
                 backgroundColor: '#e6f3f5',
                 transition: 'transform 0.3s ease',
-                cursor: 'pointer'
               }}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-6px)'}
-              onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <Card.Body className="text-center py-4">
                 <div className="fs-3 mb-2">{card.icon}</div>
@@ -147,7 +170,7 @@ const DepartmentPerformanceSummary = () => {
             <Card.Body>
               <div style={{ height: '250px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data?.taskHistory || []}>
+                  <BarChart data={monthlyCompletion}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis dataKey="month" stroke="#023347" />
                     <YAxis stroke="#023347" />

@@ -132,7 +132,7 @@ const Navbar = () => {
           {/* BUTTONS */}
           <div className="d-flex align-items-center">
             <Button variant="brand-outline" className="btn-brand-outline mx-1" onClick={handleLogin}>Login</Button>
-            <Button variant="brand" className="btn-brand mx-1" onClick={handleSignup}>Sign Up</Button>
+            {/* <Button variant="brand" className="btn-brand mx-1" onClick={handleSignup}>Sign Up</Button> */}
           </div>
         </div>
 
@@ -161,7 +161,7 @@ const Navbar = () => {
 
             <div className="d-flex justify-content-center gap-2">
               <Button variant="brand-outline" className="btn-brand-outline" onClick={handleLogin}>Login</Button>
-              <Button variant="brand" className="btn-brand" onClick={handleSignup}>Sign Up</Button>
+              {/* <Button variant="brand" className="btn-brand" onClick={handleSignup}>Sign Up</Button> */}
             </div>
           </div>
         )}
