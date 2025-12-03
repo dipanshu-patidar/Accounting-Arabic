@@ -12,15 +12,7 @@ import {
 } from "react-bootstrap";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import {
-  FaFilePdf,
-  FaEdit,
-  FaTrash,
-  FaPlus,
-  FaFilter,
-  FaTimes,
-  FaKey,
-} from "react-icons/fa";
+import { FaFilePdf, FaEdit, FaTrash, FaPlus, FaFilter, FaTimes, FaKey } from "react-icons/fa";
 import axiosInstance from "../../../Api/axiosInstance";
 import GetCompanyId from "../../../Api/GetCompanyId";
 
@@ -39,8 +31,7 @@ const emptyUser = {
 };
 
 const statusBadge = (status) => {
-  const normalized =
-    status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   return (
     <Badge
       style={{
@@ -104,9 +95,7 @@ const Users = () => {
       if (!companyId) return;
 
       try {
-        const response = await axiosInstance.get(
-          `/user-roles?company_id=${companyId}`
-        );
+        const response = await axiosInstance.get(`/user-roles?company_id=${companyId}`);
         if (response.data.success && Array.isArray(response.data.data)) {
           setRoles(response.data.data);
         }
@@ -128,15 +117,13 @@ const Users = () => {
       }
 
       try {
-        const response = await axiosInstance.get(
-          `/auth/User/company/${companyId}`
-        );
+        const response = await axiosInstance.get(`/auth/User/company/${companyId}`);
 
         if (response.data.success && Array.isArray(response.data.data)) {
-          const companyUsers = response.data.data.map((user) => {
-            const roleId = user.user_role?.toString() || "3";
-            const roleObj = roles.find((r) => r.id.toString() === roleId);
-            const roleName = roleObj ? roleObj.role_name : "Sales Executive";
+          const companyUsers = response.data.data.map(user => {
+            const roleId = user.user_role?.toString() || "17"; // Default to staff role ID
+            const roleObj = roles.find(r => r.role_id.toString() === roleId);
+            const roleName = roleObj ? roleObj.role_name : "staff";
 
             return {
               id: user.id,
@@ -168,10 +155,10 @@ const Users = () => {
     }
   }, [companyId, roles]);
 
-  const uniqueRoles = ["All", ...new Set(roles.map((role) => role.role_name))];
+  const uniqueRoles = ["All", ...new Set(roles.map(role => role.role_name))];
 
   const filtered = users.filter((u) => {
-    const toLower = (str) => (str == null ? "" : String(str).toLowerCase());
+    const toLower = (str) => (str == null ? '' : String(str).toLowerCase());
 
     const searchLower = toLower(search);
     const filterNameLower = toLower(filterName);
@@ -192,22 +179,12 @@ const Users = () => {
       uRole.includes(searchLower);
 
     const matchesName = filterName === "" || uName.includes(filterNameLower);
-    const matchesEmail =
-      filterEmail === "" || uEmail.includes(filterEmailLower);
-    const matchesPhone =
-      filterPhone === "" || uPhone.includes(filterPhoneLower);
-    const matchesStatus =
-      filterStatus === "All" || uStatus === filterStatusLower;
+    const matchesEmail = filterEmail === "" || uEmail.includes(filterEmailLower);
+    const matchesPhone = filterPhone === "" || uPhone.includes(filterPhoneLower);
+    const matchesStatus = filterStatus === "All" || uStatus === filterStatusLower;
     const matchesRole = filterRole === "All" || u.role === filterRole;
 
-    return (
-      matchesSearch &&
-      matchesName &&
-      matchesEmail &&
-      matchesPhone &&
-      matchesStatus &&
-      matchesRole
-    );
+    return matchesSearch && matchesName && matchesEmail && matchesPhone && matchesStatus && matchesRole;
   });
 
   const handleSave = async () => {
@@ -217,68 +194,58 @@ const Users = () => {
     }
 
     const formData = new FormData();
-    formData.append("company_id", companyId);
-    formData.append("name", form.name);
-    formData.append("phone", form.phone);
-    formData.append("email", form.email);
-    formData.append("user_role", form.user_role);
-    formData.append("status", form.status);
+    formData.append('company_id', companyId);
+    formData.append('name', form.name);
+    formData.append('phone', form.phone);
+    formData.append('email', form.email);
+    formData.append('user_role', form.user_role);
+    formData.append('status', form.status);
 
     if (modalType === "add") {
-      formData.append("password", form.password);
+      formData.append('password', form.password);
     }
 
-    if (previewImg && previewImg.startsWith("blob:")) {
+    if (previewImg && previewImg.startsWith('blob:')) {
       const response = await fetch(previewImg);
       const blob = await response.blob();
-      formData.append("profile", blob, "profile.jpg");
+      formData.append('profile', blob, 'profile.jpg');
     }
 
     try {
       let response;
       if (modalType === "add") {
-        response = await axiosInstance.post("/auth/User", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        response = await axiosInstance.post('/auth/User', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         const newUser = {
           ...form,
           id: response.data.id || Date.now(),
           img: previewImg,
           company_id: companyId,
-          role:
-            roles.find((r) => r.id.toString() === form.user_role)?.role_name ||
-            "Sales Executive",
+          role: roles.find(r => r.role_id.toString() === form.user_role)?.role_name || "staff"
         };
-        setUsers((prev) => [...prev, newUser]);
-        alert("User created successfully!");
+        setUsers(prev => [...prev, newUser]);
+        alert('User created successfully!');
       } else if (modalType === "edit") {
         response = await axiosInstance.put(`/auth/User/${form.id}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
-        const updatedRoleName =
-          roles.find((r) => r.id.toString() === form.user_role)?.role_name ||
-          "Sales Executive";
-        setUsers((prev) =>
-          prev.map((u) =>
+        const updatedRoleName = roles.find(r => r.role_id.toString() === form.user_role)?.role_name || "staff";
+        setUsers(prev =>
+          prev.map(u =>
             u.id === form.id
-              ? {
-                  ...form,
-                  img: previewImg,
-                  company_id: companyId,
-                  role: updatedRoleName,
-                }
+              ? { ...form, img: previewImg, company_id: companyId, role: updatedRoleName }
               : u
           )
         );
-        alert("User updated successfully!");
+        alert('User updated successfully!');
       }
       setShowModal(false);
       setForm(emptyUser);
       setPreviewImg("");
     } catch (err) {
-      console.error("Save Error:", err);
-      const msg =
-        err.response?.data?.message || "Operation failed. Please try again.";
+      console.error('Save Error:', err);
+      const msg = err.response?.data?.message || 'Operation failed. Please try again.';
       alert(msg);
     }
   };
@@ -286,6 +253,7 @@ const Users = () => {
   const handleEdit = (user) => {
     setForm({
       ...user,
+      user_role: user.user_role?.toString() || "",
       confirmPassword: "",
       company_id: user.company_id || companyId,
     });
@@ -309,15 +277,13 @@ const Users = () => {
   const handleConfirmDelete = async () => {
     try {
       await axiosInstance.delete(`/auth/User/${userToDelete.id}`, {
-        params: { company_id: companyId },
+        params: { company_id: companyId }
       });
-      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
-      alert("User deleted successfully!");
+      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+      alert('User deleted successfully!');
     } catch (err) {
-      console.error("Delete Error:", err);
-      const msg =
-        err.response?.data?.message ||
-        "Failed to delete user. Please try again.";
+      console.error('Delete Error:', err);
+      const msg = err.response?.data?.message || 'Failed to delete user. Please try again.';
       alert(msg);
     }
     setShowDeleteModal(false);
@@ -330,7 +296,13 @@ const Users = () => {
     doc.autoTable({
       startY: 22,
       head: [["User Name", "Phone", "Email", "Role", "Status"]],
-      body: filtered.map((u) => [u.name, u.phone, u.email, u.role, u.status]),
+      body: filtered.map((u) => [
+        u.name,
+        u.phone,
+        u.email,
+        u.role,
+        u.status,
+      ]),
       styles: { fontSize: 10 },
       headStyles: { fillColor: [245, 246, 250], textColor: 60 },
     });
@@ -360,7 +332,6 @@ const Users = () => {
     setShowResetModal(true);
   };
 
-  // ✅ UPDATED PASSWORD RESET HANDLER
   const handleResetPassword = async () => {
     if (newPassword !== confirmNewPassword) {
       alert("New Password and Confirm Password do not match!");
@@ -378,7 +349,6 @@ const Users = () => {
     }
 
     try {
-      // ✅ Use the correct password reset endpoint
       const response = await axiosInstance.patch(
         `/password/requests/${userToReset.id}/approve`,
         {
@@ -394,9 +364,7 @@ const Users = () => {
       }
     } catch (err) {
       console.error("Reset Password Error:", err);
-      const msg =
-        err.response?.data?.message ||
-        "Failed to reset password. Please try again.";
+      const msg = err.response?.data?.message || "Failed to reset password. Please try again.";
       alert(msg);
     }
   };
@@ -415,11 +383,7 @@ const Users = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </Col>
-          <Col
-            xs={12}
-            md={6}
-            className="d-flex justify-content-md-end justify-content-start gap-2"
-          >
+          <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
             <Button
               className="d-flex align-items-center"
               style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
@@ -432,15 +396,11 @@ const Users = () => {
         </Row>
 
         {showFilters && (
-          <Card className="mb-4 border-secondary">
+          <Card className="mb-4 border">
             <Card.Body>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="mb-0">Filter Users</h5>
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={clearFilters}
-                >
+                <Button variant="outline-secondary" size="sm" onClick={clearFilters}>
                   <FaTimes className="me-1" /> Clear All
                 </Button>
               </div>
@@ -500,10 +460,8 @@ const Users = () => {
                       value={filterRole}
                       onChange={(e) => setFilterRole(e.target.value)}
                     >
-                      {uniqueRoles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
+                      {uniqueRoles.map(role => (
+                        <option key={role} value={role}>{role}</option>
                       ))}
                     </Form.Select>
                   </Form.Group>
@@ -516,11 +474,7 @@ const Users = () => {
         <Card className="mb-4">
           <Card.Body style={{ padding: 0 }}>
             <div style={{ overflowX: "auto" }}>
-              <Table
-                responsive
-                className="align-middle mb-0"
-                style={{ fontSize: 16 }}
-              >
+              <Table responsive className="align-middle mb-0" style={{ fontSize: 16 }}>
                 <thead className="">
                   <tr>
                     <th className="py-3">#</th>
@@ -573,26 +527,17 @@ const Users = () => {
                         <td>{statusBadge(user.status)}</td>
                         <td>
                           <div className="d-flex gap-2">
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={() => handleEdit(user)}
-                            >
+                            <Button variant="outline-secondary" size="sm" onClick={() => handleEdit(user)}>
                               <FaEdit />
                             </Button>
                             <Button
-                              variant="outline-secondary"
-                              size="sm"
+                              variant="outline-secondary" size="sm"
                               onClick={() => openResetModal(user)}
                               title="Reset Password"
                             >
                               <FaKey />
                             </Button>
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={() => confirmDelete(user)}
-                            >
+                            <Button variant="outline-secondary" size="sm" onClick={() => confirmDelete(user)}>
                               <FaTrash />
                             </Button>
                           </div>
@@ -614,17 +559,9 @@ const Users = () => {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        size="lg"
-        backdrop="static"
-        keyboard={false}
-      >
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
-          <Modal.Title>
-            {modalType === "add" ? "Add User" : "Edit User"}
-          </Modal.Title>
+          <Modal.Title>{modalType === "add" ? "Add User" : "Edit User"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -656,31 +593,24 @@ const Users = () => {
             <Form.Group className="mb-2">
               <Form.Label>Role</Form.Label>
               <Form.Select
-                value={form.user_role}
+                value={form.user_role || ""}
                 onChange={(e) => {
                   const selectedId = e.target.value;
-                  const selectedRole = roles.find(
-                    (r) => r.id.toString() === selectedId
-                  );
+                  const selectedRole = roles.find(r => r.role_id.toString() === selectedId.toString());
                   setForm({
                     ...form,
                     user_role: selectedId,
-                    role: selectedRole ? selectedRole.role_name : "",
+                    role: selectedRole ? selectedRole.role_name : ""
                   });
                 }}
                 required
               >
-                <option>Select Role</option>
-                {roles &&
-                  roles.length > 0 &&
-                  roles.map((role, index) => (
-                    <option
-                      key={role?.id || index}
-                      value={role?.id?.toString() || ""}
-                    >
-                      {role?.name || "Unknown Role"}
-                    </option>
-                  ))}
+                <option value="">Select Role</option>
+                {roles.map(role => (
+                  <option key={role.role_id} value={role.role_id.toString()}>
+                    {role.role_name}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-2">
@@ -701,9 +631,7 @@ const Users = () => {
                   <Form.Control
                     type="password"
                     value={form.password}
-                    onChange={(e) =>
-                      setForm({ ...form, password: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="Enter password"
                     required
                   />
@@ -713,9 +641,7 @@ const Users = () => {
                   <Form.Control
                     type="password"
                     value={form.confirmPassword}
-                    onChange={(e) =>
-                      setForm({ ...form, confirmPassword: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                     placeholder="Confirm password"
                     required
                   />
@@ -727,28 +653,18 @@ const Users = () => {
               <Form.Label>Image Preview</Form.Label>
               {previewImg ? (
                 <div className="mb-2">
-                  <img
-                    src={previewImg}
-                    alt="preview"
-                    style={{ height: 60, borderRadius: 6 }}
-                  />
+                  <img src={previewImg} alt="preview" style={{ height: 60, borderRadius: 6 }} />
                 </div>
               ) : (
                 <div className="text-muted small mb-2">No Image</div>
               )}
-              <Form.Control
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
+              <Form.Control type="file" accept="image/*" onChange={handleImageUpload} />
               <Form.Text muted>Upload to replace image</Form.Text>
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
           <Button
             variant="primary"
             onClick={handleSave}
@@ -767,11 +683,7 @@ const Users = () => {
       </Modal>
 
       {/* Delete Modal */}
-      <Modal
-        show={showDeleteModal}
-        onHide={() => setShowDeleteModal(false)}
-        centered
-      >
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
@@ -789,18 +701,12 @@ const Users = () => {
       </Modal>
 
       {/* Reset Password Modal */}
-      <Modal
-        show={showResetModal}
-        onHide={() => setShowResetModal(false)}
-        centered
-      >
+      <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Reset Password</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>
-            Reset password for <strong>{userToReset?.name}</strong>
-          </p>
+          <p>Reset password for <strong>{userToReset?.name}</strong></p>
           <Form.Group className="mb-3">
             <Form.Label>New Password</Form.Label>
             <Form.Control
@@ -836,8 +742,7 @@ const Users = () => {
       </Modal>
 
       <p className="text-muted text-center mt-2">
-        This page allows you to manage user records with add, edit, delete,
-        search, filters, and PDF export functionality.
+        This page allows you to manage user records with add, edit, delete, search, filters, and PDF export functionality.
       </p>
     </div>
   );

@@ -8,12 +8,14 @@ import {
   Dropdown,
   Button,
   Spinner,
+  Alert,
 } from "react-bootstrap";
 import {
   FaUser,
   FaUserCheck,
   FaFileInvoice,
   FaFileInvoiceDollar,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { BsBagDashFill as BagIcon } from "react-icons/bs";
 import {
@@ -28,14 +30,18 @@ import {
 import GetCompanyId from "../../Api/GetCompanyId";
 import axiosInstance from "../../Api/axiosInstance";
 import { Link } from "react-router-dom";
+
 const CompanyDashboard = () => {
   const companyId = GetCompanyId();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [hasPermission, setHasPermission] = useState(false);
   const [timePeriod, setTimePeriod] = useState("Today");
   const [selectedPeriod, setSelectedPeriod] = useState("Weekly");
   const [selectedYear, setSelectedYear] = useState("2025");
   const [selectedSalesYear, setSelectedSalesYear] = useState("2025");
+  
   // State for API data
   const [cards, setCards] = useState({
     totalPurchaseDue: "0",
@@ -63,6 +69,36 @@ const CompanyDashboard = () => {
   });
 
   useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+    
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setHasPermission(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+        
+        // Check if user has view permission for Dashboard
+        const dashboardPermission = permissions.find(p => p.module_name === "Dashboard");
+        setHasPermission(dashboardPermission ? dashboardPermission.can_view : false);
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setHasPermission(false);
+      }
+    } else {
+      setHasPermission(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasPermission) {
+      setLoading(false);
+      return;
+    }
+    
     if (!companyId) {
       setError("Company ID is missing");
       setLoading(false);
@@ -122,7 +158,7 @@ const CompanyDashboard = () => {
     };
 
     fetchDashboard();
-  }, [companyId]);
+  }, [companyId, hasPermission]);
 
   const formatNumber = (num) =>
     Number(num).toLocaleString("en-IN", {
@@ -150,64 +186,113 @@ const CompanyDashboard = () => {
     expense: item.expense,
   }));
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "80vh" }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
+
+  // Show access denied if user doesn't have permission
+  if (!hasPermission) {
+    return (
+      <div className="container-fluid mt-3 mt-sm-3">
+        <Alert variant="success" className="d-flex align-items-center">
+          <FaExclamationTriangle className="me-3" size={24} />
+          <div>
+            <h5 className="alert-heading">Access Denied</h5>
+            <p>You don't have permission to view the Dashboard. Please contact your administrator for access.</p>
+            <hr />
+           
+          </div>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Show error message if there's an error
+  if (error) {
+    return (
+      <div className="container-fluid mt-3 mt-sm-3">
+        <Alert variant="danger" className="d-flex align-items-center">
+          <FaExclamationTriangle className="me-3" size={24} />
+          <div>
+            <h5 className="alert-heading">Error</h5>
+            <p>{error}</p>
+            <hr />
+            <p className="mb-0">
+              <Button variant="primary" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </p>
+          </div>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="container-fluid mt-3 mt-sm-3">
       {/* Company Name at Top */}
       <div className="mb-4">
         <h3 className="semi-bold text-left" style={{ color: "#53b2a5" }}>
-          Dashboard
+          ZirakBook Dashboard
         </h3>
       </div>
 
       {/* Summary Cards */}
       <Row className="g-4">
         <Col md={3}>
-          <Card className="shadow-sm border-0 rounded-3" style={{ backgroundColor: "#fff3cd" }}>
+          <Card className="shadow-sm rounded-3 border" style={{ backgroundColor: "#fff3cd" }}>
             <Card.Body className="d-flex justify-content-between align-items-center">
               <div>
-                <h5 className="fw-semibold mb-1 text-dark">{formatNumber(cards.totalPurchaseDue)}</h5>
-                <div className="text-muted small">Total Purchase Due</div>
+                <h5 className="fw-semibold mb-1">{formatNumber(cards.totalPurchaseDue)}</h5>
+                <div className=" small">Total Purchase Due</div>
               </div>
-              <div className="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
+              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
                 <BagIcon size={30} className="text-warning" />
               </div>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 rounded-3" style={{ backgroundColor: "#d4edda" }}>
+          <Card className="shadow-sm  rounded-3 border" style={{ backgroundColor: "#d4edda" }}>
             <Card.Body className="d-flex justify-content-between align-items-center">
               <div>
-                <h5 className="fw-semibold mb-1 text-dark">{formatNumber(cards.totalSalesDue)}</h5>
-                <div className="text-muted small">Total Sales Due</div>
+                <h5 className="fw-semibold mb-1 ">{formatNumber(cards.totalSalesDue)}</h5>
+                <div className=" small">Total Sales Due</div>
               </div>
-              <div className="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
+              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
                 <FaFileInvoiceDollar size={30} className="text-success" />
               </div>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 rounded-3" style={{ backgroundColor: "#cce5ff" }}>
+          <Card className="shadow-sm rounded-3 border" style={{ backgroundColor: "#cce5ff" }}>
             <Card.Body className="d-flex justify-content-between align-items-center">
               <div>
-                <h5 className="fw-semibold mb-1 text-dark">{formatNumber(cards.totalSaleAmount)}</h5>
-                <div className="text-muted small">Total Sale Amount</div>
+                <h5 className="fw-semibold mb-1">{formatNumber(cards.totalSaleAmount)}</h5>
+                <div className=" small">Total Sale Amount</div>
               </div>
-              <div className="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
+              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
                 <FaFileInvoice size={30} className="text-info" />
               </div>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 rounded-3" style={{ backgroundColor: "#f8d7da" }}>
+          <Card className="shadow-sm rounded-3 border" style={{ backgroundColor: "#f8d7da" }}>
             <Card.Body className="d-flex justify-content-between align-items-center">
               <div>
-                <h5 className="fw-semibold mb-1 text-dark">{formatNumber(cards.totalExpense)}</h5>
-                <div className="text-muted small">Total Expense</div>
+                <h5 className="fw-semibold mb-1 ">{formatNumber(cards.totalExpense)}</h5>
+                <div className=" small">Total Expense</div>
               </div>
-              <div className="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
+              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
                 <FaFileInvoiceDollar size={30} className="text-danger" />
               </div>
             </Card.Body>
@@ -218,7 +303,7 @@ const CompanyDashboard = () => {
       {/* Stats Cards */}
       <Row className="my-4 g-4">
         <Col md={3}>
-          <Card className="shadow-sm border-0 p-3 rounded-3 text-black" style={{ backgroundColor: "#FFE8CC" }}>
+          <Card className="shadow-sm  p-3 rounded-3 border" style={{ backgroundColor: "#FFE8CC" }}>
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h4 className="fw-bold mb-0">{cards.customers}</h4>
@@ -229,7 +314,7 @@ const CompanyDashboard = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 p-3 rounded-3 text-black" style={{ backgroundColor: "#D0EBFF" }}>
+          <Card className="shadow-sm p-3 rounded-3 border" style={{ backgroundColor: "#D0EBFF" }}>
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h4 className="fw-bold mb-0">{cards.vendors}</h4>
@@ -240,7 +325,7 @@ const CompanyDashboard = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 p-3 rounded-3 text-black" style={{ backgroundColor: "#E3D7FF" }}>
+          <Card className="shadow-sm  p-3 rounded-3 border" style={{ backgroundColor: "#E3D7FF" }}>
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h4 className="fw-bold mb-0">{cards.purchaseInvoiceCount}</h4>
@@ -251,7 +336,7 @@ const CompanyDashboard = () => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm border-0 p-3 rounded-3 text-black" style={{ backgroundColor: "#D8F5E8" }}>
+          <Card className="shadow-sm  p-3 rounded-3 border" style={{ backgroundColor: "#D8F5E8" }}>
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h4 className="fw-bold mb-0">{cards.salesInvoiceCount}</h4>
@@ -298,8 +383,8 @@ const CompanyDashboard = () => {
       <Row className="g-4 mt-3">
         {/* Top Selling Products */}
         <Col md={4}>
-          <Card className="border-0 shadow-sm rounded-4 h-100">
-            <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border shadow-sm rounded-4 h-100">
+            <Card.Header className=" border d-flex justify-content-between align-items-center p-3">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-pink-100 text-pink-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -333,7 +418,7 @@ const CompanyDashboard = () => {
                       />
                       <div className="flex-grow-1">
                         <h6 className="mb-0">{product.name}</h6>
-                        <small className="text-muted">
+                        <small className="">
                           {formatNumber(product.price)} • {product.total_sales}+ Sales
                         </small>
                       </div>
@@ -342,7 +427,7 @@ const CompanyDashboard = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-muted">No top products</div>
+                <div className="p-3 text-center ">No top products</div>
               )}
             </Card.Body>
           </Card>
@@ -350,8 +435,8 @@ const CompanyDashboard = () => {
 
         {/* Low Stock Products */}
         <Col md={4}>
-          <Card className="border-0 shadow-sm rounded-3 h-100">
-            <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border shadow-sm rounded-3 h-100">
+            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-orange-100 text-orange-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -379,17 +464,17 @@ const CompanyDashboard = () => {
                       />
                       <div className="flex-grow-1">
                         <h6 className="mb-0">{product.name}</h6>
-                        <small className="text-muted">ID: #{product.id}</small>
+                        <small className="">ID: #{product.id}</small>
                       </div>
                       <div className="text-end">
-                        <div className="text-muted small">Instock</div>
+                        <div className=" small">Instock</div>
                         <div className="fw-bold text-danger">{product.stock}</div>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-muted">No low stock items</div>
+                <div className="p-3 text-center">No low stock items</div>
               )}
             </Card.Body>
           </Card>
@@ -397,8 +482,8 @@ const CompanyDashboard = () => {
 
         {/* Recent Sales */}
         <Col md={4}>
-          <Card className="border-0 shadow-sm rounded-3 h-100">
-            <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border shadow-sm rounded-3 h-100">
+            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-pink-100 text-pink-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -432,12 +517,12 @@ const CompanyDashboard = () => {
                       />
                       <div className="flex-grow-1">
                         <h6 className="mb-0">{sale.product_name}</h6>
-                        <small className="text-muted">
+                        <small className="">
                           {sale.category} • {formatNumber(sale.price)}
                         </small>
                       </div>
                       <div className="text-end">
-                        <div className="text-muted small">
+                        <div className=" small">
                           {new Date(sale.date).toLocaleDateString()}
                         </div>
                         <span className={`badge ${getBadgeClass(sale.status)} text-white`}>
@@ -448,7 +533,7 @@ const CompanyDashboard = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-muted">No recent sales</div>
+                <div className="p-3 text-center ">No recent sales</div>
               )}
             </Card.Body>
           </Card>
@@ -459,8 +544,8 @@ const CompanyDashboard = () => {
       <Row className="g-4 mt-4">
         {/* Sales Statics */}
         <Col md={6}>
-          <Card className="border-0 shadow-sm rounded-3 h-100">
-            <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border shadow-sm rounded-3 h-100">
+            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-red-100 text-red-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -481,14 +566,14 @@ const CompanyDashboard = () => {
               <div className="d-flex gap-2 p-3 rounded-2 mb-3">
                 <div className="flex-grow-1 text-center">
                   <div className="fw-bold">{formatNumber(salesStatics.totalRevenue)}</div>
-                  <small className="text-muted">Revenue</small>
+                  <small className="">Revenue</small>
                   {salesStatics.revenueGrowth !== 0 && (
                     <span className="badge bg-success ms-1">↑ {salesStatics.revenueGrowth}%</span>
                   )}
                 </div>
                 <div className="flex-grow-1 text-center">
                   <div className="fw-bold">{formatNumber(salesStatics.totalExpense1)}</div>
-                  <small className="text-muted">Expense</small>
+                  <small className="">Expense</small>
                   {salesStatics.expenseGrowth !== 0 && (
                     <span className="badge bg-danger ms-1">↓ {salesStatics.expenseGrowth}%</span>
                   )}
@@ -509,8 +594,8 @@ const CompanyDashboard = () => {
 
         {/* Top Customers */}
         <Col md={6}>
-          <Card className="border-0 shadow-sm rounded-3 h-100">
-            <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border shadow-sm rounded-3 h-100">
+            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-pink-100 text-pink-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -532,13 +617,13 @@ const CompanyDashboard = () => {
                         <img
                           src={customer.image?.trim()}
                           alt={customer.name}
-                          style={{ borderRadius: "50%" , height: "40px"}}
+                          style={{ borderRadius: "50%", height: "40px" }}
                           width="40"
                           onError={(e) => (e.currentTarget.src = "https://via.placeholder.com/40")}
                         />
                         <div>
                           <h6 className="mb-0">{customer.name}</h6>
-                          <small className="text-muted">
+                          <small className="">
                             {customer.country} • {customer.orders} Orders
                           </small>
                         </div>
@@ -550,7 +635,7 @@ const CompanyDashboard = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-muted">No top customers</div>
+                <div className="p-3 text-center ">No top customers</div>
               )}
             </Card.Body>
           </Card>

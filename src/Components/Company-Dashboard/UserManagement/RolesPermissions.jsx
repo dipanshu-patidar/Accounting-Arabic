@@ -8,6 +8,8 @@ import {
   InputGroup,
   Toast,
   ToastContainer,
+  Row,
+  Col,
 } from "react-bootstrap";
 import {
   FaEdit,
@@ -19,19 +21,147 @@ import GetCompanyId from "../../../Api/GetCompanyId";
 import axios from "axios";
 import BaseUrl from "../../../Api/BaseUrl";
 
-// All available general permissions
-const allPermissions = ["View", "Create", "Edit", "Full Access"];
+// Updated tallyModules with categories
 const tallyModules = [
-  { name: "Account", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "Inventory", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "POS", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "Sales", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "Purchase", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "GST", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "User Management", permissions: ["Create", "View", "Update", "Delete"] },
-  { name: "Report", permissions: ["View"] },
-  { name: "Setting", permissions: ["View", "Update"] }
+  {
+    category: "Dashboard",
+    modules: [
+      { name: "Dashboard", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Accounts",
+    modules: [
+      { name: "Charts_of_Accounts", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Customers/Debtors", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Vendors/Creditors", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "All_Transaction", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Inventory",
+    modules: [
+      { name: "Warehouse", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Unit_of_measure", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Product_Inventory", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Service", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "StockTransfer", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Inventory_Adjustment", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Sales Order",
+    modules: [
+      { name: "Sales_Order", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Sales_Return", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Purchase Order",
+    modules: [
+      { name: "Purchase_Orders", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Purchase_Return", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "POS",
+    modules: [
+      { name: "POS_Screen", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Voucher",
+    modules: [
+      { name: "Create_Voucher", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Expenses", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Income", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Contra_Voucher", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Reports",
+    modules: [
+      { name: "Sales_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Purchase_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "POS_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Tax_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Inventory_Summary", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Balance_Sheet", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Cash_Flow", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Profit_Loss", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Vat_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "DayBook", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Journal_Entries", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Ledger", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Trial_Balance", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Income_Statement_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Account_Statement_Report", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Users Management",
+    modules: [
+      { name: "Users", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Roles_Permissions", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Settings",
+    modules: [
+      { name: "Company_Info", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Password_Requests", permissions: ["Create", "View", "Update", "Delete"] }
+    ]
+  },
+  {
+    category: "HR & Payroll",
+    modules: [
+      { name: "Employee_Management", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Attendance", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Leave_Requests", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Payroll", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Documents", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "End_of_Service", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Salary_Structure", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Generate_Payroll", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Payslip_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Payroll_Report", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Payroll_Setting", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Task Management",
+    modules: [
+      { name: "Task_Management", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Department_Summary", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Task_Progress", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Compliance & Integration",
+    modules: [
+      { name: "ZATCA_e-Invoicing", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Compliance_Integration", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  },
+  {
+    category: "Audit & Support",
+    modules: [
+      { name: "Audit_Logs", permissions: ["Create", "View", "Update", "Delete"] },
+      { name: "Support_Tickets", permissions: ["Create", "View", "Update", "Delete"] },
+    ]
+  }
 ];
+
+// Helper function to flatten modules for easier processing
+const flattenModules = () => {
+  const flattened = [];
+  tallyModules.forEach(category => {
+    category.modules.forEach(module => {
+      flattened.push(module);
+    });
+  });
+  return flattened;
+};
 
 const RolesPermissions = () => {
   const companyId = GetCompanyId();
@@ -49,82 +179,59 @@ const RolesPermissions = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // Custom Role Types
-  const [customRoleTypes, setCustomRoleTypes] = useState([]);
-  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
-  const [newRoleType, setNewRoleType] = useState("");
-  const [isAddingType, setIsAddingType] = useState(false);
-  const [typeError, setTypeError] = useState("");
-
-  // ✅ TOAST NOTIFICATION STATE
+  // TOAST NOTIFICATION STATE
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("success");
 
-  // Load custom role types from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("customRoleTypes");
-    if (saved) {
-      setCustomRoleTypes(JSON.parse(saved));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (customRoleTypes.length > 0) {
-      localStorage.setItem("customRoleTypes", JSON.stringify(customRoleTypes));
-    }
-  }, [customRoleTypes]);
-
-  // ✅ FETCH ROLES FUNCTION
-  const fetchRoles = async () => {
     if (!companyId) {
       setError("Company ID not found.");
       setLoading(false);
       return;
     }
+    
+    // Initialize form with empty permissions for all modules
+    const initialModulePermissions = {};
+    flattenModules().forEach(module => {
+      initialModulePermissions[module.name] = [];
+    });
+    setForm({ name: "", permissions: [], type: "user", modulePermissions: initialModulePermissions });
+  }, [companyId]);
+
+  // FETCH ROLES FUNCTION - Updated to match API response
+  const fetchRoles = async () => {
     try {
       const response = await axios.get(`${BaseUrl}user-roles?company_id=${companyId}`);
       if (response.data?.success && Array.isArray(response.data.data)) {
         const mappedRoles = response.data.data.map(role => {
-          let generalPerms = [];
-          try {
-            // Backend sends general_permissions as JSON string
-            const parsed = JSON.parse(role.general_permissions || "[]");
-            generalPerms = parsed.map(p => {
-              // Normalize to match UI options
-              if (p.toLowerCase() === "full access" || p.toLowerCase() === "full_access") {
-                return "Full Access";
-              }
-              return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-            });
-          } catch (e) {
-            console.warn("Failed to parse general_permissions for role:", role.id);
-          }
-
           const modulePermissions = {};
-          tallyModules.forEach(module => {
-            const permObj = role.permissions?.find(p => p.module_name === module.name);
-            if (permObj) {
+          
+          // Process permissions from API response
+          if (role.permissions && Array.isArray(role.permissions)) {
+            role.permissions.forEach(perm => {
               const perms = [];
-              if (permObj.full_access) {
-                perms.push("Full Access", ...module.permissions);
-              } else {
-                if (permObj.can_create) perms.push("Create");
-                if (permObj.can_view) perms.push("View");
-                if (permObj.can_update) perms.push("Update");
-                if (permObj.can_delete) perms.push("Delete");
-              }
-              modulePermissions[module.name] = perms;
-            } else {
+              if (perm.can_create) perms.push("Create");
+              if (perm.can_view) perms.push("View");
+              if (perm.can_update) perms.push("Update");
+              if (perm.can_delete) perms.push("Delete");
+              
+              modulePermissions[perm.module_name] = perms;
+            });
+          }
+          
+          // Initialize modules with empty permissions if not present in API response
+          flattenModules().forEach(module => {
+            if (!modulePermissions[module.name]) {
               modulePermissions[module.name] = [];
             }
           });
 
           return {
-            id: role.id,
+            id: role.role_id,
             name: role.role_name,
             users: 0,
-            permissions: generalPerms,
+            permissions: [], // No general permissions in API response
             lastModified: new Date(role.created_at).toISOString().split('T')[0],
             type: "user",
             status: role.status || "Active",
@@ -148,7 +255,7 @@ const RolesPermissions = () => {
     fetchRoles();
   }, [companyId]);
 
-  // ✅ PATCH API FOR TOGGLING ROLE STATUS — SEND STRING "Active"/"Inactive"
+  // PATCH API FOR TOGGLING ROLE STATUS
   const toggleRoleStatus = async (roleId) => {
     const role = roles.find(r => r.id === roleId);
     if (!role) return;
@@ -156,7 +263,7 @@ const RolesPermissions = () => {
     try {
       const response = await axios.patch(`${BaseUrl}user-roles/${roleId}/status`, {
         company_id: companyId,
-        status: newStatus // ✅ String, not boolean
+        status: newStatus
       });
       if (response.data?.success) {
         setRoles(roles.map(r =>
@@ -193,13 +300,14 @@ const RolesPermissions = () => {
 
   const handleAdd = () => {
     const initialModulePermissions = {};
-    tallyModules.forEach(module => {
+    flattenModules().forEach(module => {
       initialModulePermissions[module.name] = [];
     });
     setForm({ name: "", permissions: [], type: "user", modulePermissions: initialModulePermissions });
     setShowAdd(true);
   };
 
+  // Updated to match API format
   const handleAddSave = async () => {
     if (!form.name.trim()) {
       setToastMessage("Role name is required.");
@@ -211,26 +319,18 @@ const RolesPermissions = () => {
     try {
       // Build module permissions array for API
       const permissionsPayload = Object.entries(form.modulePermissions || {}).map(([moduleName, perms]) => {
-        const set = new Set((perms || []).map(p => p.toLowerCase()));
         return {
           module_name: moduleName,
-          can_create: set.has('create'),
-          can_view: set.has('view'),
-          can_update: set.has('update') || set.has('edit'),
-          can_delete: set.has('delete'),
-          full_access: set.has('full access') || set.has('full_access')
+          can_create: perms.includes('Create'),
+          can_view: perms.includes('View'),
+          can_update: perms.includes('Update'),
+          can_delete: perms.includes('Delete')
         };
       });
-
-      // General permissions as array of lowercase strings
-      const generalPerms = form.permissions.map(p => 
-        p === "Full Access" ? "full access" : p.toLowerCase()
-      );
 
       const response = await axios.post(`${BaseUrl}user-roles`, {
         company_id: companyId,
         role_name: form.name,
-        general_permissions: generalPerms,
         permissions: permissionsPayload
       });
 
@@ -263,6 +363,7 @@ const RolesPermissions = () => {
     setShowEdit(true);
   };
 
+  // Updated to match API format
   const handleEditSave = async () => {
     if (!form.name.trim()) {
       setToastMessage("Role name is required.");
@@ -273,25 +374,18 @@ const RolesPermissions = () => {
 
     try {
       const permissionsPayload = Object.entries(form.modulePermissions || {}).map(([moduleName, perms]) => {
-        const set = new Set((perms || []).map(p => p.toLowerCase()));
         return {
           module_name: moduleName,
-          can_create: set.has('create'),
-          can_view: set.has('view'),
-          can_update: set.has('update') || set.has('edit'),
-          can_delete: set.has('delete'),
-          full_access: set.has('full access') || set.has('full_access')
+          can_create: perms.includes('Create'),
+          can_view: perms.includes('View'),
+          can_update: perms.includes('Update'),
+          can_delete: perms.includes('Delete')
         };
       });
-
-      const generalPerms = form.permissions.map(p => 
-        p === "Full Access" ? "full access" : p.toLowerCase()
-      );
 
       const response = await axios.put(`${BaseUrl}user-roles/${selected.id}`, {
         company_id: companyId,
         role_name: form.name,
-        general_permissions: generalPerms,
         permissions: permissionsPayload
       });
 
@@ -344,31 +438,7 @@ const RolesPermissions = () => {
     setShowView(true);
   };
 
-  const toggleGeneralPerm = (perm) => {
-    if (perm === "Full Access") {
-      setForm(f => ({
-        ...f,
-        permissions: f.permissions.includes("Full Access") ? [] : ["Full Access"]
-      }));
-    } else {
-      setForm(f => {
-        const currentPerms = [...f.permissions];
-        const fullAccessIndex = currentPerms.indexOf("Full Access");
-        if (fullAccessIndex !== -1) {
-          return { ...f, permissions: [perm] };
-        } else {
-          const permIndex = currentPerms.indexOf(perm);
-          if (permIndex !== -1) {
-            currentPerms.splice(permIndex, 1);
-          } else {
-            currentPerms.push(perm);
-          }
-          return { ...f, permissions: currentPerms };
-        }
-      });
-    }
-  };
-
+  // Updated toggleModulePerm to handle individual permissions
   const toggleModulePerm = (moduleName, perm) => {
     setForm(prevForm => {
       const currentModulePerms = prevForm.modulePermissions[moduleName] || [];
@@ -386,57 +456,138 @@ const RolesPermissions = () => {
     });
   };
 
+  // Updated toggleModuleFullAccess to properly handle full access
   const toggleModuleFullAccess = (moduleName) => {
     setForm(prevForm => {
-      const module = tallyModules.find(m => m.name === moduleName);
+      const module = flattenModules().find(m => m.name === moduleName);
       const allModulePerms = module ? module.permissions : [];
-      const hasFullAccess = prevForm.modulePermissions[moduleName]?.includes("Full Access");
+      const hasFullAccess = prevForm.modulePermissions[moduleName]?.length === module.permissions.length;
+      
       return {
         ...prevForm,
         modulePermissions: {
           ...prevForm.modulePermissions,
-          [moduleName]: hasFullAccess ? [] : ["Full Access", ...allModulePerms]
+          [moduleName]: hasFullAccess ? [] : allModulePerms
         }
       };
     });
   };
 
-  const handleAddRoleType = async () => {
-    if (!newRoleType.trim()) {
-      setTypeError("Role type name is required");
-      return;
-    }
-    if (customRoleTypes.includes(newRoleType)) {
-      setTypeError("This role type already exists");
-      return;
-    }
-    if (!companyId) {
-      setTypeError("Company ID not found. Please try again.");
-      return;
-    }
-    setIsAddingType(true);
-    setTypeError("");
-    try {
-      const response = await axios.post(`${BaseUrl}roletype`, {
-        type_name: newRoleType,
-        company_id: companyId
-      });
-      if (response.data?.success) {
-        setCustomRoleTypes([...customRoleTypes, newRoleType]);
-        setNewRoleType("");
-        setShowAddTypeModal(false);
-        setToastMessage("Role type added successfully!");
-        setToastVariant("success");
-        setShowToast(true);
-      } else {
-        setTypeError(response.data?.message || "Failed to add role type");
-      }
-    } catch (error) {
-      console.error("Error adding role type:", error);
-      setTypeError("An error occurred while adding the role type. Please try again.");
-    } finally {
-      setIsAddingType(false);
-    }
+  // Render module permissions with categories
+  const renderModulePermissions = (isEdit = false) => {
+    return (
+      <div className="mb-3">
+        <h6 className="fw-semibold mb-3" style={{ fontSize: 14 }}>
+          Assign Module Permissions to Role
+        </h6>
+        <div style={{ border: "1px solid #dee2e6", borderRadius: "0.375rem" }}>
+          <Table responsive="sm" size="sm" style={{ fontSize: 13, marginBottom: 0 }}>
+            <thead style={{ background: "#f8f9fa" }}>
+              <tr>
+                <th style={{ width: 40, border: "none", padding: "10px 12px" }}></th>
+                <th style={{ border: "none", fontWeight: 600, padding: "10px 12px", minWidth: 150 }}>
+                  MODULE
+                </th>
+                <th style={{ border: "none", fontWeight: 600, padding: "10px 12px", textAlign: "left" }}>
+                  PERMISSIONS
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {tallyModules.map((category, categoryIdx) => (
+                <React.Fragment key={categoryIdx}>
+                  <tr>
+                    <td colSpan="3" style={{ 
+                      background: "#e9ecef", 
+                      fontWeight: 600, 
+                      padding: "8px 12px",
+                      borderTop: categoryIdx === 0 ? "none" : "1px solid #dee2e6"
+                    }}>
+                      {category.category}
+                    </td>
+                  </tr>
+                  {category.modules.map((module, idx) => (
+                    <tr key={idx} style={{ borderBottom: "1px solid #f0f0f0" }}>
+                      <td style={{ padding: "10px 12px", border: "none" }}></td>
+                      <td style={{ padding: "10px 12px", border: "none", fontWeight: 500, minWidth: 150 }}>
+                        {module.name}
+                      </td>
+                      <td style={{ padding: "10px 12px", border: "none" }}>
+                        <div className="mb-2">
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`${isEdit ? 'edit' : 'add'}-${module.name}-full-access`}
+                              checked={form.modulePermissions[module.name]?.length === module.permissions.length}
+                              onChange={() => toggleModuleFullAccess(module.name)}
+                              style={{
+                                fontSize: 13,
+                                marginRight: 5,
+                                cursor: "pointer"
+                              }}
+                            />
+                            <label 
+                              className="form-check-label" 
+                              htmlFor={`${isEdit ? 'edit' : 'add'}-${module.name}-full-access`}
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                color: form.modulePermissions[module.name]?.length === module.permissions.length ? "#53b2a5" : "inherit"
+                              }}
+                            >
+                              Full Access
+                            </label>
+                          </div>
+                        </div>
+                        <div className="d-flex flex-wrap gap-2">
+                          {module.permissions.map((perm) => {
+                            const isSelected = form.modulePermissions[module.name]?.includes(perm);
+                            const isFullAccess = form.modulePermissions[module.name]?.length === module.permissions.length;
+                            return (
+                              <div key={`${isEdit ? 'edit' : 'add'}-${module.name}-${perm}`} className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`${isEdit ? 'edit' : 'add'}-${module.name}-${perm}`}
+                                  checked={isSelected || isFullAccess}
+                                  onChange={() => toggleModulePerm(module.name, perm)}
+                                  disabled={isFullAccess}
+                                  style={{
+                                    fontSize: 13,
+                                    marginRight: 5,
+                                    cursor: isFullAccess ? "not-allowed" : "pointer",
+                                    opacity: isFullAccess ? 0.6 : 1
+                                  }}
+                                />
+                                <label 
+                                  className="form-check-label" 
+                                  htmlFor={`${isEdit ? 'edit' : 'add'}-${module.name}-${perm}`}
+                                  style={{
+                                    fontSize: 13,
+                                    color: isSelected || isFullAccess ? "#53b2a5" : "inherit",
+                                    fontWeight: isSelected || isFullAccess ? 500 : 400,
+                                    cursor: isFullAccess ? "not-allowed" : "pointer",
+                                    opacity: isFullAccess ? 0.6 : 1
+                                  }}
+                                >
+                                  {perm}
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -615,7 +766,7 @@ const RolesPermissions = () => {
           <Modal.Title>Delete Role</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Are you sure you want to delete the role <b>{selected?.name}</b>? This action cannot be undone.
+          Are you sure you want to delete role <b>{selected?.name}</b>? This action cannot be undone.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowDelete(false)}>
@@ -645,28 +796,6 @@ const RolesPermissions = () => {
                     {selected.status}
                   </span>
                 </p>
-              </div>
-              <div className="mb-3">
-                <h6>General Permissions</h6>
-                {selected.permissions && selected.permissions.length > 0 ? (
-                  <div className="d-flex flex-wrap gap-2">
-                    {selected.permissions.map((perm, idx) => (
-                      <span
-                        key={idx}
-                        className="badge"
-                        style={{
-                          backgroundColor: perm === "Full Access" ? "#ffe6c7" : "#f5f0eb",
-                          color: perm === "Full Access" ? "#FFA94D" : "#b47b3a",
-                          fontWeight: perm === "Full Access" ? 600 : 500
-                        }}
-                      >
-                        {perm}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted">No general permissions assigned.</p>
-                )}
               </div>
               <div>
                 <h6>Module Permissions</h6>
@@ -730,102 +859,7 @@ const RolesPermissions = () => {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </Form.Group>
-            <Form.Group className="mb-4">
-              <Form.Label>General Permissions</Form.Label>
-              <div className="d-flex flex-wrap gap-2">
-                {allPermissions.map((perm) => {
-                  const isActive = form.permissions.includes(perm);
-                  return (
-                    <Button
-                      key={perm}
-                      variant={isActive ? "warning" : "outline-warning"}
-                      style={{
-                        background: isActive ? "#53b2a5" : "#fff",
-                        color: isActive ? "#fff" : "#53b2a5",
-                        borderColor: "#53b2a5",
-                        fontWeight: 500,
-                        borderRadius: 8,
-                        fontSize: 15,
-                        padding: "3px 18px",
-                      }}
-                      onClick={() => toggleGeneralPerm(perm)}
-                    >
-                      {perm}
-                    </Button>
-                  );
-                })}
-              </div>
-            </Form.Group>
-            <div className="mb-3">
-              <h6 className="fw-semibold mb-3" style={{ fontSize: 14 }}>
-                Assign Module Permissions to Role
-              </h6>
-              <div style={{ border: "1px solid #dee2e6", borderRadius: "0.375rem" }}>
-                <Table responsive="sm" size="sm" style={{ fontSize: 13, marginBottom: 0 }}>
-                  <thead style={{ background: "#f8f9fa" }}>
-                    <tr>
-                      <th style={{ width: 40, border: "none", padding: "10px 12px" }}></th>
-                      <th style={{ border: "none", fontWeight: 600, padding: "10px 12px", minWidth: 150 }}>
-                        MODULE
-                      </th>
-                      <th style={{ border: "none", fontWeight: 600, padding: "10px 12px", textAlign: "left" }}>
-                        PERMISSIONS
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tallyModules.map((module, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                        <td style={{ padding: "10px 12px", border: "none" }}></td>
-                        <td style={{ padding: "10px 12px", border: "none", fontWeight: 500, minWidth: 150 }}>
-                          {module.name}
-                        </td>
-                        <td style={{ padding: "10px 12px", border: "none" }}>
-                          <div className="mb-1">
-                            <Form.Check
-                              type="checkbox"
-                              id={`add-${module.name}-full-access`}
-                              label="Full Access"
-                              checked={form.modulePermissions[module.name]?.includes("Full Access") || false}
-                              onChange={() => toggleModuleFullAccess(module.name)}
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 500,
-                                color: form.modulePermissions[module.name]?.includes("Full Access") ? "#53b2a5" : "inherit"
-                              }}
-                            />
-                          </div>
-                          <div className="d-flex flex-wrap gap-2">
-                            {module.permissions.map((perm) => {
-                              const isFullAccess = form.modulePermissions[module.name]?.includes("Full Access");
-                              const isSelected = form.modulePermissions[module.name]?.includes(perm);
-                              return (
-                                <Form.Check
-                                  key={`add-${module.name}-${perm}`}
-                                  type="checkbox"
-                                  id={`add-${module.name}-${perm}`}
-                                  label={perm}
-                                  checked={isSelected}
-                                  onChange={() => toggleModulePerm(module.name, perm)}
-                                  disabled={isFullAccess}
-                                  style={{
-                                    fontSize: 13,
-                                    marginRight: 15,
-                                    color: isSelected ? "#53b2a5" : "inherit",
-                                    fontWeight: isSelected ? 500 : 400,
-                                    opacity: isFullAccess ? 0.6 : 1
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </div>
+            {renderModulePermissions(false)}
           </Form>
         </Modal.Body>
         <Modal.Footer style={{ borderTop: "1px solid #e9ecef", padding: "15px 20px" }}>
@@ -878,136 +912,7 @@ const RolesPermissions = () => {
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label style={{ fontWeight: 500 }}>Role Type</Form.Label>
-              <div className="d-flex gap-2 align-items-center">
-                <Form.Select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  style={{
-                    border: "1px solid #e0e0e0",
-                    borderRadius: 6,
-                    padding: "8px 12px",
-                    fontSize: 14,
-                    flex: 1
-                  }}
-                >
-                  <option value="">Select type</option>
-                  <option value="superadmin">Superadmin</option>
-                  <option value="company">Company</option>
-                  <option value="user">User</option>
-                  {customRoleTypes.map((type, idx) => (
-                    <option key={idx} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </Form.Select>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={() => setShowAddTypeModal(true)}
-                  style={{ whiteSpace: "nowrap" }}
-                >
-                  + Add Type
-                </Button>
-              </div>
-            </Form.Group>
-            <Form.Group className="mb-4">
-              <Form.Label>General Permissions</Form.Label>
-              <div className="d-flex flex-wrap gap-2">
-                {allPermissions.map((perm) => {
-                  const isActive = form.permissions.includes(perm);
-                  return (
-                    <Button
-                      key={perm}
-                      variant={isActive ? "warning" : "outline-warning"}
-                      style={{
-                        background: isActive ? "#53b2a5" : "#fff",
-                        color: isActive ? "#fff" : "#53b2a5",
-                        borderColor: "#53b2a5",
-                        fontWeight: 500,
-                        borderRadius: 8,
-                        fontSize: 15,
-                        padding: "3px 18px",
-                      }}
-                      onClick={() => toggleGeneralPerm(perm)}
-                    >
-                      {perm}
-                    </Button>
-                  );
-                })}
-              </div>
-            </Form.Group>
-            <div className="mb-3">
-              <h6 className="fw-semibold mb-3" style={{ fontSize: 14 }}>
-                Assign Module Permissions to Role
-              </h6>
-              <div style={{ border: "1px solid #dee2e6", borderRadius: "0.375rem" }}>
-                <Table responsive="sm" size="sm" style={{ fontSize: 13, marginBottom: 0 }}>
-                  <thead style={{ background: "#f8f9fa" }}>
-                    <tr>
-                      <th style={{ width: 40, border: "none", padding: "10px 12px" }}></th>
-                      <th style={{ border: "none", fontWeight: 600, padding: "10px 12px", minWidth: 150 }}>
-                        MODULE
-                      </th>
-                      <th style={{ border: "none", fontWeight: 600, padding: "10px 12px", textAlign: "left" }}>
-                        PERMISSIONS
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tallyModules.map((module, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                        <td style={{ padding: "10px 12px", border: "none" }}></td>
-                        <td style={{ padding: "10px 12px", border: "none", fontWeight: 500, minWidth: 150 }}>
-                          {module.name}
-                        </td>
-                        <td style={{ padding: "10px 12px", border: "none" }}>
-                          <div className="mb-1">
-                            <Form.Check
-                              type="checkbox"
-                              id={`edit-${module.name}-full-access`}
-                              label="Full Access"
-                              checked={form.modulePermissions[module.name]?.includes("Full Access") || false}
-                              onChange={() => toggleModuleFullAccess(module.name)}
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 500,
-                                color: form.modulePermissions[module.name]?.includes("Full Access") ? "#53b2a5" : "inherit"
-                              }}
-                            />
-                          </div>
-                          <div className="d-flex flex-wrap gap-2">
-                            {module.permissions.map((perm) => {
-                              const isFullAccess = form.modulePermissions[module.name]?.includes("Full Access");
-                              const isSelected = form.modulePermissions[module.name]?.includes(perm);
-                              return (
-                                <Form.Check
-                                  key={`edit-${module.name}-${perm}`}
-                                  type="checkbox"
-                                  id={`edit-${module.name}-${perm}`}
-                                  label={perm}
-                                  checked={isSelected}
-                                  onChange={() => toggleModulePerm(module.name, perm)}
-                                  disabled={isFullAccess}
-                                  style={{
-                                    fontSize: 13,
-                                    marginRight: 15,
-                                    color: isSelected ? "#53b2a5" : "inherit",
-                                    fontWeight: isSelected ? 500 : 400,
-                                    opacity: isFullAccess ? 0.6 : 1
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </div>
+            {renderModulePermissions(true)}
           </Form>
         </Modal.Body>
         <Modal.Footer style={{ borderTop: "1px solid #e9ecef", padding: "15px 20px" }}>
@@ -1040,62 +945,11 @@ const RolesPermissions = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Add Role Type Modal */}
-      <Modal
-        show={showAddTypeModal}
-        onHide={() => {
-          setShowAddTypeModal(false);
-          setNewRoleType("");
-          setTypeError("");
-        }}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Add Role Type</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Enter New Role Type</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="e.g., Accountant, HR"
-              value={newRoleType}
-              onChange={(e) => setNewRoleType(e.target.value.trimStart())}
-              isInvalid={!!typeError || (!!newRoleType && customRoleTypes.includes(newRoleType))}
-            />
-            <Form.Control.Feedback type="invalid">
-              {typeError || (newRoleType && customRoleTypes.includes(newRoleType) ? "This role type already exists." : "")}
-            </Form.Control.Feedback>
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => {
-            setShowAddTypeModal(false);
-            setNewRoleType("");
-            setTypeError("");
-          }}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={!newRoleType || customRoleTypes.includes(newRoleType) || isAddingType}
-            onClick={handleAddRoleType}
-          >
-            {isAddingType ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Adding...
-              </>
-            ) : "Add Type"}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
       <p className="text-muted text-center mt-3">
-        This page allows you to define and manage user roles with specific permissions such as create, read, update, and delete. Control access across the application.
+        This page allows you to define and manage user roles with specific permissions such as create, read, update, and delete. Control access across application.
       </p>
 
-      {/* ✅ TOAST CONTAINER */}
+      {/* TOAST CONTAINER */}
       <ToastContainer position="top-end" className="p-3">
         <Toast
           onClose={() => setShowToast(false)}
