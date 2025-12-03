@@ -1245,8 +1245,6 @@ const AddProductModal = ({
 export default AddProductModal;
 
 
-
-
 // ✅ Full Updated Code – Compatible with your actual API response structure
 
 // import React, { useState, useEffect, useRef } from "react";
