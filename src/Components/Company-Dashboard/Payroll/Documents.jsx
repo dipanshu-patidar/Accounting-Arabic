@@ -113,7 +113,8 @@ const Documents = () => {
   }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find((e) => e.id === empId);
+    // Use == to handle number vs string ID comparison
+    const emp = employees.find((e) => e.id == empId);
     return emp ? emp.name : "–";
   };
 
@@ -177,14 +178,14 @@ const Documents = () => {
         const d = res.data.data;
         setForm({
           id: d.id,
-          employeeId: d.employee_id,
+          employeeId: d.employee_id?.toString(), // ensure string for select
           documentType: d.document_type,
           fileName: d.file_name || "",
           fileUrl: d.file_url || "",
           issueDate: d.issue_date ? d.issue_date.split("T")[0] : "",
           expiryDate: d.expiry_date ? d.expiry_date.split("T")[0] : "",
           notes: d.notes || "",
-          file: null,
+          file: null, // reset file on edit (user can re-upload)
         });
         setModalType("edit");
         setShowModal(true);
@@ -195,6 +196,24 @@ const Documents = () => {
     }
   };
 
+  // ✅ NEW: Build FormData for file upload
+  const buildFormData = (formValues) => {
+    const formData = new FormData();
+    formData.append("employee_id", formValues.employeeId);
+    formData.append("document_type", formValues.documentType);
+    formData.append("issue_date", formValues.issueDate);
+    if (formValues.expiryDate) {
+      formData.append("expiry_date", formValues.expiryDate);
+    }
+    if (formValues.notes) {
+      formData.append("notes", formValues.notes);
+    }
+    if (formValues.file) {
+      formData.append("file", formValues.file);
+    }
+    return formData;
+  };
+
   const handleSave = async () => {
     const { employeeId, documentType, issueDate } = form;
     if (!employeeId || !documentType || !issueDate) {
@@ -202,30 +221,40 @@ const Documents = () => {
       return;
     }
 
-    // ⚠️ File upload not implemented – you can add FormData upload here later
-    const payload = {
-      employee_id: parseInt(employeeId, 10),
-      document_type: documentType,
-      issue_date: issueDate,
-      expiry_date: form.expiryDate || null,
-      notes: form.notes || "",
-      // file will be handled separately if needed
-    };
+    const formData = buildFormData(form);
 
     try {
       if (modalType === "add") {
-        await axiosInstance.post(`documentsRequest/${companyId}`, payload);
-        alert("Document created successfully!");
+        // POST with FormData
+        const res = await axiosInstance.post(`documentsRequest/${companyId}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        if (res?.data?.success) {
+          alert("Document created successfully!");
+        } else {
+          throw new Error(res?.data?.message || "Unknown error");
+        }
       } else {
-        await axiosInstance.put(`documentsRequest/${form.id}`, payload);
-        alert("Document updated successfully!");
+        // PUT with FormData
+        const res = await axiosInstance.put(`documentsRequest/${form.id}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        if (res?.data?.success) {
+          alert("Document updated successfully!");
+        } else {
+          throw new Error(res?.data?.message || "Unknown error");
+        }
       }
       await fetchDocuments();
       setShowModal(false);
       setForm(emptyDocument);
     } catch (err) {
       console.error("Save error:", err);
-      alert("Failed to save document.");
+      alert("Failed to save document. " + (err.message || ""));
     }
   };
 
@@ -345,8 +374,10 @@ const Documents = () => {
                           >
                             <FaEye className="me-1" /> {d.fileName || "View"}
                           </Button>
+                        ) : d.fileName ? (
+                          d.fileName
                         ) : (
-                          d.fileName || "–"
+                          "–"
                         )}
                       </td>
                       <td>{d.issueDate || "–"}</td>
@@ -475,7 +506,7 @@ const Documents = () => {
                   </div>
                 )}
                 <Form.Text muted>
-                  File upload will be linked to document on save (not implemented in this version).
+                  Supported: PDF, DOC, DOCX, JPG, PNG (Max size depends on server)
                 </Form.Text>
               </Form.Group>
             </Col>

@@ -67,28 +67,31 @@ const TaskManagement = () => {
     try {
       setLoading(true);
       const res = await axiosInstance.get(`taskRequest/tasks?company_id=${companyId}`);
+
+      // Handle case where response is array of tasks (as per your sample)
       if (Array.isArray(res.data)) {
-        const mapped = res.data.map((task) => {
-          const assignment = task.assignments?.[0];
-          return {
-            id: task.id,
-            title: task.title,
-            description: task.description,
-            priority: task.priority,
-            status: task.status,
-            dueDate: task.due_date ? task.due_date.split('T')[0] : '',
-            createdBy: task.creator?.name || '—',
-            assignedTo: assignment?.employee_id || null,
-            assignedToName: assignment?.employee?.full_name || 'Unassigned',
-            attachment: task.attachment_url || null,
-            attachmentName: task.attachment_name || '',
-          };
-        });
+        const mapped = res.data.map((task) => ({
+          id: task.id,
+          title: task.title?.trim() || 'Untitled',
+          description: task.description || '',
+          priority: task.priority || 'Medium',
+          status: task.status || 'Pending',
+          dueDate: task.due_date ? task.due_date.split('T')[0] : '',
+          createdBy: task.creator?.name || '—',
+          assignedTo: task.assigned_to, // 👈 direct field
+          assignedToName: task.assigned_employee?.full_name || 'Unassigned', // 👈 direct object
+          attachment: task.attachment_url || null,
+          attachmentName: task.attachment_name || '',
+        }));
         setTasks(mapped);
+      } else {
+        console.warn('Unexpected response format:', res.data);
+        setTasks([]);
       }
     } catch (err) {
       console.error('Failed to fetch tasks', err);
       alert('Failed to load tasks.');
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -133,20 +136,18 @@ const TaskManagement = () => {
     if (task) {
       try {
         const res = await axiosInstance.get(`taskRequest/tasks/${task.id}`);
-        if (res.data) {
-          const t = res.data;
-          const assignment = t.assignments?.[0];
-          setEditingTask(t);
-          setFormData({
-            title: t.title,
-            description: t.description,
-            assignedTo: assignment?.employee_id?.toString() || '',
-            priority: t.priority,
-            dueDate: t.due_date ? t.due_date.split('T')[0] : '',
-            attachment: null,
-            attachmentName: t.attachment_name || '',
-          });
-        }
+        const t = res.data;
+
+        setEditingTask(t);
+        setFormData({
+          title: t.title || '',
+          description: t.description || '',
+          assignedTo: (t.assigned_to || '').toString(), // 👈 direct field
+          priority: t.priority || 'Medium',
+          dueDate: t.due_date ? t.due_date.split('T')[0] : '',
+          attachment: null,
+          attachmentName: t.attachment_name || '',
+        });
       } catch (err) {
         console.error('Failed to load task for edit', err);
         alert('Could not load task details.');
@@ -301,7 +302,7 @@ const TaskManagement = () => {
                   tasks.map((task) => (
                     <tr key={task.id}>
                       <td className="fw-bold" style={{ color: '#023347' }}>{task.title}</td>
-                      <td>{task.assignedToName}</td>
+                     <td>{task.assignedToName || 'Unassigned'}</td>
                       <td>
                         <Badge bg={getPriorityVariant(task.priority)}>{task.priority}</Badge>
                       </td>

@@ -37,11 +37,16 @@ const calculateHours = (checkIn, checkOut) => {
   if (!checkIn || !checkOut) return "–";
   const [h1, m1] = checkIn.split(":").map(Number);
   const [h2, m2] = checkOut.split(":").map(Number);
-  const totalMinutes = h2 * 60 + m2 - (h1 * 60 + m1);
-  if (totalMinutes <= 0) return "–";
+  let totalMinutes = h2 * 60 + m2 - (h1 * 60 + m1);
+
+  const sign = totalMinutes < 0 ? "-" : "";
+  totalMinutes = Math.abs(totalMinutes);
+
+  if (totalMinutes === 0) return "0h 0m";
+
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
-  return `${hours}h ${mins}m`;
+  return `${sign}${hours}h ${mins}m`;
 };
 
 const Attendance = () => {
@@ -92,32 +97,49 @@ const Attendance = () => {
       try {
         setLoading(true);
         const res = await axiosInstance.get(`attendance/company/${companyId}`);
-        if (res?.data?.success) {
-          const data = res.data.data || [];
-          const mapped = data.map((item) => {
-            const parseTime = (iso) => {
-              if (!iso) return "";
-              const d = new Date(iso);
-              return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        // 🔍 DEBUG: Log raw response
+        console.log("Attendance API Response:", res.data);
+
+        // Ensure structure: { success: true, data: [...] }
+        if (res?.data?.success && Array.isArray(res.data.data)) {
+          const mapped = res.data.data.map((item) => {
+            // Parse date (YYYY-MM-DD)
+            const dateStr = item.date ? item.date.split('T')[0] : '';
+
+            // Parse time safely
+            const parseTime = (isoStr) => {
+              if (!isoStr) return '';
+              try {
+                const d = new Date(isoStr);
+                if (isNaN(d.getTime())) return '';
+                return d.toTimeString().slice(0, 5); // "HH:mm"
+              } catch (e) {
+                return '';
+              }
             };
+
             return {
               id: item.id,
-              employeeId: item.employee_id,
-              date: item.date ? item.date.split("T")[0] : "",
+              employeeId: item.employee_id, // keep as number
+              date: dateStr,
               checkIn: parseTime(item.check_in_time),
               checkOut: parseTime(item.check_out_time),
-              status: item.status,
-              notes: item.notes || "",
-              employee: item.employee,
+              status: item.status || 'Present',
+              notes: item.notes || '',
+              employee: item.employee, // optional: for direct access
             };
           });
+
           setRecords(mapped);
         } else {
+          console.warn("Unexpected attendance response format", res.data);
           setRecords([]);
         }
       } catch (err) {
         console.error("Fetch attendances error", err);
         alert("Failed to load attendance data");
+        setRecords([]);
       } finally {
         setLoading(false);
       }
@@ -127,7 +149,8 @@ const Attendance = () => {
   }, [companyId]);
 
   const getEmployeeName = (empId) => {
-    const emp = employees.find((e) => e.id === empId);
+    if (empId == null) return "–";
+    const emp = employees.find((e) => e.id == empId); // == not ===
     return emp ? emp.name : "–";
   };
 
@@ -327,15 +350,14 @@ const Attendance = () => {
                       <td>{calculateHours(r.checkIn, r.checkOut)}</td>
                       <td>
                         <span
-                          className={`badge ${
-                            r.status === "Present"
-                              ? "bg-success"
-                              : r.status === "Absent"
+                          className={`badge ${r.status === "Present"
+                            ? "bg-success"
+                            : r.status === "Absent"
                               ? "bg-danger"
                               : r.status === "Leave"
-                              ? "bg-info"
-                              : "bg-warning"
-                          } text-dark`}
+                                ? "bg-info"
+                                : "bg-warning"
+                            } text-dark`}
                         >
                           {r.status}
                         </span>
