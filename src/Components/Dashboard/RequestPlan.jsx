@@ -75,13 +75,14 @@ const RequestPlan = () => {
       await axiosInstance.patch(`planreq/${planId}`, {
         status: newStatus,
       });
-      // Success: keep optimistic update
+      
+      // Success: reload the page to ensure proper state
+      window.location.reload();
     } catch (err) {
       console.error("Failed to update plan status:", err);
       // Revert on error
       updatedPlans[index].status = planToUpdate.status;
       setPlans(updatedPlans);
-    } finally {
       setActionLoading((prev) => ({ ...prev, [planId]: false }));
     }
   };

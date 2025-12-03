@@ -663,15 +663,6 @@ const Company = () => {
                 >
                   {/* Header: Badge + Menu */}
                   <div className="d-flex justify-content-between align-items-start mb-3">
-                    <span
-                      className="badge px-3 py-2 rounded-pill fw-semibold"
-                      style={
-                        badgeStyles[company.user_plans?.[0]?.plan?.plan_name] ||
-                        badgeStyles.Bronze
-                      }
-                    >
-                      {company.user_plans?.[0]?.plan?.plan_name || "N/A"}
-                    </span>
                     <div className="dropdown-icon position-relative">
                       <BsThreeDotsVertical
                         className="text-muted"
@@ -689,7 +680,7 @@ const Company = () => {
                             onClick={() => handleEdit(index)}
                             style={{
                               cursor: "pointer",
-                             
+
                               borderRadius: "6px",
                               padding: "8px 10px",
                             }}
@@ -703,7 +694,7 @@ const Company = () => {
                             onClick={() => setResetIndex(index)}
                             style={{
                               cursor: "pointer",
-                            
+
                               borderRadius: "6px",
                               padding: "8px 10px",
                               color: "#007bff",
@@ -718,7 +709,7 @@ const Company = () => {
                             onClick={() => navigate("/")}
                             style={{
                               cursor: "pointer",
-                             
+
                               borderRadius: "6px",
                               padding: "8px 10px",
                               color: "#338871",
@@ -732,7 +723,7 @@ const Company = () => {
                             className="dropdown-item d-flex text-secondary align-items-center fw-semibold"
                             style={{
                               cursor: "pointer",
-                            
+
                               borderRadius: "6px",
                               padding: "8px 10px",
                             }}
@@ -745,7 +736,7 @@ const Company = () => {
                             onClick={() => handleDelete(index)}
                             style={{
                               cursor: "pointer",
-                            
+
                               borderRadius: "6px",
                               padding: "8px 10px",
                             }}
@@ -756,6 +747,15 @@ const Company = () => {
                         </div>
                       )}
                     </div>
+                    <span
+                      className="badge px-3 py-2 rounded-pill fw-semibold"
+                      style={
+                        badgeStyles[company.user_plans?.[0]?.plan?.plan_name] ||
+                        badgeStyles.Bronze
+                      }
+                    >
+                      {company.user_plans?.[0]?.plan?.plan_name || "N/A"}
+                    </span>
                   </div>
                   {/* Avatar & Info */}
                   <div className="d-flex align-items-center gap-3 mb-2">
