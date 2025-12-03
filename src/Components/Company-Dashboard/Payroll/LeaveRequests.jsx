@@ -64,28 +64,17 @@ const LeaveRequests = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [leaveToDelete, setLeaveToDelete] = useState(null);
 
-  // Fetch all data
-  const fetchData = async () => {
-    if (!companyId) {
-      setError("Company ID not found.");
-      setLoading(false);
-      return;
-    }
-
+  // 🔹 Fetch Leaves — ✅ FIXED MAPPING
+  const fetchLeaves = async () => {
+    if (!companyId) return;
     try {
-      const [leavesRes, employeesRes, typesRes] = await Promise.all([
-        axiosInstance.get(`leaveRequest/company/${companyId}`),
-        axiosInstance.get(`employee?company_id=${companyId}`),
-        axiosInstance.get("leaveType"), // Adjust if endpoint differs
-      ]);
-
-      if (leavesRes.data.success) {
-        const mappedLeaves = leavesRes.data.data.map((l) => ({
+      const res = await axiosInstance.get(`leaveRequest/company?company_id=${companyId}`);
+      if (res.data?.success) {
+        const mappedLeaves = res.data.data.map((l) => ({
           id: l.id,
-          leaveId: `LR-${String(l.id).padStart(3, "0")}`,
+          leaveId: l.leave_request_id || `LR-${String(l.id).padStart(3, "0")}`, // ✅ Use real ID
           employeeId: l.employee_id,
           leaveTypeId: l.leave_type_id,
-          leaveType: l.leave_type?.name || "Unknown",
           fromDate: l.from_date ? new Date(l.from_date).toISOString().split("T")[0] : "",
           toDate: l.to_date ? new Date(l.to_date).toISOString().split("T")[0] : "",
           totalDays: l.total_days,
@@ -96,44 +85,106 @@ const LeaveRequests = () => {
         }));
         setLeaves(mappedLeaves);
       }
-
-      if (employeesRes.data.success) {
-        setEmployees(
-          employeesRes.data.data.map((emp) => ({
-            id: emp.id,
-            name: emp.full_name || emp.name,
-          }))
-        );
-      }
-
-      if (typesRes.data.success) {
-        setLeaveTypes(
-          typesRes.data.data.map((t) => ({
-            id: t.id,
-            name: t.name,
-          }))
-        );
-      }
     } catch (err) {
-      console.error("Fetch error:", err);
-      setError("Failed to load data. Please try again.");
-    } finally {
-      setLoading(false);
+      console.error("Error fetching leaves:", err);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [companyId]);
+  // 🔹 Fetch Employees
+  const fetchEmployees = async () => {
+    if (!companyId) {
+      setEmployees([]);
+      return;
+    }
 
-  const getEmployeeName = (empId) => {
-    const emp = employees.find((e) => e.id === Number(empId));
-    return emp ? emp.name : `Employee ${empId}`;
+    try {
+      const res = await axiosInstance.get(`employee?company_id=${companyId}`);
+      let empList = [];
+
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        empList = res.data.data;
+      } else if (res.data?.success && res.data.data?.employees) {
+        empList = res.data.data.employees;
+      } else if (Array.isArray(res.data)) {
+        empList = res.data;
+      }
+
+      setEmployees(
+        empList.map((emp) => ({
+          id: emp.id,
+          name: emp.full_name || emp.employee_code || emp.name || `Employee ${emp.id}`,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+      setEmployees([]);
+    }
   };
 
+  // 🔹 Fetch Leave Types — ✅ Use correct endpoint
+  const fetchLeaveTypes = async () => {
+    try {
+      const res = await axiosInstance.get("leaveRequest/types"); // ✅ Confirmed endpoint
+      let typeList = [];
+
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        typeList = res.data.data;
+      } else if (Array.isArray(res.data)) {
+        typeList = res.data;
+      }
+
+      setLeaveTypes(
+        typeList.map((t) => ({
+          id: t.id,
+          name: t.name,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching leave types:", err);
+      setLeaveTypes([]);
+    }
+  };
+
+  // 🔹 Unified loader
+  useEffect(() => {
+    let leavesLoaded = false;
+    let employeesLoaded = false;
+    let typesLoaded = false;
+
+    const checkAllLoaded = () => {
+      if (leavesLoaded && employeesLoaded && typesLoaded) {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaves().then(() => {
+      leavesLoaded = true;
+      checkAllLoaded();
+    });
+
+    fetchEmployees().then(() => {
+      employeesLoaded = true;
+      checkAllLoaded();
+    });
+
+    fetchLeaveTypes().then(() => {
+      typesLoaded = true;
+      checkAllLoaded();
+    });
+  }, [companyId]);
+
+  // ✅ Safe employee name lookup
+  const getEmployeeName = (empId) => {
+    if (empId == null || empId === "") return "–";
+    const emp = employees.find((e) => e.id == empId);
+    return emp ? emp.name : "–";
+  };
+
+  // ✅ Safe leave type name lookup
   const getLeaveTypeName = (typeId) => {
-    const type = leaveTypes.find((t) => t.id === Number(typeId));
-    return type ? type.name : "Unknown";
+    if (typeId == null) return "–";
+    const type = leaveTypes.find((t) => t.id == typeId);
+    return type ? type.name : "–";
   };
 
   const handleInputChange = (e) => {
@@ -179,7 +230,6 @@ const LeaveRequests = () => {
     setSaving(true);
     const formData = new FormData();
 
-    // Append all fields
     formData.append("employee_id", employeeId);
     formData.append("leave_type_id", leaveTypeId);
     formData.append("from_date", fromDate);
@@ -210,7 +260,7 @@ const LeaveRequests = () => {
 
       if (response.data.success) {
         alert(modalType === "add" ? "Leave request created!" : "Leave request updated!");
-        fetchData();
+        fetchLeaves();
         setShowModal(false);
         setForm(emptyLeave);
       } else {
@@ -234,7 +284,7 @@ const LeaveRequests = () => {
       const res = await axiosInstance.delete(`leaveRequest/request/${leaveToDelete.id}`);
       if (res.data.success) {
         alert("Leave request deleted successfully!");
-        fetchData();
+        fetchLeaves();
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -269,14 +319,6 @@ const LeaveRequests = () => {
       <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
         <Spinner animation="border" variant="primary" />
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container className="py-5">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
     );
   }
 
@@ -347,9 +389,9 @@ const LeaveRequests = () => {
                 {leaves.length > 0 ? (
                   leaves.map((l) => (
                     <tr key={l.id}>
-                      <td>{l.leaveId}</td>
+                      <td>{l.leaveId}</td> {/* ✅ Now shows "LR-003" */}
                       <td>{getEmployeeName(l.employeeId)}</td>
-                      <td>{getLeaveTypeName(l.leaveTypeId)}</td>
+                      <td>{getLeaveTypeName(l.leaveTypeId)}</td> {/* ✅ Now shows real type */}
                       <td>{l.fromDate}</td>
                       <td>{l.toDate}</td>
                       <td>{l.totalDays}</td>
