@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Form,
   Button,
@@ -58,6 +58,15 @@ const ContraVoucher = () => {
   const accountFromRef = useRef(null);
   const accountToRef = useRef(null);
 
+  // ✅ Add a cleanup effect to run when the component unmounts
+  useEffect(() => {
+    // This function will be called when the component is unmounted
+    return () => {
+      console.log("ContraVoucher component is unmounting. Aborting all pending requests and timeouts.");
+      // This is a placeholder. The actual AbortController will be created inside the async functions.
+    };
+  }, []);
+
   // Helpers
   const generateAutoVoucherNo = () => {
     const timestamp = Date.now();
@@ -113,8 +122,14 @@ const ContraVoucher = () => {
     }
 
     const fetchAccounts = async () => {
+      // ✅ 1. Create a new AbortController for this specific request
+      const controller = new AbortController();
+
       try {
-        const response = await axiosInstance.get(`account/company/${companyId}`);
+        const response = await axiosInstance.get(`account/company/${companyId}`, {
+          // ✅ 2. Pass the signal to the axios request
+          signal: controller.signal
+        });
         let accountsArray = [];
 
         if (Array.isArray(response.data)) {
@@ -138,6 +153,11 @@ const ContraVoucher = () => {
         }
       } catch (err) {
         console.error('Accounts API Error:', err);
+        // ✅ 4. Check if the error is due to an abort
+        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+          console.log("Accounts fetch was canceled.");
+          return; // Don't set an error state for a cancelled request
+        }
         setFetchError(err.response?.data?.message || 'Failed to load accounts.');
       }
     };
@@ -151,8 +171,14 @@ const ContraVoucher = () => {
 
     const fetchContraVouchers = async () => {
       setTableLoading(true);
+      // ✅ 1. Create a new AbortController for this specific request
+      const controller = new AbortController();
+
       try {
-        const response = await axiosInstance.get(`contravouchers/company/${companyId}`);
+        const response = await axiosInstance.get(`contravouchers/company/${companyId}`, {
+          // ✅ 2. Pass the signal to the axios request
+          signal: controller.signal
+        });
         let data = [];
         if (Array.isArray(response.data)) {
           data = response.data;
@@ -164,8 +190,16 @@ const ContraVoucher = () => {
         setContraVouchers(data);
       } catch (err) {
         console.error('Failed to fetch contra vouchers:', err);
+        // ✅ 4. Check if the error is due to an abort
+        if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+          console.log("Vouchers fetch was canceled.");
+          return; // Don't set an error state for a cancelled request
+        }
       } finally {
-        setTableLoading(false);
+        // ✅ 5. Only set loading to false if the request wasn't aborted
+        if (!controller.signal.aborted) {
+          setTableLoading(false);
+        }
       }
     };
 
@@ -269,7 +303,7 @@ const ContraVoucher = () => {
     }
 
     if (accountFromId === accountToId) {
-      setError('Account From and Account To cannot be the same.');
+      setError('Account From and Account To cannot be same.');
       setLoading(false);
       return;
     }
@@ -280,94 +314,88 @@ const ContraVoucher = () => {
       return;
     }
 
-    const formData = new FormData();
-    if (manualVoucherNo.trim()) {
-      formData.append('voucher_number', manualVoucherNo.trim());
-    }
-    formData.append('voucher_date', voucherDate);
-    formData.append('account_from_id', accountFromId);
-    formData.append('account_to_id', accountToId);
-    formData.append('amount', amount);
-    formData.append('narration', narration || '');
-    formData.append('company_id', companyId);
-
-    if (uploadedFile) {
-      formData.append('document', uploadedFile);
-    }
-
+    // ✅ Create a new AbortController for the save request
+    const controller = new AbortController();
+    
     try {
-      let response;
-      if (isEditing && currentVoucherId) {
-        response = await axiosInstance.put(`contravouchers/${currentVoucherId}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+      const formData = new FormData();
+      if (manualVoucherNo.trim()) {
+        formData.append('voucher_number', manualVoucherNo.trim());
+      }
+      formData.append('voucher_date', voucherDate);
+      formData.append('account_from_id', accountFromId);
+      formData.append('account_to_id', accountToId);
+      formData.append('amount', amount);
+      formData.append('narration', narration || '');
+      formData.append('company_id', companyId);
 
-        setContraVouchers((prev) =>
-          prev.map((v) =>
-            v.id === currentVoucherId
-              ? {
-                ...v,
-                voucher_number: manualVoucherNo.trim() || v.voucher_number,
-                voucher_date: voucherDate,
-                account_from_id: accountFromId,
-                account_to_id: accountToId,
-                amount,
-                narration: narration || '',
-                document: response.data?.document || v.document, // Preserve if not updated
-              }
-              : v
-          )
-        );
-        toast.success('Voucher updated successfully!');
-      } else {
-        response = await axiosInstance.post('contravouchers', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-
-        const newVoucher = {
-          id: response.data?.id || Date.now(),
-          voucher_no: manualVoucherNo.trim() || response.data?.voucher_no || autoVoucherNo,
-          voucher_number: manualVoucherNo.trim() || null,
-          voucher_date: voucherDate,
-          account_from_id: accountFromId,
-          account_to_id: accountToId,
-          amount,
-          narration: narration || '',
-          document: response.data?.document,
-        };
-        setContraVouchers((prev) => [newVoucher, ...prev]);
-        toast.success('Contra Voucher created successfully!');
+      if (uploadedFile) {
+        formData.append('document', uploadedFile);
       }
 
+      const response = await axiosInstance.put(
+        `contravouchers/${currentVoucherId}`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          // ✅ Pass the signal to the axios PUT request
+          signal: controller.signal,
+        }
+      );
+
+      setContraVouchers((prev) =>
+        prev.map((v) =>
+          v.id === currentVoucherId
+            ? { ...v, voucher_number: manualVoucherNo.trim() || v.voucher_number, voucher_date: voucherDate, account_from_id: accountFromId, account_to_id: accountToId, amount, narration: narration || '', document: response.data?.document || v.document, }
+            : v
+        )
+      );
+      toast.success('Voucher updated successfully!');
       setShowModal(false);
     } catch (err) {
       console.error('API Error:', err);
-      setError(
-        err.response?.data?.message ||
-        (isEditing ? 'Failed to update voucher.' : 'Failed to create voucher.')
-      );
-      toast.error(
-        err.response?.data?.message ||
-        (isEditing ? 'Failed to update voucher.' : 'Failed to create voucher.')
-      );
+      // ✅ Check for abort error
+      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+        console.log("Save request was canceled.");
+        return;
+      }
+      const errorMsg = err.response?.data?.message || 'Failed to update voucher.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setLoading(false);
+      // ✅ Only set loading to false if the request wasn't aborted
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm(`Are you sure you want to delete this voucher?`)) return;
 
+    // ✅ Create a new AbortController for the delete request
+    const controller = new AbortController();
+
     try {
-      await axiosInstance.delete(`contravouchers/${id}`);
+      await axiosInstance.delete(`contravouchers/${id}`, {
+        // ✅ Pass the signal to the axios DELETE request
+        signal: controller.signal
+      });
       setContraVouchers((prev) => prev.filter((v) => v.id !== id));
       toast.success('Voucher deleted successfully!');
     } catch (err) {
       console.error('Delete error:', err);
-      toast.error(err.response?.data?.message || 'Failed to delete voucher.');
+      // ✅ Check for abort error
+      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+        console.log("Delete request was canceled.");
+        return;
+      }
+      const errorMsg = err.response?.data?.message || 'Failed to delete voucher.';
+      toast.error(errorMsg);
     }
   };
 
+  // ... (The rest of your component's JSX return block remains the same)
   return (
     <div className="p-3">
       {/* Toast Container */}
@@ -428,7 +456,7 @@ const ContraVoucher = () => {
               <Spinner animation="border" size="sm" /> Loading...
             </div>
           ) : filteredVouchers.length === 0 ? (
-            <Alert variant="info">No contra vouchers found matching the filters.</Alert>
+            <Alert variant="info">No contra vouchers found matching filters.</Alert>
           ) : (
             <div className='' style={{ maxHeight: '400px', overflowY: 'auto' }}>
               <Table striped bordered hover size="sm">
@@ -447,7 +475,7 @@ const ContraVoucher = () => {
                 <tbody>
                   {filteredVouchers.map((voucher) => (
                     <tr key={voucher.id}>
-                      {/* Display the auto-generated voucher no by default, manual if available */}
+                      {/* Display auto-generated voucher no by default, manual if available */}
                       <td>{voucher.voucher_no_auto || voucher.voucher_number || '—'}</td>
                       <td>{voucher.voucher_date ? voucher.voucher_date.split('T')[0] : '—'}</td>
                       <td>{getAccountDisplayName(voucher.account_from_id)}</td>

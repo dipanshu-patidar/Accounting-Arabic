@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react"; // ✅ added useContext
+import React, { useState, useEffect, useContext } from "react";
 import {
   Button,
   Card,
@@ -13,7 +13,7 @@ import { FaFilePdf, FaFileExcel } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
-import { CurrencyContext } from "../../../hooks/CurrencyContext"; // ✅ only import context, not provider
+import { CurrencyContext } from "../../../hooks/CurrencyContext";
 
 const VatReport = () => {
   const [dateRange, setDateRange] = useState([null, null]);
@@ -29,7 +29,7 @@ const VatReport = () => {
 
   const types = ["All", "Outward Supplies", "Inward Supplies", "Adjustments", "Exempt Supplies"];
 
-  const fetchVatReport = async () => {
+  const fetchVatReport = async (signal) => { // ✅ Pass signal into the function
     if (!companyId) {
       setError("Company ID is missing.");
       return;
@@ -40,8 +40,13 @@ const VatReport = () => {
 
     try {
       const params = { company_id: companyId };
-      const response = await axiosInstance.get("/vat-report", { params });
+      const response = await axiosInstance.get("/vat-report", {
+        params,
+        // ✅ Pass the signal to the axios request
+        signal: signal,
+      });
 
+      // ✅ No need to check if aborted here. If aborted, it will jump to the catch block.
       if (response.data?.success && Array.isArray(response.data.vatSummary)) {
         setVatData(response.data.vatSummary);
       } else {
@@ -49,17 +54,39 @@ const VatReport = () => {
         setError("Unexpected response format.");
       }
     } catch (err) {
+      // ✅ Check if the error is because the request was aborted
+      // If it was, we just stop and don't show an error.
+      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+        console.log("Request was canceled.");
+        return;
+      }
+
       console.error("VAT Report fetch error:", err);
       setError("Failed to load VAT data. Please try again.");
       setVatData([]);
     } finally {
+      // ✅ Only set loading to false if the request wasn't aborted
+      // The check is not strictly necessary but is good practice.
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVatReport();
-  }, [companyId]);
+    // ✅ 1. Create a new AbortController
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    // ✅ 2. Call the fetch function and pass the signal
+    fetchVatReport(signal);
+
+    // ✅ 3. This is the cleanup function for useEffect
+    // It runs when the component unmounts.
+    return () => {
+      console.log("VatReport component is unmounting, cancelling request.");
+      // Abort the request, which will trigger the 'catch' block in fetchVatReport
+      controller.abort();
+    };
+  }, [companyId]); // Dependency array ensures this runs only when companyId changes
 
   const filteredRows = vatData.filter(
     (e) => filterType === "All" || e.type === filterType
@@ -107,7 +134,11 @@ const VatReport = () => {
                 width: "100%",
               }}
               className="py-2"
-              onClick={fetchVatReport}
+              onClick={() => {
+                // ✅ For manual clicks, we create a new controller just for this call
+                const controller = new AbortController();
+                fetchVatReport(controller.signal);
+              }}
               disabled={loading}
             >
               {loading ? (

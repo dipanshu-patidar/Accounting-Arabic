@@ -191,7 +191,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
   const getMenuItems = () => {
     const menuItems = {
       SUPERADMIN: [
-        navItem("/dashboard", "fas fa-tachometer-alt", "Dashboard"),
+        navItem("/dashboard", "fa-solid fa-house-chimney", "Dashboard"),
         navItem("/superadmin/company", "fas fa-building", "Company"),
         navItem("/superadmin/planpricing", "fas fa-tags", "Plans & Pricing"),
         navItem(
@@ -207,7 +207,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
         ),
       ],
       COMPANY: [
-        navItem("/company/dashboard", "fas fa-tachometer-alt", "Dashboard"),
+        navItem("/company/dashboard", "fa-solid fa-house-chimney", "Dashboard"),
 
         renderExpandableSection(
           "User Management",
@@ -249,7 +249,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
             { to: "/company/vatreport", label: "Vat Report" },
             { to: "/company/taxreport", label: "Tax Report" },
           ],
-          "fas fa-calculator"
+          "fa-solid fa-dollar-sign"
         ),
 
         renderExpandableSection(
@@ -265,7 +265,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
               label: "Inventory Adjustment",
             },
           ],
-          "fas fa-warehouse"
+          "fa-solid fa-list-ul"
         ),
 
         renderExpandableSection(
@@ -287,7 +287,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
             { to: "/company/payrollreports", label: "Payroll Report" },
             { to: "/company/payrollsettings", label: "Payroll Setting" },
           ],
-          "fas fa-users-cog"
+          "fa-solid fa-money-bill-1"
         ),
 
         renderExpandableSection(
@@ -325,7 +325,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
             { to: "/company/companyinfo", label: "Company Info" },
             { to: "/company/password-request", label: "Password Requests" },
           ],
-          "fas fa-cog"
+          "fa-solid fa-wrench"
         ),
 
         navItem("/company/ponitofsale", "fas fa-desktop", "POS Screen"),
