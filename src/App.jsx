@@ -174,20 +174,27 @@ import { CurrencyProvider } from "./hooks/CurrencyContext";
 function AppContent() {
   const location = useLocation();
 
-  useEffect(() => {
-    const lang = localStorage.getItem("lang") || "en";
-    const html = document.getElementById("html-root");
+ // Force Google Translate Arabic After Every Reload
+useEffect(() => {
+  const interval = setInterval(() => {
+    const select = document.querySelector(".goog-te-combo");
+    if (select) {
+      if (select.value !== "ar") {
+        select.value = "ar";
+        select.dispatchEvent(new Event("change"));
+      }
 
-    if (!html) return;
+      // Apply RTL globally
+      document.documentElement.dir = "rtl";
+      document.body.classList.add("rtl-mode");
 
-    if (lang === "ar") {
-        html.setAttribute("dir", "rtl");
-        html.setAttribute("lang", "ar");
-    } else {
-        html.setAttribute("dir", "ltr");
-        html.setAttribute("lang", "en");
+      clearInterval(interval);
     }
+  }, 800); // delay increased for reliability
+
+  return () => clearInterval(interval);
 }, []);
+
 
   // ✅ Define PUBLIC WEBSITE ROUTES (show Navbar + Footer)
   const publicWebsiteRoutes = [

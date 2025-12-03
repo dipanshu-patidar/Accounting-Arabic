@@ -208,3 +208,28 @@ label {
   padding-right: 1rem !important;
   padding-left: 0 !important;
 }
+
+/* 🔥 Full RTL mode fix */
+.rtl-mode .sidebar {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+/* Icon ko right side move karo */
+.rtl-mode .sidebar .menu-item {
+  flex-direction: row-reverse !important;
+}
+
+/* Icon and text gap adjust */
+.rtl-mode .sidebar .menu-item i, 
+.rtl-mode .sidebar .menu-item svg {
+  margin-left: 10px !important;
+  margin-right: 0 !important;
+}
+
+
+.rtl-mode .sidebar .expand-icon {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
