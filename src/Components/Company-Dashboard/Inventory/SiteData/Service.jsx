@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Table, Button, Modal, Form } from "react-bootstrap";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import GetCompanyId from "../../../../Api/GetCompanyId";
@@ -36,72 +36,118 @@ function Service() {
   const [loading, setLoading] = useState(false);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [unitsLoading, setUnitsLoading] = useState(false);
+  
+  // Add refs to track component state and abort controllers
+  const isMounted = useRef(true);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
+    // Set isMounted to true when component mounts
+    isMounted.current = true;
+    
+    // Create a new AbortController for this component instance
+    abortControllerRef.current = new AbortController();
+    
     fetchServices();
     fetchUnitOptions();
+    
+    // Cleanup function to set isMounted to false when component unmounts
+    return () => {
+      isMounted.current = false;
+      
+      // Abort any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Close all modals to prevent DOM issues
+      setShow(false);
+      setShowView(false);
+      setShowDeleteConfirm(false);
+    };
   }, []);
 
   const fetchServices = async () => {
+    if (!isMounted.current) return;
+    
     try {
       setServicesLoading(true);
-      // ✅ Updated endpoint to include company_id
-      const response = await axiosInstance.get(`${BaseUrl}services/company/${companyId}`);
+      // Pass the abort signal to the request
+      const response = await axiosInstance.get(`${BaseUrl}services/company/${companyId}`, {
+        signal: abortControllerRef.current?.signal
+      });
       
-      console.log("Services API Response:", response.data); // Debug log
+      console.log("Services API Response:", response.data);
       
-      if (response.data.success && response.data.data) {
-        const transformedServices = response.data.data.map(service => ({
-          id: service.id,
-          name: service.service_name,
-          sku: service.sku,
-          serviceDescription: service.description,
-          unit: service.uom_name, // ✅ Changed from 'uom' to 'uom_name' to match API response
-          price: service.price,
-          tax: service.tax_percent,
-          remarks: service.remarks,
-          isInvoiceable: service.allow_in_invoice === "1"
-        }));
-        setServices(transformedServices);
-      } else {
-        setServices([]);
+      if (isMounted.current) {
+        if (response.data.success && response.data.data) {
+          const transformedServices = response.data.data.map(service => ({
+            id: service.id,
+            name: service.service_name,
+            sku: service.sku,
+            serviceDescription: service.description,
+            unit: service.uom_name,
+            price: service.price,
+            tax: service.tax_percent,
+            remarks: service.remarks,
+            isInvoiceable: service.allow_in_invoice === "1"
+          }));
+          setServices(transformedServices);
+        } else {
+          setServices([]);
+        }
       }
     } catch (error) {
-      console.error("Error fetching services:", error.response?.data || error.message);
-      toast.error("Failed to fetch services. Please try again.", {
-        toastId: 'fetch-services-error',
-        autoClose: 3000
-      });
-      setServices([]);
+      // Don't show error if request was aborted
+      if (error.name !== 'CanceledError' && isMounted.current) {
+        console.error("Error fetching services:", error.response?.data || error.message);
+        toast.error("Failed to fetch services. Please try again.", {
+          toastId: 'fetch-services-error',
+          autoClose: 3000
+        });
+        setServices([]);
+      }
     } finally {
-      setServicesLoading(false);
+      if (isMounted.current) {
+        setServicesLoading(false);
+      }
     }
   };
 
-  // ✅ UPDATED: Fetch unit options using the new API endpoint
   const fetchUnitOptions = async () => {
+    if (!isMounted.current) return;
+    
     try {
       setUnitsLoading(true);
-      // ✅ Updated endpoint to fetch unit details by company ID
-      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`);
+      // Pass the abort signal to the request
+      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`, {
+        signal: abortControllerRef.current?.signal
+      });
       
-      console.log("Unit Details API Response:", response.data); // Debug log
+      console.log("Unit Details API Response:", response.data);
       
-      if (response.data.success && response.data.data) {
-        // Extract uom_name from each unit object
-        const unitNames = response.data.data.map(unit => unit.uom_name);
-        setUnitOptions(unitNames);
+      if (isMounted.current) {
+        if (response.data.success && response.data.data) {
+          const unitNames = response.data.data.map(unit => unit.uom_name);
+          setUnitOptions(unitNames);
+        }
       }
     } catch (error) {
-      console.error("Error fetching unit options:", error.response?.data || error.message);
-      // Fallback to default options
-      setUnitOptions(["piece", "kg", "meter", "liter", "box", "day", "yard", "sq.ft", "cubic meter", "Project"]);
+      // Don't show error if request was aborted
+      if (error.name !== 'CanceledError' && isMounted.current) {
+        console.error("Error fetching unit options:", error.response?.data || error.message);
+        setUnitOptions(["piece", "kg", "meter", "liter", "box", "day", "yard", "sq.ft", "cubic meter", "Project"]);
+      }
     } finally {
-      setUnitsLoading(false);
+      if (isMounted.current) {
+        setUnitsLoading(false);
+      }
     }
   };
 
   const handleShow = () => {
+    if (!isMounted.current) return;
+    
     const defaultUnit = unitOptions.length > 0 ? unitOptions[0] : "piece";
     setForm({ 
       id: null, 
@@ -118,11 +164,24 @@ function Service() {
     setShow(true);
   };
 
-  const handleClose = () => setShow(false);
-  const handleViewClose = () => setShowView(false);
-  const handleDeleteConfirmClose = () => setShowDeleteConfirm(false);
+  const handleClose = () => {
+    if (!isMounted.current) return;
+    setShow(false);
+  };
+  
+  const handleViewClose = () => {
+    if (!isMounted.current) return;
+    setShowView(false);
+  };
+  
+  const handleDeleteConfirmClose = () => {
+    if (!isMounted.current) return;
+    setShowDeleteConfirm(false);
+  };
 
   const handleInput = (e) => {
+    if (!isMounted.current) return;
+    
     const { name, value, type, checked } = e.target;
     setForm(prev => ({
       ...prev,
@@ -131,6 +190,8 @@ function Service() {
   };
 
   const handleSave = async () => {
+    if (!isMounted.current) return;
+    
     if (!form.name.trim()) {
       toast.error("Service Name Required", {
         toastId: 'service-name-required',
@@ -142,11 +203,11 @@ function Service() {
     try {
       setLoading(true);
       const payload = {
-        company_id: parseInt(companyId), // ✅ Convert to integer
+        company_id: parseInt(companyId),
         service_name: form.name,
         sku: form.sku,
         description: form.serviceDescription,
-        uom: form.unit, // Send string
+        uom: form.unit,
         price: parseFloat(form.price) || 0,
         tax_percent: parseFloat(form.tax) || 0,
         allow_in_invoice: form.isInvoiceable ? 1 : 0,
@@ -154,45 +215,60 @@ function Service() {
       };
 
       if (editMode && form.id) {
-        await axiosInstance.put(`${BaseUrl}services/${form.id}`, payload);
-        toast.success("Service updated successfully!", {
-          toastId: 'service-update-success',
-          autoClose: 3000
+        await axiosInstance.put(`${BaseUrl}services/${form.id}`, payload, {
+          signal: abortControllerRef.current?.signal
         });
+        if (isMounted.current) {
+          toast.success("Service updated successfully!", {
+            toastId: 'service-update-success',
+            autoClose: 3000
+          });
+        }
       } else {
-        await axiosInstance.post(`${BaseUrl}services`, payload);
-        toast.success("Service added successfully!", {
-          toastId: 'service-add-success',
-          autoClose: 3000
+        await axiosInstance.post(`${BaseUrl}services`, payload, {
+          signal: abortControllerRef.current?.signal
         });
+        if (isMounted.current) {
+          toast.success("Service added successfully!", {
+            toastId: 'service-add-success',
+            autoClose: 3000
+          });
+        }
       }
 
       await fetchServices();
-      handleClose();
+      if (isMounted.current) {
+        handleClose();
+      }
     } catch (error) {
-      console.error("Error saving service:", error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 
-        `Failed to ${editMode ? 'update' : 'add'} service. Please try again.`;
-      toast.error(errorMessage, {
-        toastId: editMode ? 'service-update-error' : 'service-add-error',
-        autoClose: 3000
-      });
+      // Don't show error if request was aborted
+      if (error.name !== 'CanceledError' && isMounted.current) {
+        console.error("Error saving service:", error.response?.data || error.message);
+        const errorMessage = error.response?.data?.message || 
+          `Failed to ${editMode ? 'update' : 'add'} service. Please try again.`;
+        toast.error(errorMessage, {
+          toastId: editMode ? 'service-update-error' : 'service-add-error',
+          autoClose: 3000
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // ✅ FIXED: Edit handler — ensure unit is in unitOptions
   const handleEdit = (service) => {
-    // Ensure the unit from service exists in unitOptions (case-insensitive fallback)
+    if (!isMounted.current) return;
+    
     let unitToUse = service.unit;
     const normalizedUnit = service.unit?.toLowerCase();
     const foundUnit = unitOptions.find(u => u.toLowerCase() === normalizedUnit);
     
     if (foundUnit) {
-      unitToUse = foundUnit; // Use exact case from unitOptions
+      unitToUse = foundUnit;
     } else if (unitOptions.length > 0) {
-      unitToUse = unitOptions[0]; // Fallback
+      unitToUse = unitOptions[0];
     }
 
     setForm({
@@ -204,33 +280,48 @@ function Service() {
   };
 
   const handleDeleteClick = (id) => {
+    if (!isMounted.current) return;
     setDeleteId(id);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
+    if (!isMounted.current) return;
+    
     try {
       setLoading(true);
-      await axiosInstance.delete(`${BaseUrl}services/${deleteId}`);
-      toast.success("Service deleted successfully!", {
-        toastId: 'service-delete-success',
-        autoClose: 3000
+      await axiosInstance.delete(`${BaseUrl}services/${deleteId}`, {
+        signal: abortControllerRef.current?.signal
       });
+      if (isMounted.current) {
+        toast.success("Service deleted successfully!", {
+          toastId: 'service-delete-success',
+          autoClose: 3000
+        });
+      }
       await fetchServices();
-      setShowDeleteConfirm(false);
+      if (isMounted.current) {
+        setShowDeleteConfirm(false);
+      }
     } catch (error) {
-      console.error("Error deleting service:", error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || "Failed to delete service. Please try again.";
-      toast.error(errorMessage, {
-        toastId: 'service-delete-error',
-        autoClose: 3000
-      });
+      // Don't show error if request was aborted
+      if (error.name !== 'CanceledError' && isMounted.current) {
+        console.error("Error deleting service:", error.response?.data || error.message);
+        const errorMessage = error.response?.data?.message || "Failed to delete service. Please try again.";
+        toast.error(errorMessage, {
+          toastId: 'service-delete-error',
+          autoClose: 3000
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   const handleView = (data) => {
+    if (!isMounted.current) return;
     setViewData(data);
     setShowView(true);
   };
@@ -258,6 +349,11 @@ function Service() {
     borderColor: '#dc3545',
     color: 'white'
   };
+
+  // If component is not mounted, render nothing
+  if (!isMounted.current) {
+    return null;
+  }
 
   return (
     <>
@@ -333,7 +429,14 @@ function Service() {
         </div>
                 
         {/* Add/Edit Modal */}
-        <Modal show={show} onHide={handleClose} centered>
+        <Modal 
+          show={show} 
+          onHide={handleClose} 
+          centered 
+          backdrop="static"
+          keyboard={false}
+          enforceFocus={false}
+        >
           <Modal.Header closeButton className="">
             <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
           </Modal.Header>
@@ -462,7 +565,14 @@ function Service() {
         </Modal>
 
         {/* View Modal */}
-        <Modal show={showView} onHide={handleViewClose} centered>
+        <Modal 
+          show={showView} 
+          onHide={handleViewClose} 
+          centered 
+          backdrop="static"
+          keyboard={false}
+          enforceFocus={false}
+        >
           <Modal.Header closeButton className="bg-light">
             <Modal.Title>Service Details</Modal.Title>
           </Modal.Header>
@@ -524,7 +634,14 @@ function Service() {
         </Modal>
         
         {/* Delete Confirmation Modal */}
-        <Modal show={showDeleteConfirm} onHide={handleDeleteConfirmClose} centered>
+        <Modal 
+          show={showDeleteConfirm} 
+          onHide={handleDeleteConfirmClose} 
+          centered 
+          backdrop="static"
+          keyboard={false}
+          enforceFocus={false}
+        >
           <Modal.Header closeButton className="bg-danger text-white">
             <Modal.Title>Confirm Deletion</Modal.Title>
           </Modal.Header>
@@ -552,6 +669,7 @@ function Service() {
         draggable
         pauseOnHover
         limit={3}
+        containerId="service-container"
       />
     </>
   );
