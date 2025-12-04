@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Table, Modal, Button, Form } from "react-bootstrap";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import GetCompanyId from '../../../Api/GetCompanyId';
@@ -36,6 +36,44 @@ const UnitOfMeasure = () => {
 
   // Initialize uoms as an empty array
   const [uoms, setUoms] = useState([]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Loading & Error States for API
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [unitsLoading, setUnitsLoading] = useState(false);
+  
+  // Add refs to track component state and abort controllers
+  const isMounted = useRef(true);
+  const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    // Set isMounted to true when component mounts
+    isMounted.current = true;
+    
+    // Create a new AbortController for this component instance
+    abortControllerRef.current = new AbortController();
+    
+    fetchUnits();
+    
+    // Cleanup function to set isMounted to false when component unmounts
+    return () => {
+      isMounted.current = false;
+      
+      // Abort any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Close all modals to prevent DOM issues
+      setShowModal(false);
+      setShowUOMModal(false);
+      setShowDeleteModal(false);
+    };
+  }, []);
 
   // Helper functions
   const getUOMsForCategory = (category) => {
@@ -76,49 +114,48 @@ const UnitOfMeasure = () => {
     return defaultUnits[category] || 'KG';
   };
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Loading & Error States for API
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [unitsLoading, setUnitsLoading] = useState(false);
-
   // Fetch Units from API by company ID - using the specific endpoint
   const fetchUnits = async () => {
+    if (!isMounted.current) return;
+    
     setUnitsLoading(true);
     try {
       // ✅ NEW ENDPOINT: /api/unit-details/getUnitDetailsByCompanyId/{company_id}
-      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`);
+      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`, {
+        signal: abortControllerRef.current?.signal
+      });
 
       console.log("API Response:", response.data); // Debug log
 
-      if (response.data.success) { // ✅ Changed from 'status' to 'success'
-        // The API already filters by company_id, so we can use the data directly
-        setUnits(response.data.data);
+      if (isMounted.current) {
+        if (response.data.success) { // ✅ Changed from 'status' to 'success'
+          // The API already filters by company_id, so we can use the data directly
+          setUnits(response.data.data);
 
-        // Extract unique UOM names from the response data
-        const uniqueUoms = [...new Set(response.data.data.map(item => item.uom_name))];
-        setUoms(uniqueUoms);
-      } else {
-        setError("Failed to fetch units");
+          // Extract unique UOM names from the response data
+          const uniqueUoms = [...new Set(response.data.data.map(item => item.uom_name))];
+          setUoms(uniqueUoms);
+        } else {
+          setError("Failed to fetch units");
+        }
       }
     } catch (err) {
-      console.error("Fetch Units API Error:", err);
-      setError("Failed to fetch units. Please try again.");
+      // Don't show error if request was aborted
+      if (err.name !== 'CanceledError' && isMounted.current) {
+        console.error("Fetch Units API Error:", err);
+        setError("Failed to fetch units. Please try again.");
+      }
     } finally {
-      setUnitsLoading(false);
+      if (isMounted.current) {
+        setUnitsLoading(false);
+      }
     }
   };
 
-  // Load data when component mounts
-  useEffect(() => {
-    fetchUnits();
-  }, []);
-
   // Handle Create/Edit Unit Modal
   const handleModalClose = () => {
+    if (!isMounted.current) return;
+    
     setShowModal(false);
     setUnitName("");
     setAbbreviation("");
@@ -129,6 +166,8 @@ const UnitOfMeasure = () => {
   };
 
   const handleModalShow = (data = null) => {
+    if (!isMounted.current) return;
+    
     console.log("handleModalShow called with data:", data); // Debug log
 
     if (data) {
@@ -154,6 +193,8 @@ const UnitOfMeasure = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    if (!isMounted.current) return;
+    
     setLoading(true);
 
     try {
@@ -181,41 +222,56 @@ const UnitOfMeasure = () => {
       if (editId) {
         // Update existing unit
         console.log("Updating unit with ID:", editId, "Data:", unitData); // Debug log
-        const response = await axiosInstance.put(`${BaseUrl}unit-details/${editId}`, unitData);
+        const response = await axiosInstance.put(`${BaseUrl}unit-details/${editId}`, unitData, {
+          signal: abortControllerRef.current?.signal
+        });
         if (response.data.success) { // ✅ Changed from 'status' to 'success'
-          setUnits(units.map(u => u.id === editId ? { ...u, ...unitData } : u));
-          toast.success("Unit updated successfully!", {
-            toastId: 'unit-update-success',
-            autoClose: 3000
-          });
+          if (isMounted.current) {
+            setUnits(units.map(u => u.id === editId ? { ...u, ...unitData } : u));
+            toast.success("Unit updated successfully!", {
+              toastId: 'unit-update-success',
+              autoClose: 3000
+            });
+          }
         }
       } else {
         // Create new unit
-        const response = await axiosInstance.post("unit-details", unitData);
+        const response = await axiosInstance.post(`${BaseUrl}unit-details`, unitData, {
+          signal: abortControllerRef.current?.signal
+        });
         if (response.data.success) { // ✅ Changed from 'status' to 'success'
-          setUnits([...units, { ...response.data.data, uom_name: unitName }]);
-          toast.success("Unit created successfully!", {
-            toastId: 'unit-create-success',
-            autoClose: 3000
-          });
+          if (isMounted.current) {
+            setUnits([...units, { ...response.data.data, uom_name: unitName }]);
+            toast.success("Unit created successfully!", {
+              toastId: 'unit-create-success',
+              autoClose: 3000
+            });
+          }
         }
       }
       handleModalClose();
       fetchUnits(); // Refresh data
     } catch (err) {
-      console.error("Save Unit API Error:", err);
-      setError("Failed to save unit. Please try again.");
-      toast.error("Failed to save unit. Please try again.", {
-        toastId: 'unit-save-error',
-        autoClose: 3000
-      });
+      // Don't show error if request was aborted
+      if (err.name !== 'CanceledError' && isMounted.current) {
+        console.error("Save Unit API Error:", err);
+        setError("Failed to save unit. Please try again.");
+        toast.error("Failed to save unit. Please try again.", {
+          toastId: 'unit-save-error',
+          autoClose: 3000
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   // Delete Unit - Show confirmation modal
   const handleDeleteClick = (id) => {
+    if (!isMounted.current) return;
+    
     console.log("Delete clicked for ID:", id); // Debug log
     setDeleteId(id);
     setShowDeleteModal(true);
@@ -223,6 +279,8 @@ const UnitOfMeasure = () => {
 
   // Confirm Delete
   const handleConfirmDelete = async () => {
+    if (!isMounted.current) return;
+    
     console.log("Confirming delete for ID:", deleteId); // Debug log
     setShowDeleteModal(false);
     setLoading(true);
@@ -230,28 +288,36 @@ const UnitOfMeasure = () => {
     try {
       // Fixed: Changed from data to params for delete request
       const response = await axiosInstance.delete(`${BaseUrl}unit-details/${deleteId}`, {
-        params: { company_id: companyId }
+        params: { company_id: companyId },
+        signal: abortControllerRef.current?.signal
       });
 
       console.log("Delete response:", response.data); // Debug log
 
       if (response.data.success) { // ✅ Changed from 'status' to 'success'
-        setUnits(units.filter(u => u.id !== deleteId));
-        toast.success("Unit deleted successfully.", {
-          toastId: 'unit-delete-success',
-          autoClose: 3000
-        });
+        if (isMounted.current) {
+          setUnits(units.filter(u => u.id !== deleteId));
+          toast.success("Unit deleted successfully.", {
+            toastId: 'unit-delete-success',
+            autoClose: 3000
+          });
+        }
         fetchUnits(); // Refresh data
       }
     } catch (err) {
-      console.error("Delete Unit API Error:", err);
-      toast.error("Failed to delete unit. Please try again.", {
-        toastId: 'unit-delete-error',
-        autoClose: 3000
-      });
+      // Don't show error if request was aborted
+      if (err.name !== 'CanceledError' && isMounted.current) {
+        console.error("Delete Unit API Error:", err);
+        toast.error("Failed to delete unit. Please try again.", {
+          toastId: 'unit-delete-error',
+          autoClose: 3000
+        });
+      }
     } finally {
-      setLoading(false);
-      setDeleteId(null);
+      if (isMounted.current) {
+        setLoading(false);
+        setDeleteId(null);
+      }
     }
   };
 
@@ -264,11 +330,15 @@ const UnitOfMeasure = () => {
 
   // Import Excel
   const handleImport = (e) => {
+    if (!isMounted.current) return;
+    
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
+      if (!isMounted.current) return;
+      
       try {
         const bstr = evt.target.result;
         const workbook = XLSX.read(bstr, { type: "binary" });
@@ -297,24 +367,33 @@ const UnitOfMeasure = () => {
             category: category,
             weight_per_unit: item["Weight per Unit"] || "",
           };
-          return axiosInstance.post(`${BaseUrl}unit-details`, newUnit);
+          return axiosInstance.post(`${BaseUrl}unit-details`, newUnit, {
+            signal: abortControllerRef.current?.signal
+          });
         });
 
         await Promise.all(promises);
-        fetchUnits(); // Refresh the list after import
-        toast.success("Units imported successfully!", {
-          toastId: 'units-import-success',
-          autoClose: 3000
-        });
+        if (isMounted.current) {
+          fetchUnits(); // Refresh the list after import
+          toast.success("Units imported successfully!", {
+            toastId: 'units-import-success',
+            autoClose: 3000
+          });
+        }
       } catch (error) {
-        console.error("Import Error:", error);
-        setError("Failed to import units. Please try again.");
-        toast.error("Failed to import units. Please try again.", {
-          toastId: 'units-import-error',
-          autoClose: 3000
-        });
+        // Don't show error if request was aborted
+        if (error.name !== 'CanceledError' && isMounted.current) {
+          console.error("Import Error:", error);
+          setError("Failed to import units. Please try again.");
+          toast.error("Failed to import units. Please try again.", {
+            toastId: 'units-import-error',
+            autoClose: 3000
+          });
+        }
       } finally {
-        setLoading(false);
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
     };
     reader.readAsBinaryString(file);
@@ -322,6 +401,8 @@ const UnitOfMeasure = () => {
 
   // Export to Excel
   const handleExport = () => {
+    if (!isMounted.current) return;
+    
     const exportData = units.map(({ uom_name, weight_per_unit, category }) => ({ // ✅ Changed from 'unit_name' to 'uom_name'
       "Unit Name": uom_name || "",
       "Weight per Unit": weight_per_unit || "",
@@ -339,6 +420,8 @@ const UnitOfMeasure = () => {
 
   // Download Template
   const handleDownloadTemplate = () => {
+    if (!isMounted.current) return;
+    
     const template = [{
       "Unit Name": "",
       "Weight per Unit": "",
@@ -352,11 +435,14 @@ const UnitOfMeasure = () => {
 
   // Page Change
   const handlePageChange = (pageNumber) => {
+    if (!isMounted.current) return;
     setCurrentPage(pageNumber);
   };
 
   // ✅ POST: Submit Unit Details - NEW ENDPOINT: /api/unit-details
   const handleSubmitUnitDetails = async () => {
+    if (!isMounted.current) return;
+    
     if (!selectedUnit || !weightPerUnit || !selectedCategory) {
       toast.error("Please fill all fields", {
         toastId: 'unit-details-validation-error',
@@ -377,34 +463,48 @@ const UnitOfMeasure = () => {
         uom_name: selectedUnit, // Send the name, not ID
         category: category,
         weight_per_unit: parseFloat(weightPerUnit)
+      }, {
+        signal: abortControllerRef.current?.signal
       });
 
       if (response.data.success) {
-        toast.success("Unit details saved successfully!", {
-          toastId: 'unit-details-save-success',
-          autoClose: 3000
-        });
-        setShowUOMModal(false);
-        setSelectedUnit("");
-        setWeightPerUnit("");
-        setSelectedCategory("");
-        setDynamicLabel("Weight per Unit");
-        // Refresh the units list
-        fetchUnits(); // Refresh data
+        if (isMounted.current) {
+          toast.success("Unit details saved successfully!", {
+            toastId: 'unit-details-save-success',
+            autoClose: 3000
+          });
+          setShowUOMModal(false);
+          setSelectedUnit("");
+          setWeightPerUnit("");
+          setSelectedCategory("");
+          setDynamicLabel("Weight per Unit");
+          // Refresh the units list
+          fetchUnits(); // Refresh data
+        }
       } else {
         throw new Error("Failed to save unit details");
       }
     } catch (err) {
-      console.error("Save Unit Details API Error:", err);
-      setError("Failed to save unit details. Please try again.");
-      toast.error("Failed to save unit details. Please try again.", {
-        toastId: 'unit-details-save-error',
-        autoClose: 3000
-      });
+      // Don't show error if request was aborted
+      if (err.name !== 'CanceledError' && isMounted.current) {
+        console.error("Save Unit Details API Error:", err);
+        setError("Failed to save unit details. Please try again.");
+        toast.error("Failed to save unit details. Please try again.", {
+          toastId: 'unit-details-save-error',
+          autoClose: 3000
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
+
+  // If component is not mounted, render nothing
+  if (!isMounted.current) {
+    return null;
+  }
 
   return (
     <>
@@ -572,7 +672,14 @@ const UnitOfMeasure = () => {
         </div>
 
         {/* ✅ Edit Unit Modal */}
-        <Modal show={showModal} onHide={handleModalClose} centered>
+        <Modal 
+          show={showModal} 
+          onHide={handleModalClose} 
+          centered 
+          backdrop="static"
+          keyboard={false}
+          enforceFocus={false}
+        >
           <Modal.Header closeButton>
             <Modal.Title>{editId ? "Edit Unit" : "Add Unit"}</Modal.Title>
           </Modal.Header>
@@ -672,7 +779,14 @@ const UnitOfMeasure = () => {
         </Modal>
 
         {/* ✅ Unit Details Modal */}
-        <Modal show={showUOMModal} onHide={() => setShowUOMModal(false)} centered>
+        <Modal 
+          show={showUOMModal} 
+          onHide={() => setShowUOMModal(false)} 
+          centered 
+          backdrop="static"
+          keyboard={false}
+          enforceFocus={false}
+        >
           <Modal.Header closeButton>
             <Modal.Title>Unit Details</Modal.Title>
           </Modal.Header>
@@ -772,7 +886,14 @@ const UnitOfMeasure = () => {
         </Modal>
 
         {/* ✅ Delete Confirmation Modal */}
-        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal 
+          show={showDeleteModal} 
+          onHide={() => setShowDeleteModal(false)} 
+          centered 
+          backdrop="static"
+          keyboard={false}
+          enforceFocus={false}
+        >
           <Modal.Header closeButton>
             <Modal.Title>Confirm Delete</Modal.Title>
           </Modal.Header>
@@ -810,6 +931,7 @@ const UnitOfMeasure = () => {
         draggable
         pauseOnHover
         limit={3}
+        containerId="unit-measure-container"
       />
     </>
   );
