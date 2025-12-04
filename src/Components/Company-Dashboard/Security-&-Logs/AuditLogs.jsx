@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Card, Table, InputGroup, FormControl, Button } from "react-bootstrap";
 import { FaListAlt, FaSearch, FaDownload, FaShieldAlt } from "react-icons/fa";
-
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 const AuditLogs = () => {
   const [searchTerm, setSearchTerm] = useState("");
-
+  const companyId = GetCompanyId();
   const logs = [
     {
       id: 1,

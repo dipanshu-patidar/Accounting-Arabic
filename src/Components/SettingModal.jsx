@@ -8,16 +8,16 @@ import withoutheader from "../../src/assets/withoutheader.jpeg";
 import ThemeSetting from "./SettingModal/ThemeSetting";
 
 const SettingModal = ({ show, handleClose }) => {
-  const { 
-    layout, 
-    updateLayout, 
-    sidebarColor, 
-    updateSidebarColor, 
-    topbarColor, 
+  const {
+    layout,
+    updateLayout,
+    sidebarColor,
+    updateSidebarColor,
+    topbarColor,
     updateTopbarColor,
-    resetTheme 
+    resetTheme
   } = useTheme();
-  
+
   const [layoutWidth, setLayoutWidth] = useState("fluid");
 
   const layoutImages = [

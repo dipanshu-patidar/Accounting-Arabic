@@ -345,15 +345,15 @@ const CompanyInfo = () => {
           prev.map((v) =>
             v.id === currentVoucherId
               ? {
-                  ...v,
-                  voucher_number: manualVoucherNo.trim() || v.voucher_number,
-                  voucher_date: voucherDate,
-                  account_from_id: accountFromId,
-                  account_to_id: accountToId,
-                  amount,
-                  narration: narration || '',
-                  document: response.data?.document || v.document,
-                }
+                ...v,
+                voucher_number: manualVoucherNo.trim() || v.voucher_number,
+                voucher_date: voucherDate,
+                account_from_id: accountFromId,
+                account_to_id: accountToId,
+                amount,
+                narration: narration || '',
+                document: response.data?.document || v.document,
+              }
               : v
           )
         );
@@ -1097,7 +1097,7 @@ const CompanyInfo = () => {
           ? 'Manage your company and invoice settings in both languages.'
           : t('pageDescription')}
       </p>
-      
+
       {/* Toast Container */}
       <ToastContainer
         position="top-right"
