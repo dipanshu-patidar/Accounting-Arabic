@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Modal, Button, Form } from "react-bootstrap";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import GetCompanyId from '../../../Api/GetCompanyId';
@@ -8,10 +8,16 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import * as XLSX from 'xlsx';
 
-const companyId = GetCompanyId();
-
 const UnitOfMeasure = () => {
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [canViewUOM, setCanViewUOM] = useState(false);
+  const [canCreateUOM, setCanCreateUOM] = useState(false);
+  const [canUpdateUOM, setCanUpdateUOM] = useState(false);
+  const [canDeleteUOM, setCanDeleteUOM] = useState(false);
+
   // States
+  const companyId = GetCompanyId();
   const [units, setUnits] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [unitName, setUnitName] = useState("");
@@ -37,42 +43,50 @@ const UnitOfMeasure = () => {
   // Initialize uoms as an empty array
   const [uoms, setUoms] = useState([]);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Loading & Error States for API
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [unitsLoading, setUnitsLoading] = useState(false);
-  
-  // Add refs to track component state and abort controllers
-  const isMounted = useRef(true);
-  const abortControllerRef = useRef(null);
-
+  // Check permissions
   useEffect(() => {
-    // Set isMounted to true when component mounts
-    isMounted.current = true;
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
     
-    // Create a new AbortController for this component instance
-    abortControllerRef.current = new AbortController();
-    
-    fetchUnits();
-    
-    // Cleanup function to set isMounted to false when component unmounts
-    return () => {
-      isMounted.current = false;
-      
-      // Abort any ongoing requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setCanViewUOM(true);
+      setCanCreateUOM(true);
+      setCanUpdateUOM(true);
+      setCanDeleteUOM(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+        
+        // Check if user has permissions for Unit_of_measure
+        const uomPermission = permissions.find(p => p.module_name === "Unit_of_measure");
+        
+        if (uomPermission) {
+          setCanViewUOM(uomPermission.can_view || false);
+          setCanCreateUOM(uomPermission.can_create || false);
+          setCanUpdateUOM(uomPermission.can_update || false);
+          setCanDeleteUOM(uomPermission.can_delete || false);
+        } else {
+          setCanViewUOM(false);
+          setCanCreateUOM(false);
+          setCanUpdateUOM(false);
+          setCanDeleteUOM(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setCanViewUOM(false);
+        setCanCreateUOM(false);
+        setCanUpdateUOM(false);
+        setCanDeleteUOM(false);
       }
-      
-      // Close all modals to prevent DOM issues
-      setShowModal(false);
-      setShowUOMModal(false);
-      setShowDeleteModal(false);
-    };
+    } else {
+      setCanViewUOM(false);
+      setCanCreateUOM(false);
+      setCanUpdateUOM(false);
+      setCanDeleteUOM(false);
+    }
   }, []);
 
   // Helper functions
@@ -114,48 +128,54 @@ const UnitOfMeasure = () => {
     return defaultUnits[category] || 'KG';
   };
 
-  // Fetch Units from API by company ID - using the specific endpoint
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Loading & Error States for API
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [unitsLoading, setUnitsLoading] = useState(false);
+
+  // Fetch Units from API by company ID - using specific endpoint
   const fetchUnits = async () => {
-    if (!isMounted.current) return;
-    
+    if (!canViewUOM) {
+      setUnitsLoading(false);
+      return;
+    }
+
     setUnitsLoading(true);
     try {
       // ✅ NEW ENDPOINT: /api/unit-details/getUnitDetailsByCompanyId/{company_id}
-      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`, {
-        signal: abortControllerRef.current?.signal
-      });
+      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`);
 
       console.log("API Response:", response.data); // Debug log
 
-      if (isMounted.current) {
-        if (response.data.success) { // ✅ Changed from 'status' to 'success'
-          // The API already filters by company_id, so we can use the data directly
-          setUnits(response.data.data);
+      if (response.data.success) { // ✅ Changed from 'status' to 'success'
+        // The API already filters by company_id, so we can use the data directly
+        setUnits(response.data.data);
 
-          // Extract unique UOM names from the response data
-          const uniqueUoms = [...new Set(response.data.data.map(item => item.uom_name))];
-          setUoms(uniqueUoms);
-        } else {
-          setError("Failed to fetch units");
-        }
+        // Extract unique UOM names from response data
+        const uniqueUoms = [...new Set(response.data.data.map(item => item.uom_name))];
+        setUoms(uniqueUoms);
+      } else {
+        setError("Failed to fetch units");
       }
     } catch (err) {
-      // Don't show error if request was aborted
-      if (err.name !== 'CanceledError' && isMounted.current) {
-        console.error("Fetch Units API Error:", err);
-        setError("Failed to fetch units. Please try again.");
-      }
+      console.error("Fetch Units API Error:", err);
+      setError("Failed to fetch units. Please try again.");
     } finally {
-      if (isMounted.current) {
-        setUnitsLoading(false);
-      }
+      setUnitsLoading(false);
     }
   };
 
+  // Load data when component mounts
+  useEffect(() => {
+    fetchUnits();
+  }, [canViewUOM]);
+
   // Handle Create/Edit Unit Modal
   const handleModalClose = () => {
-    if (!isMounted.current) return;
-    
     setShowModal(false);
     setUnitName("");
     setAbbreviation("");
@@ -166,7 +186,15 @@ const UnitOfMeasure = () => {
   };
 
   const handleModalShow = (data = null) => {
-    if (!isMounted.current) return;
+    if (data && !canUpdateUOM) {
+      toast.error("You don't have permission to edit units");
+      return;
+    }
+    
+    if (!data && !canCreateUOM) {
+      toast.error("You don't have permission to create units");
+      return;
+    }
     
     console.log("handleModalShow called with data:", data); // Debug log
 
@@ -175,7 +203,7 @@ const UnitOfMeasure = () => {
       setEditId(data.id);
       setUnitName(data.uom_name || ""); // ✅ Changed from 'unit_name' to 'uom_name'
       setWeightPerUnit(data.weight_per_unit || "");
-      // Set category based on the category field in the data
+      // Set category based on the category field in data
       if (data.category) {
         const lowerCaseCategory = data.category.toLowerCase();
         setSelectedCategory(lowerCaseCategory);
@@ -193,7 +221,16 @@ const UnitOfMeasure = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!isMounted.current) return;
+    
+    if (editId && !canUpdateUOM) {
+      toast.error("You don't have permission to update units");
+      return;
+    }
+    
+    if (!editId && !canCreateUOM) {
+      toast.error("You don't have permission to create units");
+      return;
+    }
     
     setLoading(true);
 
@@ -222,55 +259,45 @@ const UnitOfMeasure = () => {
       if (editId) {
         // Update existing unit
         console.log("Updating unit with ID:", editId, "Data:", unitData); // Debug log
-        const response = await axiosInstance.put(`${BaseUrl}unit-details/${editId}`, unitData, {
-          signal: abortControllerRef.current?.signal
-        });
+        const response = await axiosInstance.put(`${BaseUrl}unit-details/${editId}`, unitData);
         if (response.data.success) { // ✅ Changed from 'status' to 'success'
-          if (isMounted.current) {
-            setUnits(units.map(u => u.id === editId ? { ...u, ...unitData } : u));
-            toast.success("Unit updated successfully!", {
-              toastId: 'unit-update-success',
-              autoClose: 3000
-            });
-          }
+          setUnits(units.map(u => u.id === editId ? { ...u, ...unitData } : u));
+          toast.success("Unit updated successfully!", {
+            toastId: 'unit-update-success',
+            autoClose: 3000
+          });
         }
       } else {
         // Create new unit
-        const response = await axiosInstance.post(`${BaseUrl}unit-details`, unitData, {
-          signal: abortControllerRef.current?.signal
-        });
+        const response = await axiosInstance.post("unit-details", unitData);
         if (response.data.success) { // ✅ Changed from 'status' to 'success'
-          if (isMounted.current) {
-            setUnits([...units, { ...response.data.data, uom_name: unitName }]);
-            toast.success("Unit created successfully!", {
-              toastId: 'unit-create-success',
-              autoClose: 3000
-            });
-          }
+          setUnits([...units, { ...response.data.data, uom_name: unitName }]);
+          toast.success("Unit created successfully!", {
+            toastId: 'unit-create-success',
+            autoClose: 3000
+          });
         }
       }
       handleModalClose();
       fetchUnits(); // Refresh data
     } catch (err) {
-      // Don't show error if request was aborted
-      if (err.name !== 'CanceledError' && isMounted.current) {
-        console.error("Save Unit API Error:", err);
-        setError("Failed to save unit. Please try again.");
-        toast.error("Failed to save unit. Please try again.", {
-          toastId: 'unit-save-error',
-          autoClose: 3000
-        });
-      }
+      console.error("Save Unit API Error:", err);
+      setError("Failed to save unit. Please try again.");
+      toast.error("Failed to save unit. Please try again.", {
+        toastId: 'unit-save-error',
+        autoClose: 3000
+      });
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
   // Delete Unit - Show confirmation modal
   const handleDeleteClick = (id) => {
-    if (!isMounted.current) return;
+    if (!canDeleteUOM) {
+      toast.error("You don't have permission to delete units");
+      return;
+    }
     
     console.log("Delete clicked for ID:", id); // Debug log
     setDeleteId(id);
@@ -279,8 +306,6 @@ const UnitOfMeasure = () => {
 
   // Confirm Delete
   const handleConfirmDelete = async () => {
-    if (!isMounted.current) return;
-    
     console.log("Confirming delete for ID:", deleteId); // Debug log
     setShowDeleteModal(false);
     setLoading(true);
@@ -288,36 +313,29 @@ const UnitOfMeasure = () => {
     try {
       // Fixed: Changed from data to params for delete request
       const response = await axiosInstance.delete(`${BaseUrl}unit-details/${deleteId}`, {
-        params: { company_id: companyId },
-        signal: abortControllerRef.current?.signal
+        params: { company_id: companyId }
       });
 
       console.log("Delete response:", response.data); // Debug log
 
       if (response.data.success) { // ✅ Changed from 'status' to 'success'
-        if (isMounted.current) {
-          setUnits(units.filter(u => u.id !== deleteId));
-          toast.success("Unit deleted successfully.", {
-            toastId: 'unit-delete-success',
-            autoClose: 3000
-          });
-        }
+        setUnits(units.filter(u => u.id !== deleteId));
+        toast.success("Unit deleted successfully.", {
+          toastId: 'unit-delete-success',
+          autoClose: 3000
+        });
         fetchUnits(); // Refresh data
       }
     } catch (err) {
-      // Don't show error if request was aborted
-      if (err.name !== 'CanceledError' && isMounted.current) {
-        console.error("Delete Unit API Error:", err);
-        toast.error("Failed to delete unit. Please try again.", {
-          toastId: 'unit-delete-error',
-          autoClose: 3000
-        });
-      }
+      console.error("Delete Unit API Error:", err);
+      setError("Failed to delete unit. Please try again.");
+      toast.error("Failed to delete unit. Please try again.", {
+        toastId: 'unit-delete-error',
+        autoClose: 3000
+      });
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-        setDeleteId(null);
-      }
+      setLoading(false);
+      setDeleteId(null);
     }
   };
 
@@ -330,15 +348,16 @@ const UnitOfMeasure = () => {
 
   // Import Excel
   const handleImport = (e) => {
-    if (!isMounted.current) return;
+    if (!canCreateUOM) {
+      toast.error("You don't have permission to import units");
+      return;
+    }
     
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = async (evt) => {
-      if (!isMounted.current) return;
-      
       try {
         const bstr = evt.target.result;
         const workbook = XLSX.read(bstr, { type: "binary" });
@@ -367,33 +386,24 @@ const UnitOfMeasure = () => {
             category: category,
             weight_per_unit: item["Weight per Unit"] || "",
           };
-          return axiosInstance.post(`${BaseUrl}unit-details`, newUnit, {
-            signal: abortControllerRef.current?.signal
-          });
+          return axiosInstance.post(`${BaseUrl}unit-details`, newUnit);
         });
 
         await Promise.all(promises);
-        if (isMounted.current) {
-          fetchUnits(); // Refresh the list after import
-          toast.success("Units imported successfully!", {
-            toastId: 'units-import-success',
-            autoClose: 3000
-          });
-        }
+        fetchUnits(); // Refresh the list after import
+        toast.success("Units imported successfully!", {
+          toastId: 'units-import-success',
+          autoClose: 3000
+        });
       } catch (error) {
-        // Don't show error if request was aborted
-        if (error.name !== 'CanceledError' && isMounted.current) {
-          console.error("Import Error:", error);
-          setError("Failed to import units. Please try again.");
-          toast.error("Failed to import units. Please try again.", {
-            toastId: 'units-import-error',
-            autoClose: 3000
-          });
-        }
+        console.error("Import Error:", error);
+        setError("Failed to import units. Please try again.");
+        toast.error("Failed to import units. Please try again.", {
+          toastId: 'units-import-error',
+          autoClose: 3000
+        });
       } finally {
-        if (isMounted.current) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
     reader.readAsBinaryString(file);
@@ -401,7 +411,10 @@ const UnitOfMeasure = () => {
 
   // Export to Excel
   const handleExport = () => {
-    if (!isMounted.current) return;
+    if (!canViewUOM) {
+      toast.error("You don't have permission to export units");
+      return;
+    }
     
     const exportData = units.map(({ uom_name, weight_per_unit, category }) => ({ // ✅ Changed from 'unit_name' to 'uom_name'
       "Unit Name": uom_name || "",
@@ -420,7 +433,10 @@ const UnitOfMeasure = () => {
 
   // Download Template
   const handleDownloadTemplate = () => {
-    if (!isMounted.current) return;
+    if (!canCreateUOM) {
+      toast.error("You don't have permission to download unit templates");
+      return;
+    }
     
     const template = [{
       "Unit Name": "",
@@ -435,13 +451,15 @@ const UnitOfMeasure = () => {
 
   // Page Change
   const handlePageChange = (pageNumber) => {
-    if (!isMounted.current) return;
     setCurrentPage(pageNumber);
   };
 
   // ✅ POST: Submit Unit Details - NEW ENDPOINT: /api/unit-details
   const handleSubmitUnitDetails = async () => {
-    if (!isMounted.current) return;
+    if (!canCreateUOM) {
+      toast.error("You don't have permission to create units");
+      return;
+    }
     
     if (!selectedUnit || !weightPerUnit || !selectedCategory) {
       toast.error("Please fill all fields", {
@@ -463,47 +481,46 @@ const UnitOfMeasure = () => {
         uom_name: selectedUnit, // Send the name, not ID
         category: category,
         weight_per_unit: parseFloat(weightPerUnit)
-      }, {
-        signal: abortControllerRef.current?.signal
       });
 
       if (response.data.success) {
-        if (isMounted.current) {
-          toast.success("Unit details saved successfully!", {
-            toastId: 'unit-details-save-success',
-            autoClose: 3000
-          });
-          setShowUOMModal(false);
-          setSelectedUnit("");
-          setWeightPerUnit("");
-          setSelectedCategory("");
-          setDynamicLabel("Weight per Unit");
-          // Refresh the units list
-          fetchUnits(); // Refresh data
-        }
+        toast.success("Unit details saved successfully!", {
+          toastId: 'unit-details-save-success',
+          autoClose: 3000
+        });
+        setShowUOMModal(false);
+        setSelectedUnit("");
+        setWeightPerUnit("");
+        setSelectedCategory("");
+        setDynamicLabel("Weight per Unit");
+        // Refresh units list
+        fetchUnits(); // Refresh data
       } else {
         throw new Error("Failed to save unit details");
       }
     } catch (err) {
-      // Don't show error if request was aborted
-      if (err.name !== 'CanceledError' && isMounted.current) {
-        console.error("Save Unit Details API Error:", err);
-        setError("Failed to save unit details. Please try again.");
-        toast.error("Failed to save unit details. Please try again.", {
-          toastId: 'unit-details-save-error',
-          autoClose: 3000
-        });
-      }
+      console.error("Save Unit Details API Error:", err);
+      setError("Failed to save unit details. Please try again.");
+      toast.error("Failed to save unit details. Please try again.", {
+        toastId: 'unit-details-save-error',
+        autoClose: 3000
+      });
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
-  // If component is not mounted, render nothing
-  if (!isMounted.current) {
-    return null;
+  // If user doesn't have view permission, show access denied message
+  if (!canViewUOM) {
+    return (
+      <div className="p-4 mt-2">
+        <div className="text-center p-5">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view Unit of Measure.</p>
+          <p>Please contact your administrator for access.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -513,14 +530,16 @@ const UnitOfMeasure = () => {
           <div className="d-flex justify-content-between flex-wrap gap-2">
             <h4 className="fw-semibold">Manage Unit of Measure</h4>
             <div className="d-flex gap-2 flex-wrap">
-              <Button
-                className="rounded-pill text-white"
-                style={{ backgroundColor: "#28a745", borderColor: "#28a745" }}
-                onClick={() => document.getElementById("excelImport").click()}
-                disabled={loading}
-              >
-                <i className="fas fa-file-import me-2" /> Import
-              </Button>
+              {canCreateUOM && (
+                <Button
+                  className="rounded-pill text-white"
+                  style={{ backgroundColor: "#28a745", borderColor: "#28a745" }}
+                  onClick={() => document.getElementById("excelImport").click()}
+                  disabled={loading}
+                >
+                  <i className="fas fa-file-import me-2" /> Import
+                </Button>
+              )}
 
               <input
                 type="file"
@@ -530,37 +549,43 @@ const UnitOfMeasure = () => {
                 onChange={handleImport}
               />
 
-              <Button
-                className="rounded-pill text-white"
-                style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
-                onClick={handleExport}
-                disabled={loading}
-              >
-                <i className="fas fa-file-export me-2" /> Export
-              </Button>
+              {canViewUOM && (
+                <Button
+                  className="rounded-pill text-white"
+                  style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
+                  onClick={handleExport}
+                  disabled={loading}
+                >
+                  <i className="fas fa-file-export me-2" /> Export
+                </Button>
+              )}
 
-              <Button
-                className="rounded-pill text-white"
-                style={{ backgroundColor: "#ffc107", borderColor: "#ffc107" }}
-                onClick={handleDownloadTemplate}
-                disabled={loading}
-              >
-                <i className="fas fa-download me-2" /> Download Template
-              </Button>
+              {canCreateUOM && (
+                <Button
+                  className="rounded-pill text-white"
+                  style={{ backgroundColor: "#ffc107", borderColor: "#ffc107" }}
+                  onClick={handleDownloadTemplate}
+                  disabled={loading}
+                >
+                  <i className="fas fa-download me-2" /> Download Template
+                </Button>
+              )}
 
-              <Button
-                className="set_btn text-white fw-semibold"
-                style={{ backgroundColor: '#3daaaa', borderColor: '#3daaaa' }}
-                onClick={() => setShowUOMModal(true)}
-                disabled={loading} // Disable during API call
-              >
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                ) : (
-                  <i className="fa fa-plus me-2" />
-                )}
-                Create Unit
-              </Button>
+              {canCreateUOM && (
+                <Button
+                  className="set_btn text-white fw-semibold"
+                  style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
+                  onClick={() => setShowUOMModal(true)}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <i className="fa fa-plus me-2"></i>
+                  )}
+                  Create Unit
+                </Button>
+              )}
             </div>
           </div>
 
@@ -593,22 +618,26 @@ const UnitOfMeasure = () => {
                       <td>{u.category || ""}</td>
                       <td>{u.weight_per_unit || ""} {u.uom_name || ""}</td>
                       <td>
-                        <Button
-                          variant="link"
-                          className="text-warning p-0 me-2"
-                          onClick={() => handleModalShow(u)}
-                          disabled={loading}
-                        >
-                          <FaEdit />
-                        </Button>
-                        <Button
-                          variant="link"
-                          className="text-danger p-0 me-2"
-                          onClick={() => handleDeleteClick(u.id)}
-                          disabled={loading}
-                        >
-                          <FaTrash />
-                        </Button>
+                        {canUpdateUOM && (
+                          <Button
+                            variant="link"
+                            className="text-warning p-0 me-2"
+                            onClick={() => handleModalShow(u)}
+                            disabled={loading}
+                          >
+                            <FaEdit />
+                          </Button>
+                        )}
+                        {canDeleteUOM && (
+                          <Button
+                            variant="link"
+                            className="text-danger p-0 me-2"
+                            onClick={() => handleDeleteClick(u.id)}
+                            disabled={loading}
+                          >
+                            <FaTrash />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -647,7 +676,7 @@ const UnitOfMeasure = () => {
                       className="page-link"
                       style={
                         currentPage === index + 1
-                          ? { backgroundColor: '#3daaaa', borderColor: '#3daaaa', color: 'white' }
+                          ? { backgroundColor: "#3daaaa", borderColor: "#3daaaa", color: "white" }
                           : {}
                       }
                       onClick={() => handlePageChange(index + 1)}
@@ -672,14 +701,7 @@ const UnitOfMeasure = () => {
         </div>
 
         {/* ✅ Edit Unit Modal */}
-        <Modal 
-          show={showModal} 
-          onHide={handleModalClose} 
-          centered 
-          backdrop="static"
-          keyboard={false}
-          enforceFocus={false}
-        >
+        <Modal show={showModal} onHide={handleModalClose} centered>
           <Modal.Header closeButton>
             <Modal.Title>{editId ? "Edit Unit" : "Add Unit"}</Modal.Title>
           </Modal.Header>
@@ -779,14 +801,7 @@ const UnitOfMeasure = () => {
         </Modal>
 
         {/* ✅ Unit Details Modal */}
-        <Modal 
-          show={showUOMModal} 
-          onHide={() => setShowUOMModal(false)} 
-          centered 
-          backdrop="static"
-          keyboard={false}
-          enforceFocus={false}
-        >
+        <Modal show={showUOMModal} onHide={() => setShowUOMModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Unit Details</Modal.Title>
           </Modal.Header>
@@ -886,14 +901,7 @@ const UnitOfMeasure = () => {
         </Modal>
 
         {/* ✅ Delete Confirmation Modal */}
-        <Modal 
-          show={showDeleteModal} 
-          onHide={() => setShowDeleteModal(false)} 
-          centered 
-          backdrop="static"
-          keyboard={false}
-          enforceFocus={false}
-        >
+        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Confirm Delete</Modal.Title>
           </Modal.Header>
@@ -931,7 +939,6 @@ const UnitOfMeasure = () => {
         draggable
         pauseOnHover
         limit={3}
-        containerId="unit-measure-container"
       />
     </>
   );

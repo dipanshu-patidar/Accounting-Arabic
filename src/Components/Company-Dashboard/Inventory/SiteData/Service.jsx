@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, Button, Modal, Form } from "react-bootstrap";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import GetCompanyId from "../../../../Api/GetCompanyId";
@@ -7,12 +7,18 @@ import BaseUrl from "../../../../Api/BaseUrl";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const companyId = GetCompanyId();
-
 const initialServices = [];
 const initialUnitOptions = [];
 
 function Service() {
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [canViewServices, setCanViewServices] = useState(false);
+  const [canCreateServices, setCanCreateServices] = useState(false);
+  const [canUpdateServices, setCanUpdateServices] = useState(false);
+  const [canDeleteServices, setCanDeleteServices] = useState(false);
+  
+  const companyId = GetCompanyId();
   const [services, setServices] = useState(initialServices);
   const [unitOptions, setUnitOptions] = useState(initialUnitOptions); 
   
@@ -36,117 +42,124 @@ function Service() {
   const [loading, setLoading] = useState(false);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [unitsLoading, setUnitsLoading] = useState(false);
-  
-  // Add refs to track component state and abort controllers
-  const isMounted = useRef(true);
-  const abortControllerRef = useRef(null);
 
+  // Check permissions
   useEffect(() => {
-    // Set isMounted to true when component mounts
-    isMounted.current = true;
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
     
-    // Create a new AbortController for this component instance
-    abortControllerRef.current = new AbortController();
-    
-    fetchServices();
-    fetchUnitOptions();
-    
-    // Cleanup function to set isMounted to false when component unmounts
-    return () => {
-      isMounted.current = false;
-      
-      // Abort any ongoing requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setCanViewServices(true);
+      setCanCreateServices(true);
+      setCanUpdateServices(true);
+      setCanDeleteServices(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+        
+        // Check if user has permissions for Service
+        const servicePermission = permissions.find(p => p.module_name === "Service");
+        
+        if (servicePermission) {
+          setCanViewServices(servicePermission.can_view || false);
+          setCanCreateServices(servicePermission.can_create || false);
+          setCanUpdateServices(servicePermission.can_update || false);
+          setCanDeleteServices(servicePermission.can_delete || false);
+        } else {
+          setCanViewServices(false);
+          setCanCreateServices(false);
+          setCanUpdateServices(false);
+          setCanDeleteServices(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setCanViewServices(false);
+        setCanCreateServices(false);
+        setCanUpdateServices(false);
+        setCanDeleteServices(false);
       }
-      
-      // Close all modals to prevent DOM issues
-      setShow(false);
-      setShowView(false);
-      setShowDeleteConfirm(false);
-    };
+    } else {
+      setCanViewServices(false);
+      setCanCreateServices(false);
+      setCanUpdateServices(false);
+      setCanDeleteServices(false);
+    }
   }, []);
 
+  useEffect(() => {
+    if (canViewServices) {
+      fetchServices();
+      fetchUnitOptions();
+    }
+  }, [canViewServices]);
+
   const fetchServices = async () => {
-    if (!isMounted.current) return;
-    
     try {
       setServicesLoading(true);
-      // Pass the abort signal to the request
-      const response = await axiosInstance.get(`${BaseUrl}services/company/${companyId}`, {
-        signal: abortControllerRef.current?.signal
-      });
+      // ✅ Updated endpoint to include company_id
+      const response = await axiosInstance.get(`${BaseUrl}services/company/${companyId}`);
       
-      console.log("Services API Response:", response.data);
+      console.log("Services API Response:", response.data); // Debug log
       
-      if (isMounted.current) {
-        if (response.data.success && response.data.data) {
-          const transformedServices = response.data.data.map(service => ({
-            id: service.id,
-            name: service.service_name,
-            sku: service.sku,
-            serviceDescription: service.description,
-            unit: service.uom_name,
-            price: service.price,
-            tax: service.tax_percent,
-            remarks: service.remarks,
-            isInvoiceable: service.allow_in_invoice === "1"
-          }));
-          setServices(transformedServices);
-        } else {
-          setServices([]);
-        }
-      }
-    } catch (error) {
-      // Don't show error if request was aborted
-      if (error.name !== 'CanceledError' && isMounted.current) {
-        console.error("Error fetching services:", error.response?.data || error.message);
-        toast.error("Failed to fetch services. Please try again.", {
-          toastId: 'fetch-services-error',
-          autoClose: 3000
-        });
+      if (response.data.success && response.data.data) {
+        const transformedServices = response.data.data.map(service => ({
+          id: service.id,
+          name: service.service_name,
+          sku: service.sku,
+          serviceDescription: service.description,
+          unit: service.uom_name, // ✅ Changed from 'uom' to 'uom_name' to match API response
+          price: service.price,
+          tax: service.tax_percent,
+          remarks: service.remarks,
+          isInvoiceable: service.allow_in_invoice === "1"
+        }));
+        setServices(transformedServices);
+      } else {
         setServices([]);
       }
+    } catch (error) {
+      console.error("Error fetching services:", error.response?.data || error.message);
+      toast.error("Failed to fetch services. Please try again.", {
+        toastId: 'fetch-services-error',
+        autoClose: 3000
+      });
+      setServices([]);
     } finally {
-      if (isMounted.current) {
-        setServicesLoading(false);
-      }
+      setServicesLoading(false);
     }
   };
 
+  // ✅ UPDATED: Fetch unit options using new API endpoint
   const fetchUnitOptions = async () => {
-    if (!isMounted.current) return;
-    
     try {
       setUnitsLoading(true);
-      // Pass the abort signal to the request
-      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`, {
-        signal: abortControllerRef.current?.signal
-      });
+      // ✅ Updated endpoint to fetch unit details by company ID
+      const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`);
       
-      console.log("Unit Details API Response:", response.data);
+      console.log("Unit Details API Response:", response.data); // Debug log
       
-      if (isMounted.current) {
-        if (response.data.success && response.data.data) {
-          const unitNames = response.data.data.map(unit => unit.uom_name);
-          setUnitOptions(unitNames);
-        }
+      if (response.data.success && response.data.data) {
+        // Extract uom_name from each unit object
+        const unitNames = response.data.data.map(unit => unit.uom_name);
+        setUnitOptions(unitNames);
       }
     } catch (error) {
-      // Don't show error if request was aborted
-      if (error.name !== 'CanceledError' && isMounted.current) {
-        console.error("Error fetching unit options:", error.response?.data || error.message);
-        setUnitOptions(["piece", "kg", "meter", "liter", "box", "day", "yard", "sq.ft", "cubic meter", "Project"]);
-      }
+      console.error("Error fetching unit options:", error.response?.data || error.message);
+      // Fallback to default options
+      setUnitOptions(["piece", "kg", "meter", "liter", "box", "day", "yard", "sq.ft", "cubic meter", "Project"]);
     } finally {
-      if (isMounted.current) {
-        setUnitsLoading(false);
-      }
+      setUnitsLoading(false);
     }
   };
 
   const handleShow = () => {
-    if (!isMounted.current) return;
+    if (!canCreateServices) {
+      toast.error("You don't have permission to create services");
+      return;
+    }
     
     const defaultUnit = unitOptions.length > 0 ? unitOptions[0] : "piece";
     setForm({ 
@@ -158,30 +171,17 @@ function Service() {
       price: "", 
       tax: "", 
       remarks: "", 
-      isInvoiceable: true
+      isInvoiceable: true 
     });
     setEditMode(false);
     setShow(true);
   };
 
-  const handleClose = () => {
-    if (!isMounted.current) return;
-    setShow(false);
-  };
-  
-  const handleViewClose = () => {
-    if (!isMounted.current) return;
-    setShowView(false);
-  };
-  
-  const handleDeleteConfirmClose = () => {
-    if (!isMounted.current) return;
-    setShowDeleteConfirm(false);
-  };
+  const handleClose = () => setShow(false);
+  const handleViewClose = () => setShowView(false);
+  const handleDeleteConfirmClose = () => setShowDeleteConfirm(false);
 
   const handleInput = (e) => {
-    if (!isMounted.current) return;
-    
     const { name, value, type, checked } = e.target;
     setForm(prev => ({
       ...prev,
@@ -190,8 +190,6 @@ function Service() {
   };
 
   const handleSave = async () => {
-    if (!isMounted.current) return;
-    
     if (!form.name.trim()) {
       toast.error("Service Name Required", {
         toastId: 'service-name-required',
@@ -200,75 +198,75 @@ function Service() {
       return;
     }
     
+    if (!canCreateServices && !editMode) {
+      toast.error("You don't have permission to create services");
+      return;
+    }
+    
+    if (!canUpdateServices && editMode) {
+      toast.error("You don't have permission to update services");
+      return;
+    }
+    
+    setLoading(true);
     try {
-      setLoading(true);
       const payload = {
-        company_id: parseInt(companyId),
+        company_id: parseInt(companyId), // ✅ Convert to integer
         service_name: form.name,
         sku: form.sku,
         description: form.serviceDescription,
-        uom: form.unit,
+        uom: form.unit, // Send string, not ID
         price: parseFloat(form.price) || 0,
         tax_percent: parseFloat(form.tax) || 0,
-        allow_in_invoice: form.isInvoiceable ? 1 : 0,
+        allow_in_invoice: form.isInvoiceable ? "1" : "0",
         remarks: form.remarks
       };
 
       if (editMode && form.id) {
-        await axiosInstance.put(`${BaseUrl}services/${form.id}`, payload, {
-          signal: abortControllerRef.current?.signal
+        await axiosInstance.put(`${BaseUrl}services/${form.id}`, payload);
+        toast.success("Service updated successfully!", {
+          toastId: 'service-update-success',
+          autoClose: 3000
         });
-        if (isMounted.current) {
-          toast.success("Service updated successfully!", {
-            toastId: 'service-update-success',
-            autoClose: 3000
-          });
-        }
       } else {
-        await axiosInstance.post(`${BaseUrl}services`, payload, {
-          signal: abortControllerRef.current?.signal
-        });
-        if (isMounted.current) {
-          toast.success("Service added successfully!", {
-            toastId: 'service-add-success',
-            autoClose: 3000
-          });
-        }
-      }
-
-      await fetchServices();
-      if (isMounted.current) {
-        handleClose();
-      }
-    } catch (error) {
-      // Don't show error if request was aborted
-      if (error.name !== 'CanceledError' && isMounted.current) {
-        console.error("Error saving service:", error.response?.data || error.message);
-        const errorMessage = error.response?.data?.message || 
-          `Failed to ${editMode ? 'update' : 'add'} service. Please try again.`;
-        toast.error(errorMessage, {
-          toastId: editMode ? 'service-update-error' : 'service-add-error',
+        await axiosInstance.post(`${BaseUrl}services`, payload);
+        toast.success("Service added successfully!", {
+          toastId: 'service-add-success',
           autoClose: 3000
         });
       }
+
+      await fetchServices();
+      handleClose();
+    } catch (error) {
+      console.error("Error saving service:", error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 
+        `Failed to ${editMode ? 'update' : 'add'} service. Please try again.`;
+      toast.error(errorMessage, {
+        toastId: editMode ? 'service-update-error' : 'service-add-error',
+        autoClose: 3000
+      });
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
+  // ✅ FIXED: Edit handler — ensure unit is in unitOptions
   const handleEdit = (service) => {
-    if (!isMounted.current) return;
+    if (!canUpdateServices) {
+      toast.error("You don't have permission to edit services");
+      return;
+    }
     
+    // Ensure unit from service exists in unitOptions (case-insensitive fallback)
     let unitToUse = service.unit;
     const normalizedUnit = service.unit?.toLowerCase();
     const foundUnit = unitOptions.find(u => u.toLowerCase() === normalizedUnit);
     
     if (foundUnit) {
-      unitToUse = foundUnit;
+      unitToUse = foundUnit; // Use exact case from unitOptions
     } else if (unitOptions.length > 0) {
-      unitToUse = unitOptions[0];
+      unitToUse = unitOptions[0]; // Fallback
     }
 
     setForm({
@@ -280,48 +278,44 @@ function Service() {
   };
 
   const handleDeleteClick = (id) => {
-    if (!isMounted.current) return;
+    if (!canDeleteServices) {
+      toast.error("You don't have permission to delete services");
+      return;
+    }
+    
     setDeleteId(id);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!isMounted.current) return;
-    
+    setShowDeleteConfirm(false);
+    setLoading(true);
     try {
-      setLoading(true);
-      await axiosInstance.delete(`${BaseUrl}services/${deleteId}`, {
-        signal: abortControllerRef.current?.signal
+      await axiosInstance.delete(`${BaseUrl}services/${deleteId}`);
+      toast.success("Service deleted successfully!", {
+        toastId: 'service-delete-success',
+        autoClose: 3000
       });
-      if (isMounted.current) {
-        toast.success("Service deleted successfully!", {
-          toastId: 'service-delete-success',
-          autoClose: 3000
-        });
-      }
       await fetchServices();
-      if (isMounted.current) {
-        setShowDeleteConfirm(false);
-      }
     } catch (error) {
-      // Don't show error if request was aborted
-      if (error.name !== 'CanceledError' && isMounted.current) {
-        console.error("Error deleting service:", error.response?.data || error.message);
-        const errorMessage = error.response?.data?.message || "Failed to delete service. Please try again.";
-        toast.error(errorMessage, {
-          toastId: 'service-delete-error',
-          autoClose: 3000
-        });
-      }
+      console.error("Error deleting service:", error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || "Failed to delete service. Please try again.";
+      toast.error(errorMessage, {
+        toastId: 'service-delete-error',
+        autoClose: 3000
+      });
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
+      setDeleteId(null);
     }
   };
 
   const handleView = (data) => {
-    if (!isMounted.current) return;
+    if (!canViewServices) {
+      toast.error("You don't have permission to view services");
+      return;
+    }
+    
     setViewData(data);
     setShowView(true);
   };
@@ -350,9 +344,17 @@ function Service() {
     color: 'white'
   };
 
-  // If component is not mounted, render nothing
-  if (!isMounted.current) {
-    return null;
+  // If user doesn't have view permission, show access denied message
+  if (!canViewServices) {
+    return (
+      <div className="p-4 mt-2">
+        <div className="text-center p-5">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view Services.</p>
+          <p>Please contact your administrator for access.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -360,24 +362,28 @@ function Service() {
       <div className="container mt-5">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="mb-0">Service Management</h2>
-          <Button style={customButtonStyle} onClick={handleShow} disabled={loading}>
-            {loading ? 'Loading...' : 'Add Service'}
-          </Button>
+          {canCreateServices && (
+            <Button style={customButtonStyle} onClick={handleShow} disabled={loading}>
+              {loading ? 'Loading...' : 'Add Service'}
+            </Button>
+          )}
         </div>
         
         <div className="table-responsive">
           <Table striped bordered hover className="shadow-sm">
-            <thead className="">
+            <thead>
               <tr>
                 <th>Service Name</th>
                 <th>Service Description</th>
+                <th>Unit of Measure</th>
+                <th>Price</th>
                 <th className="text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {servicesLoading ? (
                 <tr>
-                  <td colSpan="3" className="text-center py-3">
+                  <td colSpan="5" className="text-center py-3">
                     <div className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
                     Loading services...
                   </td>
@@ -385,42 +391,50 @@ function Service() {
               ) : services.length > 0 ? (
                 services.map((s) => (
                   <tr key={s.id}>
-                    <td className="align-middle">{s.name}</td>
-                    <td className="align-middle">{s.serviceDescription}</td>
-                    <td className="text-center align-middle">
-                      <Button 
-                        size="sm" 
-                        style={viewButtonStyle} 
-                        onClick={() => handleView(s)} 
-                        title="View"
-                        className="me-1"
-                      >
-                        <FaEye />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        style={editButtonStyle} 
-                        onClick={() => handleEdit(s)} 
-                        title="Edit"
-                        className="me-1"
-                      >
-                        <FaEdit />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        style={deleteButtonStyle} 
-                        onClick={() => handleDeleteClick(s.id)} 
-                        title="Delete"
-                      >
-                        <FaTrash />
-                      </Button>
+                    <td>{s.name}</td>
+                    <td>{s.serviceDescription}</td>
+                    <td>{s.unit}</td>
+                    <td>₹{parseFloat(s.price || 0).toFixed(2)}</td>
+                    <td className="text-center">
+                      {canViewServices && (
+                        <Button 
+                          size="sm" 
+                          style={viewButtonStyle} 
+                          onClick={() => handleView(s)} 
+                          title="View"
+                          className="me-1"
+                        >
+                          <FaEye />
+                        </Button>
+                      )}
+                      {canUpdateServices && (
+                        <Button 
+                          size="sm" 
+                          style={editButtonStyle} 
+                          onClick={() => handleEdit(s)} 
+                          title="Edit"
+                          className="me-1"
+                        >
+                          <FaEdit />
+                        </Button>
+                      )}
+                      {canDeleteServices && (
+                        <Button 
+                          size="sm" 
+                          style={deleteButtonStyle} 
+                          onClick={() => handleDeleteClick(s.id)} 
+                          title="Delete"
+                        >
+                          <FaTrash />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" className="text-center py-3">
-                    No Services Added
+                  <td colSpan="5" className="text-center py-3">
+                    No services added
                   </td>
                 </tr>
               )}
@@ -429,15 +443,8 @@ function Service() {
         </div>
                 
         {/* Add/Edit Modal */}
-        <Modal 
-          show={show} 
-          onHide={handleClose} 
-          centered 
-          backdrop="static"
-          keyboard={false}
-          enforceFocus={false}
-        >
-          <Modal.Header closeButton className="">
+        <Modal show={show} onHide={handleClose} centered>
+          <Modal.Header closeButton>
             <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -448,9 +455,8 @@ function Service() {
                   name="name" 
                   value={form.name} 
                   onChange={handleInput} 
-                  required 
-                  className="shadow-sm"
                   placeholder="Enter service name"
+                  required 
                 />
               </Form.Group>
               
@@ -460,7 +466,6 @@ function Service() {
                   name="sku" 
                   value={form.sku} 
                   onChange={handleInput} 
-                  className="shadow-sm"
                   placeholder="Enter SKU (optional)"
                 />
               </Form.Group>
@@ -473,7 +478,6 @@ function Service() {
                   value={form.serviceDescription} 
                   onChange={handleInput} 
                   rows={3}
-                  className="shadow-sm"
                   placeholder="Describe the service"
                 />
               </Form.Group>
@@ -484,7 +488,6 @@ function Service() {
                   name="unit" 
                   value={form.unit} 
                   onChange={handleInput}
-                  className="shadow-sm"
                   disabled={unitsLoading}
                 >
                   {unitsLoading ? (
@@ -502,24 +505,24 @@ function Service() {
               <Form.Group className="mb-3">
                 <Form.Label>Price</Form.Label>
                 <Form.Control 
-                  type="number"
+                  type="number" 
                   step="0.01"
                   name="price" 
                   value={form.price} 
                   onChange={handleInput} 
-                  placeholder="Enter service price"
-                  className="shadow-sm"
-                  required
+                  placeholder="Enter price"
+                  required 
                 />
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Default Tax%</Form.Label>
+                <Form.Label>Default Tax %</Form.Label>
                 <Form.Control 
+                  type="number" 
+                  step="0.01"
                   name="tax" 
                   value={form.tax} 
                   onChange={handleInput} 
-                  className="shadow-sm"
                   placeholder="e.g. 18"
                 />
               </Form.Group>
@@ -528,23 +531,19 @@ function Service() {
                 <Form.Check
                   type="checkbox"
                   name="isInvoiceable"
-                  checked={form.isInvoiceable || false}
+                  checked={form.isInvoiceable}
                   onChange={handleInput}
-                  label=" Allow this service to be added in invoices"
+                  label="Allow this service to be added in invoices"
                 />
-                <Form.Text className="text-muted">
-                  If unchecked, this service won't appear when creating invoices.
-                </Form.Text>
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Remarks</Form.Label>
                 <Form.Control 
+                  as="textarea" 
                   name="remarks" 
                   value={form.remarks} 
                   onChange={handleInput} 
-                  className="shadow-sm"
-                  as="textarea"
                   rows={2}
                   placeholder="Internal notes (not visible to customers)"
                 />
@@ -565,64 +564,27 @@ function Service() {
         </Modal>
 
         {/* View Modal */}
-        <Modal 
-          show={showView} 
-          onHide={handleViewClose} 
-          centered 
-          backdrop="static"
-          keyboard={false}
-          enforceFocus={false}
-        >
-          <Modal.Header closeButton className="bg-light">
+        <Modal show={showView} onHide={handleViewClose} centered>
+          <Modal.Header closeButton>
             <Modal.Title>Service Details</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             {viewData && (
               <div className="p-3">
-                <div className="mb-4">
-                  <h5 className="text-primary">{viewData.name}</h5>
-                  <p className="text-muted mb-0">SKU: <strong>{viewData.sku || 'N/A'}</strong></p>
-                </div>
-
-                <div className="mb-4">
-                  <h6>Service Description</h6>
-                  <p>{viewData.serviceDescription || 'N/A'}</p>
-                </div>
-
-                <div className="row mb-4">
-                  <div className="col-md-6">
-                    <h6>Unit of Measure</h6>
-                    <p className="text-dark">{viewData.unit}</p>
-                  </div>
-                  <div className="col-md-6">
-                    <h6>Default Tax</h6>
-                    <p className="text-dark">{viewData.tax || 'N/A'}</p>
-                  </div>
-                  <div className="col-md-6">
-                    <h6>Price</h6>
-                    <p className="text-success">
-                      <strong>₹{parseFloat(viewData.price || 0).toFixed(2)}</strong>
-                    </p>
-                  </div>
-                  <div className="col-md-6">
-                    <h6>Available in Invoices</h6>
-                    <p>
-                      {viewData.isInvoiceable ? (
-                        <span className="badge bg-success">Yes</span>
-                      ) : (
-                        <span className="badge bg-secondary">No</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <h6>Remarks</h6>
-                  <p>{viewData.remarks || 'N/A'}</p>
-                  <p className="text-muted small fst-italic">
-                    Remarks are for internal use only; they do not display anywhere.
-                  </p>
-                </div>
+                <h5 className="text-primary mb-3">{viewData.name}</h5>
+                <p className="mb-2"><strong>SKU:</strong> {viewData.sku || 'N/A'}</p>
+                <p className="mb-2"><strong>Service Description:</strong> {viewData.serviceDescription || 'N/A'}</p>
+                <p className="mb-2"><strong>Unit of Measure:</strong> {viewData.unit || 'N/A'}</p>
+                <p className="mb-2"><strong>Price:</strong> ₹{parseFloat(viewData.price || 0).toFixed(2)}</p>
+                <p className="mb-2"><strong>Default Tax %:</strong> {viewData.tax || 'N/A'}</p>
+                <p className="mb-2">
+                  <strong>Available in Invoices:</strong> {viewData.isInvoiceable ? (
+                    <span className="badge bg-success">Yes</span>
+                  ) : (
+                    <span className="badge bg-secondary">No</span>
+                  )}
+                </p>
+                <p className="mb-2"><strong>Remarks:</strong> {viewData.remarks || 'N/A'}</p>
               </div>
             )}
           </Modal.Body>
@@ -634,22 +596,17 @@ function Service() {
         </Modal>
         
         {/* Delete Confirmation Modal */}
-        <Modal 
-          show={showDeleteConfirm} 
-          onHide={handleDeleteConfirmClose} 
-          centered 
-          backdrop="static"
-          keyboard={false}
-          enforceFocus={false}
-        >
-          <Modal.Header closeButton className="bg-danger text-white">
+        <Modal show={showDeleteConfirm} onHide={handleDeleteConfirmClose} centered>
+          <Modal.Header closeButton>
             <Modal.Title>Confirm Deletion</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <p>Are you sure you want to delete this service? This action cannot be undone.</p>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={handleDeleteConfirmClose}>Cancel</Button>
+            <Button variant="secondary" onClick={handleDeleteConfirmClose}>
+              Cancel
+            </Button>
             <Button variant="danger" onClick={handleDeleteConfirm} disabled={loading}>
               {loading ? 'Deleting...' : 'Delete'}
             </Button>
@@ -669,10 +626,9 @@ function Service() {
         draggable
         pauseOnHover
         limit={3}
-        containerId="service-container"
       />
     </>
   );
 }
 
-export default Service;    
+export default Service;

@@ -14,6 +14,63 @@ const PointOfSale = () => {
   const navigate = useNavigate();
   const { convertPrice, symbol, currency } = useContext(CurrencyContext);
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [posPermissions, setPosPermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setPosPermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for POS_Screen module
+        const posPermission = permissions.find(p => p.module_name === "POS_Screen");
+        if (posPermission) {
+          setPosPermissions({
+            can_create: posPermission.can_create,
+            can_view: posPermission.can_view,
+            can_update: posPermission.can_update,
+            can_delete: posPermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setPosPermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setPosPermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
+
   // State declarations
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -50,6 +107,11 @@ const PointOfSale = () => {
   // Fetch products and taxes
   useEffect(() => {
     const fetchData = async () => {
+      if (!posPermissions.can_view) {
+        setLoading(false);
+        return;
+      }
+      
       try {
         setLoading(true);
 
@@ -83,7 +145,7 @@ const PointOfSale = () => {
     };
 
     fetchData();
-  }, [companyId]);
+  }, [companyId, posPermissions.can_view]);
 
   // Initialize warehouse stock from products
   const [warehouseStock, setWarehouseStock] = useState({});
@@ -104,19 +166,39 @@ const PointOfSale = () => {
   };
 
   const handleAddItem = () => {
+    if (!posPermissions.can_create) {
+      alert("You don't have permission to add products.");
+      return;
+    }
+    
     setShowAdd(false);
   };
 
   const handleUpdateItem = () => {
+    if (!posPermissions.can_update) {
+      alert("You don't have permission to update products.");
+      return;
+    }
+    
     setShowEdit(false);
   };
 
   const handleAddCategory = () => {
+    if (!posPermissions.can_create) {
+      alert("You don't have permission to add categories.");
+      return;
+    }
+    
     setShowAddCategoryModal(false);
   };
 
   // --- Create Invoice ---
   const handleCreateInvoice = async () => {
+    if (!posPermissions.can_create) {
+      alert("You don't have permission to create invoices.");
+      return;
+    }
+    
     // Validation checks
     if (!selectedCustomer) {
       setValidationError("Please select a customer before creating an invoice");
@@ -172,7 +254,7 @@ const PointOfSale = () => {
         setTimeout(() => {
           navigate("/company/invoice-summary", {
             state: {
-              invoiceId: invoiceId, // Pass the invoice ID
+              invoiceId: invoiceId, // Pass invoice ID
               selectedCustomer,
               selectedProducts,
               quantity,
@@ -258,6 +340,11 @@ const PointOfSale = () => {
   };
 
   const handleDeleteTax = async (taxId) => {
+    if (!posPermissions.can_delete) {
+      alert("You don't have permission to delete tax classes.");
+      return;
+    }
+    
     if (window.confirm("Are you sure you want to delete this tax class?")) {
       try {
         const response = await axiosInstance.delete(`/taxclasses/${taxId}`);
@@ -352,7 +439,7 @@ const PointOfSale = () => {
       ...prev,
       [product.id]: prev[product.id] || 1,
     }));
-    
+
     // Set default warehouse if not already selected
     if (!selectedWarehouses[product.id] && product.warehouses && product.warehouses.length > 0) {
       setSelectedWarehouses(prev => ({
@@ -360,7 +447,7 @@ const PointOfSale = () => {
         [product.id]: product.warehouses[0].warehouse_id
       }));
     }
-    
+
     setIsModalVisible(true);
   };
 
@@ -368,13 +455,13 @@ const PointOfSale = () => {
     const selectedWarehouseId = selectedWarehouses[currentProduct.id];
     // Find the warehouse in the current product's warehouses array
     const selectedWarehouse = currentProduct.warehouses?.find(wh => String(wh.warehouse_id) === String(selectedWarehouseId));
-    
+
     // Debug logging
     console.log("Selected warehouse ID:", selectedWarehouseId);
     console.log("Selected warehouse:", selectedWarehouse);
     console.log("All warehouses:", currentProduct.warehouses);
-    
-    // If we can't find the warehouse, try to match by string conversion
+
+    // If we can't find warehouse, try to match by string conversion
     const availableStock = selectedWarehouse ? selectedWarehouse.stock_qty : 0;
     const requestedQuantity = quantity[currentProduct.id] || 1;
 
@@ -387,14 +474,14 @@ const PointOfSale = () => {
     const index = selectedProducts.findIndex((p) => p.id === currentProduct.id);
     const updated = [...selectedProducts];
     if (index > -1) {
-      updated[index] = { 
-        ...updated[index], 
+      updated[index] = {
+        ...updated[index],
         quantity: quantity[currentProduct.id] || 1,
         selectedWarehouseId: selectedWarehouseId
       };
     } else {
-      updated.push({ 
-        ...currentProduct, 
+      updated.push({
+        ...currentProduct,
         quantity: quantity[currentProduct.id] || 1,
         selectedWarehouseId: selectedWarehouseId
       });
@@ -453,7 +540,7 @@ const PointOfSale = () => {
               >
                 {tax.tax_class} - {tax.tax_value}%
               </div>
-              {tax.id !== 4 && (
+              {posPermissions.can_delete && tax.id !== 4 && (
                 <Button
                   variant="outline-danger"
                   size="sm"
@@ -468,23 +555,49 @@ const PointOfSale = () => {
             </div>
           </Dropdown.Item>
         ))}
-        <Dropdown.Divider />
-        <Dropdown.Item as="div">
-          <Button
-            variant="primary"
-            className="w-100"
-            onClick={() => setShowAddTaxModal(true)}
-          >
-            Add New Tax
-          </Button>
-        </Dropdown.Item>
+        {posPermissions.can_create && (
+          <>
+            <Dropdown.Divider />
+            <Dropdown.Item as="div">
+              <Button
+                variant="primary"
+                className="w-100"
+                onClick={() => setShowAddTaxModal(true)}
+              >
+                Add New Tax
+              </Button>
+            </Dropdown.Item>
+          </>
+        )}
       </Dropdown.Menu>
     </Dropdown>
   );
 
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <span className="ms-2">Loading POS data...</span>
+      </div>
+    );
+  }
+
+  if (!posPermissions.can_view) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="text-center">
+          <h3 className="text-danger">Access Denied</h3>
+          <p>You don't have permission to view the Point of Sale module.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
-      
+
       <Row>
         {/* Left Side */}
         <Col md={8}>
@@ -499,18 +612,21 @@ const PointOfSale = () => {
           <div className="mb-4">
             <div className="d-flex justify-content-between align-items-center mb-4 mt-2">
               <h4 className="mb-0">Available Products</h4>
-              <button
-                onClick={() => setShowAdd(true)}
-                className="btn"
-                style={{
-                  backgroundColor: "#27b2b6",
-                  color: "#fff",
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "13px",
-                }}>
-                Add Product
-              </button>
+              {posPermissions.can_create && (
+                <button
+                  onClick={() => setShowAdd(true)}
+                  className="btn"
+                  style={{
+                    backgroundColor: "#27b2b6",
+                    color: "#fff",
+                    padding: "4px 10px",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                  }}
+                >
+                  Add Product
+                </button>
+              )}
             </div>
             {products?.length === 0 ? (
               <Alert variant="warning">
@@ -538,7 +654,7 @@ const PointOfSale = () => {
                   {products.map((product) => {
                     const totalStock = product.warehouses?.reduce((sum, wh) => sum + (wh.stock_qty || 0), 0) || 0;
                     const isSelected = selectedProducts.some((p) => p.id === product.id);
-                    
+
                     return (
                       <tr key={product.id}>
                         <td>
@@ -615,7 +731,7 @@ const PointOfSale = () => {
                     const totalStock = product.warehouses?.reduce((sum, wh) => sum + (wh.stock_qty || 0), 0) || 0;
                     const selectedWarehouseId = selectedWarehouses[product.id];
                     const selectedWarehouse = product.warehouses?.find(wh => String(wh.warehouse_id) === String(selectedWarehouseId));
-                    
+
                     return (
                       <Col key={product.id} md={6} className="mb-3">
                         <Card>
@@ -625,13 +741,13 @@ const PointOfSale = () => {
                               alt={product.item_name}
                               rounded
                               style={{ width: "80px", height: "80px", objectFit: "cover" }}
-                              className="me-3"/>
+                              className="me-3" />
                             <div className="flex-grow-1">
                               <Card.Title>{product.item_name}</Card.Title>
                               <Card.Text>
                                 <div style={{ maxHeight: "80px", overflowY: "auto" }}>
                                   <small>
-                                    <strong>Selected Warehouse:</strong> {selectedWarehouse ? selectedWarehouse.warehouse_name : 'N/A'}<br />    
+                                    <strong>Selected Warehouse:</strong> {selectedWarehouse ? selectedWarehouse.warehouse_name : 'N/A'}<br />
                                   </small>
                                 </div>
                                 <br />
@@ -690,7 +806,7 @@ const PointOfSale = () => {
             </Row>
           )}
 
-          <div className="border p-3 rounded bg-white">
+          <div className="border p-3 rounded">
             <div className="d-flex justify-content-between mb-3">
               <strong>Subtotal:</strong>
               <span>{symbol}{convertPrice(calculateSubTotal())}</span>
@@ -701,7 +817,7 @@ const PointOfSale = () => {
             </div>
             {(paymentStatus === "1" || paymentStatus === "3") && (
               <>
-                <div className="d-flex justify-content-between mb-2">
+                <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
                   <strong>Amount Paid:</strong>
                   <span>{symbol}{convertPrice(amountPaid)}</span>
                 </div>
@@ -740,13 +856,15 @@ const PointOfSale = () => {
 
         {/* Buttons */}
         <div className="mt-3 d-flex gap-2 flex-column flex-sm-row-reverse">
-          <Button
-            variant="primary"
-            onClick={handleCreateInvoice}
-            disabled={selectedProducts.length === 0}
-          >
-            Generate Invoice
-          </Button>
+          {posPermissions.can_create && (
+            <Button
+              variant="primary"
+              onClick={handleCreateInvoice}
+              disabled={selectedProducts.length === 0}
+            >
+              Generate Invoice
+            </Button>
+          )}
           <Button
             variant="danger"
             onClick={handleClear}
@@ -764,9 +882,9 @@ const PointOfSale = () => {
         </Modal.Header>
         <Modal.Body>
           <h5>{currentProduct?.item_name}</h5>
-         
+
           <p><strong>Total Stock:</strong> {warehouseStock[currentProduct?.id] || 0} units</p>
-          
+
           <Form.Group className="mb-3">
             <Form.Label>Select Warehouse</Form.Label>
             <Form.Select
@@ -784,7 +902,7 @@ const PointOfSale = () => {
               )}
             </Form.Select>
           </Form.Group>
-          
+
           <Form.Group className="mb-3">
             <Form.Label>Quantity</Form.Label>
             <Form.Control
@@ -796,18 +914,18 @@ const PointOfSale = () => {
               }
             />
           </Form.Group>
-          
+
           <Form.Group>
             <Form.Label>Price per unit ({symbol})</Form.Label>
             <Form.Control type="number" value={price} onChange={handlePriceChange} />
           </Form.Group>
-          
+
           <p className="mt-3">
             <strong>Total Price:</strong> {symbol} {isNaN(price * (quantity[currentProduct?.id] || 1))
               ? "0.00"
               : convertPrice(price * (quantity[currentProduct?.id] || 1))}
           </p>
-          
+
           {quantityError && <Alert variant="danger" className="mt-2">{quantityError}</Alert>}
         </Modal.Body>
         <Modal.Footer>

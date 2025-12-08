@@ -18,6 +18,13 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function StockTransfer() {
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [hasViewPermission, setHasViewPermission] = useState(false);
+  const [hasCreatePermission, setHasCreatePermission] = useState(false);
+  const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
+  const [hasDeletePermission, setHasDeletePermission] = useState(false);
+
   // All transfers list
   const [transfers, setTransfers] = useState([]);
   const [viewTransfer, setViewTransfer] = useState(null);
@@ -53,9 +60,56 @@ function StockTransfer() {
   const [warehouses, setWarehouses] = useState([]);
   const companyId = GetCompanyId();
 
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setHasViewPermission(true);
+      setHasCreatePermission(true);
+      setHasUpdatePermission(true);
+      setHasDeletePermission(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for StockTransfer module
+        const stockTransferPermission = permissions.find(p => p.module_name === "StockTransfer");
+        
+        if (stockTransferPermission) {
+          setHasViewPermission(stockTransferPermission.can_view);
+          setHasCreatePermission(stockTransferPermission.can_create);
+          setHasUpdatePermission(stockTransferPermission.can_update);
+          setHasDeletePermission(stockTransferPermission.can_delete);
+        } else {
+          // Default to no permissions if module not found
+          setHasViewPermission(false);
+          setHasCreatePermission(false);
+          setHasUpdatePermission(false);
+          setHasDeletePermission(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setHasViewPermission(false);
+        setHasCreatePermission(false);
+        setHasUpdatePermission(false);
+        setHasDeletePermission(false);
+      }
+    } else {
+      setHasViewPermission(false);
+      setHasCreatePermission(false);
+      setHasUpdatePermission(false);
+      setHasDeletePermission(false);
+    }
+  }, []);
+
   // ✅ Fetch products by company
   const fetchProductsByCompany = async () => {
-    if (!companyId) return;
+    if (!companyId || !hasViewPermission) return;
     setProductsLoading(true);
     try {
       const response = await axiosInstance.get(`${BaseUrl}products/company/${companyId}`);
@@ -102,7 +156,7 @@ function StockTransfer() {
 
   // ✅ Fetch warehouses by company
   const fetchWarehousesByCompany = async () => {
-    if (!companyId) return;
+    if (!companyId || !hasViewPermission) return;
     setWarehousesLoading(true);
     try {
       const response = await axios.get(`${BaseUrl}warehouses/company/${companyId}`);
@@ -131,7 +185,7 @@ function StockTransfer() {
 
   // ✅ Fetch stock transfers
   const fetchStockTransfers = async () => {
-    if (!companyId) return;
+    if (!companyId || !hasViewPermission) return;
     setDataLoading(true);
     try {
       const response = await axios.get(`${BaseUrl}stocktransfers/company/${companyId}`);
@@ -189,17 +243,17 @@ function StockTransfer() {
 
   // Initial data load
   useEffect(() => {
-    if (companyId) {
+    if (companyId && hasViewPermission) {
       fetchProductsByCompany();
       fetchWarehousesByCompany();
     }
-  }, [companyId]);
+  }, [companyId, hasViewPermission]);
 
   useEffect(() => {
-    if (companyId && warehouses.length > 0) {
+    if (companyId && warehouses.length > 0 && hasViewPermission) {
       fetchStockTransfers();
     }
-  }, [companyId, warehouses.length]);
+  }, [companyId, warehouses.length, hasViewPermission]);
 
   // Auto-generate voucher
   useEffect(() => {
@@ -273,6 +327,19 @@ function StockTransfer() {
         return;
       }
     }
+
+    // Check permissions
+    if (editTransfer && !hasUpdatePermission) {
+      setError("You do not have permission to update stock transfers");
+      toast.error("You do not have permission to update stock transfers");
+      return;
+    }
+    if (!editTransfer && !hasCreatePermission) {
+      setError("You do not have permission to create stock transfers");
+      toast.error("You do not have permission to create stock transfers");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -342,6 +409,11 @@ function StockTransfer() {
   };
 
   const handleDeleteTransfer = async (id) => {
+    if (!hasDeletePermission) {
+      toast.error("You do not have permission to delete stock transfers");
+      return;
+    }
+
     if (window.confirm("Are you sure you want to delete this transfer?")) {
       try {
         await axios.delete(`${BaseUrl}stocktransfer/${id}`);
@@ -354,6 +426,10 @@ function StockTransfer() {
   };
 
   const handleEditTransfer = (transfer) => {
+    if (!hasUpdatePermission) {
+      toast.error("You do not have permission to edit stock transfers");
+      return;
+    }
     setEditTransfer(transfer);
   };
 
@@ -386,6 +462,21 @@ function StockTransfer() {
     return true;
   });
 
+  // If user doesn't have view permission, show access denied message
+  if (!hasViewPermission) {
+    return (
+      <div className="container mt-4">
+        <div className="alert alert-danger text-center">
+          <h4>Access Denied</h4>
+          <p>You don't have permission to view the Stock Transfer module.</p>
+          <button className="btn btn-primary" onClick={() => window.history.back()}>
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mt-4">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
@@ -393,17 +484,19 @@ function StockTransfer() {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3>Stock Transfer Records</h3>
-        <button
-          className="btn text-white"
-          style={{ backgroundColor: "#53b2a5" }}
-          onClick={() => {
-            resetForm();
-            setEditTransfer(null);
-            setShowModal(true);
-          }}
-        >
-          <FontAwesomeIcon icon={faPlus} className="me-2" /> Add Stock Transfer
-        </button>
+        {hasCreatePermission && (
+          <button
+            className="btn text-white"
+            style={{ backgroundColor: "#53b2a5" }}
+            onClick={() => {
+              resetForm();
+              setEditTransfer(null);
+              setShowModal(true);
+            }}
+          >
+            <FontAwesomeIcon icon={faPlus} className="me-2" /> Add Stock Transfer
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -466,14 +559,26 @@ function StockTransfer() {
                         <button className="btn btn-sm btn-success me-1" onClick={() => setViewTransfer(t)}>
                           <FontAwesomeIcon icon={faEye} />
                         </button>
-                        <button
-                          className="btn btn-sm p-2 me-1"
-                          style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "black", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}
-                          onClick={() => handleEditTransfer(t)}
-                          title="Edit Transfer"
-                        >
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
+                        {hasUpdatePermission && (
+                          <button
+                            className="btn btn-sm p-2 me-1"
+                            style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "black", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}
+                            onClick={() => handleEditTransfer(t)}
+                            title="Edit Transfer"
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                        )}
+                        {hasDeletePermission && (
+                          <button
+                            className="btn btn-sm p-2"
+                            style={{ backgroundColor: "#dc3545", borderColor: "#dc3545", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}
+                            onClick={() => handleDeleteTransfer(t.id)}
+                            title="Delete Transfer"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

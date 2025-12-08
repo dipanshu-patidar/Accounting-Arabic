@@ -35,6 +35,63 @@ const PurchaseOrderr = () => {
   const [viewModal, setViewModal] = useState(false);
   const companyId = GetCompanyId();
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [purchaseOrderPermissions, setPurchaseOrderPermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setPurchaseOrderPermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Purchase_Order module
+        const purchaseOrderPermission = permissions.find(p => p.module_name === "Purchase_Order");
+        if (purchaseOrderPermission) {
+          setPurchaseOrderPermissions({
+            can_create: purchaseOrderPermission.can_create,
+            can_view: purchaseOrderPermission.can_view,
+            can_update: purchaseOrderPermission.can_update,
+            can_delete: purchaseOrderPermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setPurchaseOrderPermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setPurchaseOrderPermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
+
   // Filters
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -47,7 +104,7 @@ const PurchaseOrderr = () => {
 
   // ✅ FETCH ALL ORDERS
   const fetchPurchaseOrders = async () => {
-    if (!companyId) {
+    if (!companyId || !purchaseOrderPermissions.can_view) {
       setLoading(false);
       return;
     }
@@ -65,17 +122,12 @@ const PurchaseOrderr = () => {
 
           return {
             id: po.company_info.id,
-            orderNo: poStep?.data?.PO_no || poStep?.data?.Manual_PO_ref || "-",
+            orderNo: quotationStep?.data?.PO_no || poStep?.data?.Manual_PO_ref || "-",
             vendor: quotationStep?.data?.quotation_from_vendor_name || "-",
-            date: poStep?.data?.order_date
-              ? poStep.data.order_date.split("T")[0]
+            date: quotationStep?.data?.order_date
+              ? quotationStep.data.order_date.split("T")[0]
               : po.company_info.created_at.split("T")[0],
             amount: formatAmount(po.total),
-            purchaseQuotation: quotationStep?.data || {},
-            purchaseOrder: poStep?.data || {},
-            goodsReceipt: grStep?.data || {},
-            bill: billStep?.data || {},
-            payment: paymentStep?.data || {},
             purchaseQuotationStatus: mapApiStatusToUiStatus(quotationStep?.status),
             purchaseOrderStatus: mapApiStatusToUiStatus(poStep?.status),
             goodsReceiptStatus: mapApiStatusToUiStatus(grStep?.status),
@@ -100,49 +152,50 @@ const PurchaseOrderr = () => {
 
   useEffect(() => {
     fetchPurchaseOrders();
-  }, [companyId]);
-// ✅ HANDLE "CREATE" or "CONTINUE"
-const getFirstIncompleteStep = (order) => {
-  if (!order) return "purchaseQuotation";
-  const sequence = [
-    { key: "purchaseQuotationStatus", ui: "purchaseQuotation" },
-    { key: "purchaseOrderStatus", ui: "purchaseOrder" },
-    { key: "goodsReceiptStatus", ui: "goodsReceipt" },
-    { key: "billStatus", ui: "bill" },
-    { key: "paymentStatus", ui: "payment" },
-  ];
+  }, [companyId, purchaseOrderPermissions.can_view]);
 
-  for (const s of sequence) {
-    // Treat any status other than 'Done' as incomplete
-    if (!order[s.key] || order[s.key] !== "Done") return s.ui;
-  }
+  // ✅ HANDLE "CREATE" or "CONTINUE"
+  const getFirstIncompleteStep = (order) => {
+    if (!order) return "purchaseQuotation";
+    const sequence = [
+      { key: "purchaseQuotationStatus", ui: "purchaseQuotation" },
+      { key: "purchaseOrderStatus", ui: "purchaseOrder" },
+      { key: "goodsReceiptStatus", ui: "goodsReceipt" },
+      { key: "billStatus", ui: "bill" },
+      { key: "paymentStatus", ui: "payment" },
+    ];
 
-  // If all steps are done, default to quotation (or you can choose to open the final step)
-  return "purchaseQuotation";
-};
+    for (const s of sequence) {
+      // Treat any status other than 'Done' as incomplete
+      if (!order[s.key] || order[s.key] !== "Done") return s.ui;
+    }
 
-const handleCreateNewPurchase = async (order = null) => {
-  if (order) {
-    const initialStep = getFirstIncompleteStep(order);
+    // If all steps are done, default to quotation (or you can choose to open final step)
+    return "purchaseQuotation";
+  };
 
+  const handleCreateNewPurchase = (order = null) => {
+    if (!purchaseOrderPermissions.can_create) {
+      alert("You don't have permission to create purchase orders.");
+      return;
+    }
+    
+    const initialStep = order ? getFirstIncompleteStep(order) : "purchaseQuotation";
+    
     setSelectedOrder({
-      id: order.id,
+      id: order?.id,
       initialStep,
-      purchaseQuotation: order.purchaseQuotation || {},
-      purchaseOrder: order.purchaseOrder || {},
-      goodsReceipt: order.goodsReceipt || {},
-      bill: order.bill || {},
-      payment: order.payment || {},
-      fullOrderData: order.fullOrderData || {},
+      purchaseQuotation: order?.purchaseQuotation || {},
+      purchaseOrder: order?.purchaseOrder || {},
+      goodsReceipt: order?.goodsReceipt || {},
+      bill: order?.bill || {},
+      payment: order?.payment || {},
+      fullOrderData: order?.fullOrderData || {},
     });
 
     setStepModal(true);
-  } else {
-    // New order
-    setSelectedOrder(null);
-    setStepModal(true);
-  }
-};
+  };
+
   // ✅ DEFINE THIS — fixes "handleModalClose is not defined"
   const handleFormClose = () => {
     setStepModal(false);
@@ -155,8 +208,13 @@ const handleCreateNewPurchase = async (order = null) => {
     handleFormClose();
   };
 
-  // 🔥 Delete order
+  // ✅ Delete order
   const handleDelete = async () => {
+    if (!purchaseOrderPermissions.can_delete) {
+      alert("You don't have permission to delete purchase orders.");
+      return;
+    }
+    
     if (!deleteConfirm) return;
     try {
       const res = await axiosInstance.delete(`purchase-orders/${deleteConfirm.id}`);
@@ -172,16 +230,21 @@ const handleCreateNewPurchase = async (order = null) => {
     }
   };
 
-  // Handle view order
+  // ✅ Handle view order
   const handleViewOrder = async (order) => {
+    if (!purchaseOrderPermissions.can_view) {
+      alert("You don't have permission to view purchase orders.");
+      return;
+    }
+    
     try {
-      // If we already have the full data, use it
+      // If we already have the full order data, use it
       if (order.fullOrderData) {
         setViewOrder(order.fullOrderData);
       } else {
         // Otherwise fetch it
         const res = await axiosInstance.get(`purchase-orders/${order.id}`);
-        if (res.data.success && res.data.data) {
+        if (res.data.success) {
           setViewOrder(res.data.data);
         } else {
           alert("Failed to load order details.");
@@ -200,14 +263,12 @@ const handleCreateNewPurchase = async (order = null) => {
     return orders.filter((order) => {
       const matchesOrderNo =
         !searchOrderNo ||
-        order.orderNo?.toString().includes(searchOrderNo.trim()) ||
-        (order.bill?.Bill_no || "").includes(searchOrderNo.trim());
+        (order.orderNo?.toString().includes(searchOrderNo.trim()));
 
       const orderDate = new Date(order.date);
       const from = fromDate ? new Date(fromDate) : null;
       const to = toDate ? new Date(toDate) : null;
-      const afterFrom = !from || orderDate >= from;
-      const beforeTo = !to || orderDate <= to;
+      const dateMatch = (!from || orderDate >= from) && (!to || orderDate <= to);
 
       const matchesPurchaseQuotationStatus =
         !purchaseQuotationStatusFilter ||
@@ -219,13 +280,11 @@ const handleCreateNewPurchase = async (order = null) => {
         !goodsReceiptStatusFilter ||
         order.goodsReceiptStatus === goodsReceiptStatusFilter;
       const matchesBillStatus = !billStatusFilter || order.billStatus === billStatusFilter;
-      const matchesPaymentStatus =
-        !paymentStatusFilter || order.paymentStatus === paymentStatusFilter;
+      const matchesPaymentStatus = !paymentStatusFilter || order.paymentStatus === paymentStatusFilter;
 
       return (
         matchesOrderNo &&
-        afterFrom &&
-        beforeTo &&
+        dateMatch &&
         matchesPurchaseQuotationStatus &&
         matchesPurchaseOrderStatus &&
         matchesGoodsReceiptStatus &&
@@ -263,8 +322,39 @@ const handleCreateNewPurchase = async (order = null) => {
     return <Badge bg={variant}>{status}</Badge>;
   };
 
-  if (loading) return <div className="p-4">Loading purchase orders...</div>;
-  if (error) return <div className="p-4 text-danger">{error}</div>;
+  // If user doesn't have view permission, show access denied message
+  if (!purchaseOrderPermissions.can_view) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="text-center">
+          <h3 className="text-danger">Access Denied</h3>
+          <p>You don't have permission to view Purchase Order module.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <span className="ms-2">Loading purchase orders...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="text-center">
+          <h3 className="text-danger">Error</h3>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
@@ -273,14 +363,15 @@ const handleCreateNewPurchase = async (order = null) => {
           <FaArrowRight size={20} color="red" />
           <h5 className="mb-0">Purchase Workflow</h5>
         </div>
-        <Button
-          variant="primary"
-          className="mb-3"
-          onClick={() => handleCreateNewPurchase()}
-          style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
-        >
-          + Create New Purchase
-        </Button>
+        {purchaseOrderPermissions.can_create && (
+          <Button
+            variant="primary"
+            onClick={() => handleCreateNewPurchase()}
+            style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
+          >
+            + Create New Purchase
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -316,7 +407,6 @@ const handleCreateNewPurchase = async (order = null) => {
             />
           </Form.Group>
         </Col>
-
         <Col md={3}>
           <Form.Group>
             <Form.Label>Purchase Quotation</Form.Label>
@@ -350,7 +440,8 @@ const handleCreateNewPurchase = async (order = null) => {
             <Form.Label>Goods Receipt</Form.Label>
             <Form.Select
               value={goodsReceiptStatusFilter}
-              onChange={(e) => setGoodsReceiptStatusFilter(e.target.value)}>
+              onChange={(e) => setGoodsReceiptStatusFilter(e.target.value)}
+            >
               <option value="">All</option>
               <option value="Pending">Pending</option>
               <option value="Done">Done</option>
@@ -386,29 +477,11 @@ const handleCreateNewPurchase = async (order = null) => {
             </Form.Select>
           </Form.Group>
         </Col>
-
-        <Col md={3} className="d-flex align-items-end">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setSearchOrderNo("");
-              setFromDate("");
-              setToDate("");
-              setPurchaseQuotationStatusFilter("");
-              setPurchaseOrderStatusFilter("");
-              setGoodsReceiptStatusFilter("");
-              setBillStatusFilter("");
-              setPaymentStatusFilter("");
-            }}
-          >
-            Clear
-          </Button>
-        </Col>
       </Row>
 
       {/* Table */}
       <Table bordered hover responsive className="text-center align-middle">
-        <thead className="">
+        <thead>
           <tr>
             <th>#</th>
             <th>Purchase No</th>
@@ -433,16 +506,15 @@ const handleCreateNewPurchase = async (order = null) => {
               <tr key={order.id}>
                 <td>{idx + 1}</td>
                 <td>{order.orderNo}</td>
-                <td>{order.vendor}</td>
                 <td>{order.date}</td>
                 <td>{order.amount}</td>
                 <td>{statusBadge(order.purchaseQuotationStatus)}</td>
                 <td>{statusBadge(order.purchaseOrderStatus)}</td>
                 <td>{statusBadge(order.goodsReceiptStatus)}</td>
                 <td>{statusBadge(order.billStatus)}</td>
-                <td>{statusBadge(order.paymentStatus)}</td> 
-                <td>
-                  <div className="d-flex gap-1 justify-content-center">
+                <td>{statusBadge(order.paymentStatus)}</td>
+                <td className="d-flex justify-content-center gap-2">
+                  {purchaseOrderPermissions.can_view && (
                     <Button
                       size="sm"
                       variant="outline-info"
@@ -451,23 +523,27 @@ const handleCreateNewPurchase = async (order = null) => {
                     >
                       <FaEye />
                     </Button>
+                  )}
+                  {purchaseOrderPermissions.can_update && (
                     <Button
                       size="sm"
                       variant="outline-primary"
                       onClick={() => handleCreateNewPurchase(order)}
+                      title="Continue Workflow"
                     >
                       Continue
                     </Button>
+                  )}
+                  {purchaseOrderPermissions.can_delete && (
                     <Button
                       size="sm"
                       variant="outline-danger"
-                      onClick={() =>
-                        setDeleteConfirm({ id: order.id, name: order.orderNo })
-                      }
+                      onClick={() => setDeleteConfirm({ id: order.id, name: order.orderNo })}
+                      title="Delete Order"
                     >
                       <FaTrash />
                     </Button>
-                  </div>
+                  )}
                 </td>
               </tr>
             ))
@@ -475,35 +551,26 @@ const handleCreateNewPurchase = async (order = null) => {
         </tbody>
       </Table>
 
-      {/* Delete Modal */}
-      <Modal show={!!deleteConfirm} onHide={() => setDeleteConfirm(null)} centered>
+      {/* Create/Edit Modal */}
+      <Modal show={stepModal} onHide={handleFormClose} size="xl" centered>
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
+          <Modal.Title>
+            {selectedOrder?.id ? "Continue Purchase" : "Create Purchase"}
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Alert variant="warning">
-            Are you sure you want to delete purchase order{" "}
-            <strong>{deleteConfirm?.name}</strong>? This cannot be undone.
-          </Alert>
+          <MultiStepPurchaseForm
+            initialData={selectedOrder}
+            initialStep={selectedOrder?.initialStep || "purchaseQuotation"}
+            onClose={handleFormClose}
+            onRefresh={fetchPurchaseOrders}
+            selectedOrder={selectedOrder}
+          />
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
-            Delete
-          </Button>
-        </Modal.Footer>
       </Modal>
 
       {/* View Order Modal */}
-      <Modal 
-        show={viewModal} 
-        onHide={() => setViewModal(false)} 
-        size="xl" 
-        centered
-        scrollable
-      >
+      <Modal show={viewModal} onHide={() => setViewModal(false)} size="xl" centered scrollable>
         <Modal.Header closeButton>
           <Modal.Title>Purchase Order Details</Modal.Title>
         </Modal.Header>
@@ -512,65 +579,104 @@ const handleCreateNewPurchase = async (order = null) => {
             <>
               {/* Company Info */}
               <Card className="mb-4">
-                <Card.Header as="h5">Company Information</Card.Header>
+                <Card.Header className="bg-light">Company Information</Card.Header>
                 <Card.Body>
                   <Row>
                     <Col md={6}>
-                      <p><strong>Company Name:</strong> {viewOrder.company_info.company_name}</p>
-                      <p><strong>Address:</strong> {viewOrder.company_info.company_address}</p>
-                      <p><strong>Email:</strong> {viewOrder.company_info.company_email}</p>
-                      <p><strong>Phone:</strong> {viewOrder.company_info.company_phone}</p>
+                      <p><strong>Company Name:</strong> {viewOrder.company_info?.company_name || 'N/A'}</p>
+                      <p><strong>Company ID:</strong> {viewOrder.company_info?.company_id || 'N/A'}</p>
+                      <p><strong>Address:</strong> {viewOrder.company_info?.company_address || 'N/A'}</p>
                     </Col>
                     <Col md={6}>
-                      <p><strong>Bank Name:</strong> {viewOrder.company_info.bank_name}</p>
-                      <p><strong>Account No:</strong> {viewOrder.company_info.account_no}</p>
-                      <p><strong>Account Holder:</strong> {viewOrder.company_info.account_holder}</p>
-                      <p><strong>IFSC Code:</strong> {viewOrder.company_info.ifsc_code}</p>
+                      <p><strong>Email:</strong> {viewOrder.company_info?.company_email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {viewOrder.company_info?.company_phone || 'N/A'}</p>
+                      <p><strong>Created At:</strong> {viewOrder.company_info?.created_at ? new Date(viewOrder.company_info.created_at).toLocaleDateString() : 'N/A'}</p>
                     </Col>
                   </Row>
-                  <Row className="mt-3">
-                    <Col md={12}>
-                      <p><strong>Terms:</strong></p>
-                      <p>{viewOrder.company_info.terms.replace(/["\\r\\n]/g, '')}</p>
-                      <p><strong>Notes:</strong></p>
-                      <p>{viewOrder.company_info.notes.replace(/["\\r\\n]/g, '')}</p>
-                    </Col>
-                  </Row>
+                  {viewOrder.company_info?.terms && (
+                    <div className="mt-3">
+                      <p><strong>Terms & Conditions:</strong></p>
+                      <div className="border p-2 rounded bg-light">
+                        {viewOrder.company_info.terms.split('\r\n').map((term, idx) => (
+                          <p key={idx} className="mb-1">{term}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </Card.Body>
               </Card>
 
               {/* Shipping Details */}
               <Card className="mb-4">
-                <Card.Header as="h5">Shipping Details</Card.Header>
+                <Card.Header className="bg-light">Shipping Details</Card.Header>
                 <Card.Body>
                   <Row>
                     <Col md={6}>
                       <h6>Bill To</h6>
-                      <p><strong>Attention:</strong> {viewOrder.shipping_details.bill_to_attention_name}</p>
-                      <p><strong>Company:</strong> {viewOrder.shipping_details.bill_to_company_name}</p>
-                      <p><strong>Address:</strong> {viewOrder.shipping_details.bill_to_company_address}</p>
-                      <p><strong>Email:</strong> {viewOrder.shipping_details.bill_to_company_email}</p>
-                      <p><strong>Phone:</strong> {viewOrder.shipping_details.bill_to_company_phone}</p>
+                      <p><strong>Name:</strong> {viewOrder.shipping_details?.bill_to_name || 'N/A'}</p>
+                      <p><strong>Address:</strong> {viewOrder.shipping_details?.bill_to_address || 'N/A'}</p>
+                      <p><strong>Email:</strong> {viewOrder.shipping_details?.bill_to_email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {viewOrder.shipping_details?.bill_to_phone || 'N/A'}</p>
+                      <p><strong>Attention:</strong> {viewOrder.shipping_details?.bill_to_attention_name || 'N/A'}</p>
                     </Col>
                     <Col md={6}>
                       <h6>Ship To</h6>
-                      <p><strong>Attention:</strong> {viewOrder.shipping_details.ship_to_attention_name}</p>
-                      <p><strong>Company:</strong> {viewOrder.shipping_details.ship_to_company_name}</p>
-                      <p><strong>Address:</strong> {viewOrder.shipping_details.ship_to_company_address}</p>
-                      <p><strong>Email:</strong> {viewOrder.shipping_details.ship_to_company_email}</p>
-                      <p><strong>Phone:</strong> {viewOrder.shipping_details.ship_to_company_phone}</p>
+                      <p><strong>Name:</strong> {viewOrder.shipping_details?.ship_to_name || 'N/A'}</p>
+                      <p><strong>Address:</strong> {viewOrder.shipping_details?.ship_to_address || 'N/A'}</p>
+                      <p><strong>Email:</strong> {viewOrder.shipping_details?.ship_to_email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {viewOrder.shipping_details?.ship_to_phone || 'N/A'}</p>
+                      <p><strong>Attention:</strong> {viewOrder.shipping_details?.ship_to_attention_name || 'N/A'}</p>
                     </Col>
                   </Row>
                 </Card.Body>
               </Card>
 
-              {/* Items */}
+              {/* Steps Information */}
               <Card className="mb-4">
-                <Card.Header as="h5">Items</Card.Header>
+                <Card.Header className="bg-light">Workflow Steps</Card.Header>
                 <Card.Body>
-                  <Table striped bordered hover>
+                  <Row>
+                    <Col md={6}>
+                      <h6>Quotation</h6>
+                      <p><strong>Status:</strong> {statusBadge(viewOrder.purchaseQuotationStatus)}</p>
+                      <p><strong>PO No:</strong> {viewOrder.purchaseQuotation?.PO_no || 'N/A'}</p>
+                      <p><strong>Manual Ref No:</strong> {viewOrder.purchaseQuotation?.Manual_PO_ref || 'N/A'}</p>
+                    </Col>
+                    <Col md={6}>
+                      <h6>Purchase Order</h6>
+                      <p><strong>Status:</strong> {statusBadge(viewOrder.purchaseOrderStatus)}</p>
+                      <p><strong>SO No:</strong> {viewOrder.purchaseOrder?.SO_no || 'N/A'}</p>
+                    </Col>
+                  </Row>
+                  <Row className="mt-3">
+                    <Col md={6}>
+                      <h6>Goods Receipt</h6>
+                      <p><strong>Status:</strong> {statusBadge(viewOrder.goodsReceiptStatus)}</p>
+                    </Col>
+                    <Col md={6}>
+                      <h6>Bill</h6>
+                      <p><strong>Status:</strong> {statusBadge(viewOrder.billStatus)}</p>
+                    </Col>
+                  </Row>
+                  <Row className="mt-3">
+                    <Col md={6}>
+                      <h6>Payment</h6>
+                      <p><strong>Status:</strong> {statusBadge(viewOrder.paymentStatus)}</p>
+                      <p><strong>Payment No:</strong> {viewOrder.payment?.Payment_no || 'N/A'}</p>
+                      <p><strong>Payment Date:</strong> {viewOrder.payment?.payment_date ? new Date(viewOrder.payment.payment_date).toLocaleDateString() : 'N/A'}</p>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+
+              {/* Items Information */}
+              <Card className="mb-4">
+                <Card.Header className="bg-light">Order Items</Card.Header>
+                <Card.Body>
+                  <Table striped bordered hover responsive>
                     <thead>
                       <tr>
+                        <th>#</th>
                         <th>Item Name</th>
                         <th>Quantity</th>
                         <th>Rate</th>
@@ -580,88 +686,39 @@ const handleCreateNewPurchase = async (order = null) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {viewOrder.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td>{item.item_name}</td>
-                          <td>{item.qty}</td>
-                          <td>{formatAmount(item.rate)}</td>
-                          <td>{item.tax_percent}%</td>
-                          <td>{item.discount}</td>
-                          <td>{formatAmount(item.amount)}</td>
+                      {viewOrder.items && viewOrder.items.length > 0 ? (
+                        viewOrder.items.map((item, idx) => (
+                          <tr key={item.id || idx}>
+                            <td>{idx + 1}</td>
+                            <td>{item.item_name || 'N/A'}</td>
+                            <td>{item.qty || '0'}</td>
+                            <td>{formatAmount(item.rate)}</td>
+                            <td>{item.tax_percent || '0'}%</td>
+                            <td>{formatAmount(item.discount)}</td>
+                            <td>{formatAmount(item.amount)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="7">No items found for this order.</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
-                   
                   </Table>
                 </Card.Body>
               </Card>
 
-              {/* Steps */}
-              <Card className="mb-4">
-                <Card.Header as="h5">Workflow Steps</Card.Header>
-                <Card.Body>
-                  {viewOrder.steps.map((step, idx) => (
-                    <div key={idx} className="mb-3">
-                      <h6 className="text-capitalize">{step.step.replace('_', ' ')} 
-                        <Badge className="ms-2" bg={
-                          step.status === 'completed' ? 'success' : 
-                          step.status === 'Pending' ? 'secondary' : 'danger'
-                        }>
-                          {step.status}
-                        </Badge>
-                      </h6>
-                      <Row>
-                        {Object.entries(step.data).map(([key, value]) => (
-                          <Col md={4} key={key} className="mb-2">
-                            <strong>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {value}
-                          </Col>
-                        ))}
-                      </Row>
-                      {idx < viewOrder.steps.length - 1 && <hr />}
-                    </div>
-                  ))}
-                </Card.Body>
-              </Card>
-
-              {/* Additional Info */}
-              <Card className="mb-4">
-                <Card.Header as="h5">Additional Information</Card.Header>
+              {/* Additional Information */}
+              <Card>
+                <Card.Header className="bg-light">Additional Information</Card.Header>
                 <Card.Body>
                   <Row>
-                    {viewOrder?.additional_info.files && viewOrder.additional_info.files.length > 0 && (
-                      <Col md={12}>
-                        <p><strong>Attached Files:</strong></p>
-                        <ul>
-                          {viewOrder?.additional_info.files.map((file, idx) => (
-                            <li key={idx}>
-                              <a href={file.url} target="_blank" rel="noopener noreferrer">
-                                {file.name}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </Col>
-                    )}
-                    {viewOrder.additional_info.signature_url && (
-                      <Col md={4}>
-                        <p><strong>Signature:</strong></p>
-                        <img src={viewOrder?.additional_info.signature_url} alt="Signature" style={{maxWidth: '100%'}} />
-                      </Col>
-                    )}
-                    {viewOrder.additional_info.photo_url && (
-                      <Col md={4}>
-                        <p><strong>Photo:</strong></p>
-                        <img src={viewOrder?.additional_info.photo_url} alt="Photo" style={{maxWidth: '100%'}} />
-                      </Col>
-                    )}
-                    {viewOrder.additional_info.attachment_url && (
-                      <Col md={4}>
-                        <p><strong>Attachment:</strong></p>
-                        <a href={viewOrder?.additional_info.attachment_url} target="_blank" rel="noopener noreferrer">
-                          View Attachment
-                        </a>
-                      </Col>
-                    )}
+                    <Col md={6}>
+                      <p><strong>Signature URL:</strong> {viewOrder.additional_info?.signature_url ? <a href={viewOrder.additional_info.signature_url} target="_blank" rel="noopener noreferrer">View Signature</a> : 'N/A'}</p>
+                      <p><strong>Photo URL:</strong> {viewOrder.additional_info?.photo_url ? <a href={viewOrder.additional_info.photo_url} target="_blank" rel="noopener noreferrer">View Photo</a> : 'N/A'}</p>
+                      <p><strong>Attachment URL:</strong> {viewOrder.additional_info?.attachment_url ? <a href={viewOrder.additional_info.attachment_url} target="_blank" rel="noopener noreferrer">View Attachment</a> : 'N/A'}</p>
+                      <p><strong>Files:</strong> {viewOrder.additional_info?.files && viewOrder.additional_info.files.length > 0 ? `${viewOrder.additional_info.files.length} file(s)` : 'N/A'}</p>
+                    </Col>
                   </Row>
                 </Card.Body>
               </Card>
@@ -672,37 +729,39 @@ const handleCreateNewPurchase = async (order = null) => {
           <Button variant="secondary" onClick={() => setViewModal(false)}>
             Close
           </Button>
+          {purchaseOrderPermissions.can_update && (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setViewModal(false);
+                handleCreateNewPurchase(viewOrder);
+              }}
+            >
+              Continue Workflow
+            </Button>
+          )}
         </Modal.Footer>
       </Modal>
 
-      {/* Form Modal */}
-      <Modal show={stepModal} onHide={handleFormClose} size="xl" centered>
+      {/* Delete Confirmation Modal */}
+      <Modal show={!!deleteConfirm} onHide={() => setDeleteConfirm(null)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>
-            {selectedOrder?.id ? "Continue Purchase" : "Create Purchase"}
-          </Modal.Title>
+          <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <MultiStepPurchaseForm
-            initialData={{
-              poId: selectedOrder?.id,
-              purchaseQuotation: selectedOrder?.purchaseQuotation || {},
-              purchaseOrder: selectedOrder?.purchaseOrder || {},
-              goodsReceipt: selectedOrder?.goodsReceipt || {},
-              bill: selectedOrder?.bill || {},
-              payment: selectedOrder?.payment || {},
-              company_info: selectedOrder?.fullOrderData?.company_info || {},
-              shipping_details: selectedOrder?.fullOrderData?.shipping_details || {},
-              additional_info: selectedOrder?.fullOrderData?.additional_info || {},
-              items: selectedOrder?.fullOrderData?.items || [],
-            }}
-            initialStep={selectedOrder?.initialStep || "purchaseQuotation"}
-            onClose={handleFormClose}
-            onRefresh={fetchPurchaseOrders}
-            onSubmit={handleFormSubmit}
-            selectedOrder={selectedOrder}
-          />
+          <Alert variant="warning">
+            Are you sure you want to delete purchase order{" "}
+            <strong>{deleteConfirm?.name}</strong>? This action cannot be undone.
+          </Alert>
         </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

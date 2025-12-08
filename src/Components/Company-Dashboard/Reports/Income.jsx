@@ -20,6 +20,15 @@ import 'react-toastify/dist/ReactToastify.css';
 const Income = () => {
   const companyId = GetCompanyId();
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [incomePermissions, setIncomePermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [editVoucher, setEditVoucher] = useState(null);
   const [deleteVoucher, setDeleteVoucher] = useState(null);
@@ -57,6 +66,54 @@ const Income = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Check user permissions for Income module
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setIncomePermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Income module
+        const incomePermission = permissions.find(p => p.module_name === "Income");
+        if (incomePermission) {
+          setIncomePermissions({
+            can_create: incomePermission.can_create,
+            can_view: incomePermission.can_view,
+            can_update: incomePermission.can_update,
+            can_delete: incomePermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setIncomePermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setIncomePermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
 
   // Generate auto receipt number
   const generateAutoReceiptNo = () => {
@@ -330,14 +387,14 @@ const Income = () => {
 
   // MAIN EFFECT: Initialize all data ONCE
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId || !incomePermissions.can_view) return;
 
     console.log("Component mounted with companyId:", companyId);
     setAutoReceiptNo(generateAutoReceiptNo());
     fetchCustomersByCompany();
     fetchAccountsByCompany(); // ✅ NEW: Fetch accounts
     fetchIncomeVouchers();
-  }, [companyId]);
+  }, [companyId, incomePermissions.can_view]);
 
   // Fetch customers when create modal is opened if not already loaded
   useEffect(() => {
@@ -594,6 +651,18 @@ const Income = () => {
     fetchAccountsByCompany();
   };
 
+  // If user doesn't have view permission, show access denied message
+  if (!incomePermissions.can_view) {
+    return (
+      <div className="p-4 mt-1 product-header">
+        <div className="text-center py-5">
+          <h3 className="text-danger">Access Denied</h3>
+          <p>You don't have permission to view the Income module.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 mt-1 product-header">
       {/* Toast Container */}
@@ -612,19 +681,21 @@ const Income = () => {
           <button className="btn btn-light border text-success">
             <FaFileExcel />
           </button>
-          <button
-            className="btn text-white d-flex align-items-center gap-2"
-            style={{ backgroundColor: "#3daaaa" }}
-            onClick={() => setShowCreateModal(true)}
-            disabled={fetching}
-          >
-            <FaPlusCircle /> Create Income Voucher
-          </button>
+          {incomePermissions.can_create && (
+            <button
+              className="btn text-white d-flex align-items-center gap-2"
+              style={{ backgroundColor: "#3daaaa" }}
+              onClick={() => setShowCreateModal(true)}
+              disabled={fetching}
+            >
+              <FaPlusCircle /> Create Income Voucher
+            </button>
+          )}
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-3 rounded shadow-sm mb-4">
+      <div className="border p-3 rounded shadow-sm mb-4">
         <div className="row g-3">
           <div className="col-md-4">
             <label className="form-label fw-semibold">Receipt No</label>
@@ -731,24 +802,30 @@ const Income = () => {
                             </span>
                           </td>
                           <td className="d-flex gap-2 justify-content-center">
-                            <button
-                              className="btn btn-sm text-info"
-                              onClick={() => handleView(voucher)}
-                            >
-                              <FaEye />
-                            </button>
-                            <button
-                              className="btn btn-sm text-warning"
-                              onClick={() => handleEdit(voucher)}
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              className="btn btn-sm text-danger"
-                              onClick={() => handleDelete(voucher)}
-                            >
-                              <FaTrash />
-                            </button>
+                            {incomePermissions.can_view && (
+                              <button
+                                className="btn btn-sm text-info"
+                                onClick={() => handleView(voucher)}
+                              >
+                                <FaEye />
+                              </button>
+                            )}
+                            {incomePermissions.can_update && (
+                              <button
+                                className="btn btn-sm text-warning"
+                                onClick={() => handleEdit(voucher)}
+                              >
+                                <FaEdit />
+                              </button>
+                            )}
+                            {incomePermissions.can_delete && (
+                              <button
+                                className="btn btn-sm text-danger"
+                                onClick={() => handleDelete(voucher)}
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -790,485 +867,57 @@ const Income = () => {
       )}
 
       {/* CREATE MODAL */}
-      <div
-        className={`modal fade ${showCreateModal ? "show" : ""}`}
-        style={{
-          display: showCreateModal ? "block" : "none",
-          backgroundColor: "rgba(0,0,0,0.5)",
-        }}
-        tabIndex="-1"
-      >
-        <div className="modal-dialog modal-dialog-centered modal-lg">
-          <div className="modal-content">
-            <div className="modal-header border-0">
-              <h5 className="modal-title fw-bold">Create Income Voucher</h5>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={() => setShowCreateModal(false)}
-              ></button>
-            </div>
-            <div className="modal-body">
-              <form onSubmit={handleSubmit}>
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">
-                      Auto Receipt No
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={autoReceiptNo}
-                      readOnly
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">
-                      Manual Receipt No
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={manualReceiptNo}
-                      onChange={(e) => setManualReceiptNo(e.target.value)}
-                      placeholder="Enter manual receipt number"
-                    />
-                  </div>
-                </div>
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">
-                      Voucher Date
-                    </label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      name="voucherDate"
-                      defaultValue={new Date().toISOString().split("T")[0]}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">
-                      Deposited To
-                    </label>
-                    {accountsLoading ? ( // ✅ Changed from customersLoading to accountsLoading
-                      <div className="d-flex align-items-center">
-                        <div className="spinner-border spinner-border-sm me-2" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                        <span>Loading accounts...</span>
-                      </div>
-                    ) : (
-                      <div className="input-group">
-                        <select className="form-select" name="depositedTo" required>
-                          <option value="">Select Account</option>
-                          {accounts.map((acc) => ( // ✅ Changed from customers to accounts
-                            <option key={acc.id} value={acc.id}>
-                              {acc.display_name || acc.bank_name_branch}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          className="btn btn-outline-secondary"
-                          type="button"
-                          onClick={refreshAccounts} // ✅ Changed from refreshCustomers to refreshAccounts
-                          disabled={accountsLoading} // ✅ Changed from customersLoading to accountsLoading
-                        >
-                          {accountsLoading ? ( // ✅ Changed from customersLoading to accountsLoading
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            ></span>
-                          ) : (
-                            "Refresh"
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="row mb-3">
-                  <div className="col-md-12">
-                    <label className="form-label fw-semibold">
-                      Received From
-                    </label>
-                    <div className="customer-search-container position-relative">
-                      <div className="input-group">
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Search customer by name or phone..."
-                          value={receivedFromSearchTerm}
-                          onChange={(e) => {
-                            handleCustomerSearch(e.target.value);
-                            setShowCustomerDropdown(true);
-                          }}
-                          onFocus={() => {
-                            setShowCustomerDropdown(true);
-                            if (!receivedFromSearchTerm.trim()) {
-                              setFilteredCustomers(customers);
-                            }
-                          }}
-                        />
-                        <span className="input-group-text">
-                          <FaSearch />
-                        </span>
-                      </div>
-                      {showCustomerDropdown && (
-                        <div
-                          className="position-absolute w-100 mt-1 shadow-sm bg-white border rounded-1"
-                          style={{ zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
-                        >
-                          {customersLoading ? (
-                            <div className="p-3 text-center">
-                              <div className="spinner-border spinner-border-sm me-2" role="status">
-                                <span className="visually-hidden">Loading...</span>
-                              </div>
-                              <span>Loading customers...</span>
-                            </div>
-                          ) : filteredCustomers.length > 0 ? (
-                            filteredCustomers.map(customer => (
-                              <div
-                                key={customer.id}
-                                className="p-3 border-bottom"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleCustomerSelect(customer)}
-                              >
-                                <div className="fw-bold">{getCustomerDisplayName(customer)}</div>
-                                {getCustomerDisplayPhone(customer) && (
-                                  <div className="small text-muted">{getCustomerDisplayPhone(customer)}</div>
-                                )}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-3 text-center text-muted">
-                              No customers found
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="input-group mt-2">
-                        <button
-                          className="btn btn-outline-secondary"
-                          type="button"
-                          onClick={refreshCustomers}
-                          disabled={customersLoading}
-                        >
-                          {customersLoading ? (
-                            <span
-                              className="spinner-border spinner-border-sm"
-                              role="status"
-                              aria-hidden="true"
-                            ></span>
-                          ) : (
-                            "Refresh"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <table className="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Income Account</th>
-                        <th>Amount</th>
-                        <th>Narration</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tableRows.map((row) => (
-                        <tr key={row.id}>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={row.account}
-                              onChange={(e) =>
-                                handleRowChange(
-                                  row.id,
-                                  "account",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="e.g., Sales Revenue"
-                              required
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={row.amount}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (/^\d*\.?\d*$/.test(val) || val === "") {
-                                  handleRowChange(row.id, "amount", val);
-                                }
-                              }}
-                              required
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="Row narration"
-                              value={row.narration}
-                              onChange={(e) =>
-                                handleRowChange(
-                                  row.id,
-                                  "narration",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-danger"
-                              onClick={() => handleDeleteRow(row.id)}
-                              disabled={tableRows.length <= 1}
-                            >
-                              <FaTrash />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={3} className="text-end fw-bold">
-                          Total: {calculateTotal()}
-                        </td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={handleAddRow}
-                  >
-                    + Add Row
-                  </button>
-                  <div className="form-check d-flex align-items-center gap-2 mb-0">
-                    <input
-                      className="form-check-input mb-0"
-                      type="checkbox"
-                      id="showNarrationCheck"
-                      checked={showNarration}
-                      onChange={(e) => setShowNarration(e.target.checked)}
-                    />
-                    <label
-                      className="form-check-label fw-semibold mb-0"
-                      htmlFor="showNarrationCheck"
-                    >
-                      Add Voucher Narration
-                    </label>
-                  </div>
-                </div>
-
-                {showNarration && (
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Narration</label>
-                    <textarea
-                      className="form-control"
-                      rows="3"
-                      value={narration}
-                      onChange={(e) => setNarration(e.target.value)}
-                      placeholder="Enter narration for this income voucher..."
-                    ></textarea>
-                  </div>
-                )}
-
-                <div className="d-flex justify-content-end gap-2">
-                  <button
-                    type="submit"
-                    className="btn"
-                    style={{ backgroundColor: "#3daaaa", color: "white" }}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        ></span>
-                        Saving...
-                      </>
-                    ) : (
-                      "Save"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* VIEW MODAL */}
-      <div
-        className={`modal fade ${showViewModal ? "show" : ""}`}
-        style={{
-          display: showViewModal ? "block" : "none",
-          backgroundColor: "rgba(0,0,0,0.5)",
-        }}
-        tabIndex="-1"
-      >
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Income Voucher Details</h5>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={() => setShowViewModal(false)}
-              ></button>
-            </div>
-            <div className="modal-body">
-              {selectedVoucher && (
-                <div>
-                  <table className="table table-bordered">
-                    <tbody>
-                      <tr>
-                        <td>
-                          <strong>Date</strong>
-                        </td>
-                        <td>{selectedVoucher.date}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Auto Receipt No</strong>
-                        </td>
-                        <td>{selectedVoucher.autoReceiptNo}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Manual Receipt No</strong>
-                        </td>
-                        <td>{selectedVoucher.manualReceiptNo}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Deposited To</strong>
-                        </td>
-                        <td>{getAccountName(selectedVoucher.depositedTo)}</td> {/* ✅ Changed to getAccountName */}
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Received From</strong>
-                        </td>
-                        <td>
-                          {getCustomerName(selectedVoucher.receivedFromId)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Status</strong>
-                        </td>
-                        <td>
-                          <span
-                            className={getStatusBadge(selectedVoucher.status)}
-                          >
-                            {selectedVoucher.status}
-                          </span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Total Amount</strong>
-                        </td>
-                        <td>{selectedVoucher.totalAmount}</td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <strong>Narration</strong>
-                        </td>
-                        <td>{selectedVoucher.narration}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <h6 className="mt-4 mb-3">Income Account Details</h6>
-                  <table className="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>Income Account</th>
-                        <th>Amount</th>
-                        <th>Narration</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedVoucher.items.map((item, index) => (
-                        <tr key={index}>
-                          <td>{getIncomeAccountName(item.account)}</td>
-                          <td>{item.amount}</td>
-                          <td>{item.narration || ""}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* EDIT MODAL */}
-      <div
-        className={`modal fade ${showEditModal ? "show" : ""}`}
-        style={{
-          display: showEditModal ? "block" : "none",
-          backgroundColor: "rgba(0,0,0,0.5)",
-        }}
-        tabIndex="-1"
-      >
-        <div className="modal-dialog modal-dialog-centered modal-lg">
-          <div className="modal-content">
-            <div className="modal-header border-0">
-              <h5 className="modal-title">Edit Income Voucher</h5>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={() => setShowEditModal(false)}
-              ></button>
-            </div>
-            <div className="modal-body">
-              {editVoucher && (
-                <form onSubmit={handleEditSubmit}>
+      {incomePermissions.can_create && (
+        <div
+          className={`modal fade ${showCreateModal ? "show" : ""}`}
+          style={{
+            display: showCreateModal ? "block" : "none",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+          tabIndex="-1"
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header border-0">
+                <h5 className="modal-title fw-bold">Create Income Voucher</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowCreateModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={handleSubmit}>
                   <div className="row mb-3">
                     <div className="col-md-6">
+                      <label className="form-label fw-semibold">
+                        Auto Receipt No
+                      </label>
                       <input
                         type="text"
                         className="form-control"
-                        name="autoReceiptNo"
-                        defaultValue={editVoucher.autoReceiptNo}
+                        value={autoReceiptNo}
                         readOnly
                       />
                     </div>
                     <div className="col-md-6">
+                      <label className="form-label fw-semibold">
+                        Manual Receipt No
+                      </label>
                       <input
                         type="text"
                         className="form-control"
-                        name="manualReceiptNo"
-                        defaultValue={editVoucher.manualReceiptNo || ""}
+                        value={manualReceiptNo}
+                        onChange={(e) => setManualReceiptNo(e.target.value)}
+                        placeholder="Enter manual receipt number"
                       />
                     </div>
                   </div>
                   <div className="row mb-3">
                     <div className="col-md-6">
+                      <label className="form-label fw-semibold">
+                        Voucher Date
+                      </label>
                       <input
                         type="date"
                         className="form-control"
@@ -1278,84 +927,249 @@ const Income = () => {
                       />
                     </div>
                     <div className="col-md-6">
-                      <select
-                        className="form-select"
-                        name="depositedTo"
-                        defaultValue={editVoucher.depositedTo}
-                      >
-                        {accounts.map((acc) => ( // ✅ Changed from customers to accounts
-                          <option key={acc.id} value={acc.id}>
-                            {acc.display_name || acc.bank_name_branch}
-                          </option>
-                        ))}
-                      </select>
+                      <label className="form-label fw-semibold">
+                        Deposited To
+                      </label>
+                      {accountsLoading ? ( // ✅ Changed from customersLoading to accountsLoading
+                        <div className="d-flex align-items-center">
+                          <div className="spinner-border spinner-border-sm me-2" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                          <span>Loading accounts...</span>
+                        </div>
+                      ) : (
+                        <div className="input-group">
+                          <select className="form-select" name="depositedTo" required>
+                            <option value="">Select Account</option>
+                            {accounts.map((acc) => ( // ✅ Changed from customers to accounts
+                              <option key={acc.id} value={acc.id}>
+                                {acc.display_name || acc.bank_name_branch}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            className="btn btn-outline-secondary"
+                            type="button"
+                            onClick={refreshAccounts} // ✅ Changed from refreshCustomers to refreshAccounts
+                            disabled={accountsLoading} // ✅ Changed from customersLoading to accountsLoading
+                          >
+                            {accountsLoading ? ( // ✅ Changed from customersLoading to accountsLoading
+                              <span
+                                className="spinner-border spinner-border-sm"
+                                role="status"
+                                aria-hidden="true"
+                              ></span>
+                            ) : (
+                              "Refresh"
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="row mb-3">
                     <div className="col-md-12">
-                      <input
-                        type="text"
-                        className="form-control"
-                        defaultValue={getCustomerName(
-                          editVoucher.receivedFromId
+                      <label className="form-label fw-semibold">
+                        Received From
+                      </label>
+                      <div className="customer-search-container position-relative">
+                        <div className="input-group">
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search customer by name or phone..."
+                            value={receivedFromSearchTerm}
+                            onChange={(e) => {
+                              handleCustomerSearch(e.target.value);
+                              setShowCustomerDropdown(true);
+                            }}
+                            onFocus={() => {
+                              setShowCustomerDropdown(true);
+                              if (!receivedFromSearchTerm.trim()) {
+                                setFilteredCustomers(customers);
+                              }
+                            }}
+                          />
+                          <span className="input-group-text">
+                            <FaSearch />
+                          </span>
+                        </div>
+                        {showCustomerDropdown && (
+                          <div
+                            className="position-absolute w-100 mt-1 shadow-sm bg-white border rounded-1"
+                            style={{ zIndex: 1000, maxHeight: '300px', overflowY: 'auto' }}
+                          >
+                            {customersLoading ? (
+                              <div className="p-3 text-center">
+                                <div className="spinner-border spinner-border-sm me-2" role="status">
+                                  <span className="visually-hidden">Loading...</span>
+                                </div>
+                                <span>Loading customers...</span>
+                              </div>
+                            ) : filteredCustomers.length > 0 ? (
+                              filteredCustomers.map(customer => (
+                                <div
+                                  key={customer.id}
+                                  className="p-3 border-bottom"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleCustomerSelect(customer)}
+                                >
+                                  <div className="fw-bold">{getCustomerDisplayName(customer)}</div>
+                                  {getCustomerDisplayPhone(customer) && (
+                                    <div className="small text-muted">{getCustomerDisplayPhone(customer)}</div>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="p-3 text-center text-muted">
+                                No customers found
+                              </div>
+                            )}
+                          </div>
                         )}
-                        readOnly
-                      />
+                        <div className="input-group mt-2">
+                          <button
+                            className="btn btn-outline-secondary"
+                            type="button"
+                            onClick={refreshCustomers}
+                            disabled={customersLoading}
+                          >
+                            {customersLoading ? (
+                              <span
+                                className="spinner-border spinner-border-sm"
+                                role="status"
+                                aria-hidden="true"
+                              ></span>
+                            ) : (
+                              "Refresh"
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="row mb-3">
-                    <div className="col-md-12">
+
+                  <div className="mb-3">
+                    <table className="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Income Account</th>
+                          <th>Amount</th>
+                          <th>Narration</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableRows.map((row) => (
+                          <tr key={row.id}>
+                            <td>
+                              <input
+                                type="text"
+                                className="form-control"
+                                value={row.account}
+                                onChange={(e) =>
+                                  handleRowChange(
+                                    row.id,
+                                    "account",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="e.g., Sales Revenue"
+                                required
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                className="form-control"
+                                value={row.amount}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (/^\d*\.?\d*$/.test(val) || val === "") {
+                                    handleRowChange(row.id, "amount", val);
+                                  }
+                                }}
+                                required
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Row narration"
+                                value={row.narration}
+                                onChange={(e) =>
+                                  handleRowChange(
+                                    row.id,
+                                    "narration",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDeleteRow(row.id)}
+                                disabled={tableRows.length <= 1}
+                              >
+                                <FaTrash />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan={3} className="text-end fw-bold">
+                            Total: {calculateTotal()}
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={handleAddRow}
+                    >
+                      + Add Row
+                    </button>
+                    <div className="form-check d-flex align-items-center gap-2 mb-0">
                       <input
-                        type="text"
-                        className="form-control"
-                        defaultValue={editVoucher.items
-                          .map((i) => i.account)
-                          .join(", ")}
-                        readOnly
+                        className="form-check-input mb-0"
+                        type="checkbox"
+                        id="showNarrationCheck"
+                        checked={showNarration}
+                        onChange={(e) => setShowNarration(e.target.checked)}
                       />
+                      <label
+                        className="form-check-label fw-semibold mb-0"
+                        htmlFor="showNarrationCheck"
+                      >
+                        Add Voucher Narration
+                      </label>
                     </div>
                   </div>
-                  <div className="row mb-3">
-                    <div className="col-md-12">
-                      <input
-                        type="text"
-                        className="form-control"
-                        defaultValue={editVoucher.totalAmount}
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                  <div className="row mb-3">
-                    <div className="col-md-12">
+
+                  {showNarration && (
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Narration</label>
                       <textarea
                         className="form-control"
                         rows="3"
-                        defaultValue={editVoucher.narration}
-                        name="narration"
+                        value={narration}
+                        onChange={(e) => setNarration(e.target.value)}
+                        placeholder="Enter narration for this income voucher..."
                       ></textarea>
                     </div>
-                  </div>
-                  <div className="row mb-3">
-                    <div className="col-md-12">
-                      <select
-                        className="form-select"
-                        name="status"
-                        defaultValue={editVoucher.status.toLowerCase()}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="d-flex justify-content-end gap-3 mt-4">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary"
-                      onClick={() => setShowEditModal(false)}
-                    >
-                      Cancel
-                    </button>
+                  )}
+
+                  <div className="d-flex justify-content-end gap-2">
                     <button
                       type="submit"
                       className="btn"
@@ -1372,82 +1186,353 @@ const Income = () => {
                           Saving...
                         </>
                       ) : (
-                        "Save Changes"
+                        "Save"
                       )}
                     </button>
                   </div>
                 </form>
-              )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* VIEW MODAL */}
+      {incomePermissions.can_view && (
+        <div
+          className={`modal fade ${showViewModal ? "show" : ""}`}
+          style={{
+            display: showViewModal ? "block" : "none",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+          tabIndex="-1"
+        >
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Income Voucher Details</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowViewModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {selectedVoucher && (
+                  <div>
+                    <table className="table table-bordered">
+                      <tbody>
+                        <tr>
+                          <td>
+                            <strong>Date</strong>
+                          </td>
+                          <td>{selectedVoucher.date}</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Auto Receipt No</strong>
+                          </td>
+                          <td>{selectedVoucher.autoReceiptNo}</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Manual Receipt No</strong>
+                          </td>
+                          <td>{selectedVoucher.manualReceiptNo}</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Deposited To</strong>
+                          </td>
+                          <td>{getAccountName(selectedVoucher.depositedTo)}</td> {/* ✅ Changed to getAccountName */}
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Received From</strong>
+                          </td>
+                          <td>
+                            {getCustomerName(selectedVoucher.receivedFromId)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Status</strong>
+                          </td>
+                          <td>
+                            <span
+                              className={getStatusBadge(selectedVoucher.status)}
+                            >
+                              {selectedVoucher.status}
+                            </span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Total Amount</strong>
+                          </td>
+                          <td>{selectedVoucher.totalAmount}</td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <strong>Narration</strong>
+                          </td>
+                          <td>{selectedVoucher.narration}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <h6 className="mt-4 mb-3">Income Account Details</h6>
+                    <table className="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Income Account</th>
+                          <th>Amount</th>
+                          <th>Narration</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedVoucher.items.map((item, index) => (
+                          <tr key={index}>
+                            <td>{getIncomeAccountName(item.account)}</td>
+                            <td>{item.amount}</td>
+                            <td>{item.narration || ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {incomePermissions.can_update && (
+        <div
+          className={`modal fade ${showEditModal ? "show" : ""}`}
+          style={{
+            display: showEditModal ? "block" : "none",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+          tabIndex="-1"
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content">
+              <div className="modal-header border-0">
+                <h5 className="modal-title">Edit Income Voucher</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowEditModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {editVoucher && (
+                  <form onSubmit={handleEditSubmit}>
+                    <div className="row mb-3">
+                      <div className="col-md-6">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="autoReceiptNo"
+                          defaultValue={editVoucher.autoReceiptNo}
+                          readOnly
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <input
+                          type="text"
+                          className="form-control"
+                          name="manualReceiptNo"
+                          defaultValue={editVoucher.manualReceiptNo || ""}
+                        />
+                      </div>
+                    </div>
+                    <div className="row mb-3">
+                      <div className="col-md-6">
+                        <input
+                          type="date"
+                          className="form-control"
+                          name="voucherDate"
+                          defaultValue={new Date().toISOString().split("T")[0]}
+                          required
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <select
+                          className="form-select"
+                          name="depositedTo"
+                          defaultValue={editVoucher.depositedTo}
+                        >
+                          {accounts.map((acc) => ( // ✅ Changed from customers to accounts
+                            <option key={acc.id} value={acc.id}>
+                              {acc.display_name || acc.bank_name_branch}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="row mb-3">
+                      <div className="col-md-12">
+                        <input
+                          type="text"
+                          className="form-control"
+                          defaultValue={getCustomerName(
+                            editVoucher.receivedFromId
+                          )}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                    <div className="row mb-3">
+                      <div className="col-md-12">
+                        <input
+                          type="text"
+                          className="form-control"
+                          defaultValue={editVoucher.items
+                            .map((i) => i.account)
+                            .join(", ")}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                    <div className="row mb-3">
+                      <div className="col-md-12">
+                        <input
+                          type="text"
+                          className="form-control"
+                          defaultValue={editVoucher.totalAmount}
+                          readOnly
+                        />
+                      </div>
+                    </div>
+                    <div className="row mb-3">
+                      <div className="col-md-12">
+                        <textarea
+                          className="form-control"
+                          rows="3"
+                          defaultValue={editVoucher.narration}
+                          name="narration"
+                        ></textarea>
+                      </div>
+                    </div>
+                    <div className="row mb-3">
+                      <div className="col-md-12">
+                        <select
+                          className="form-select"
+                          name="status"
+                          defaultValue={editVoucher.status.toLowerCase()}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="d-flex justify-content-end gap-3 mt-4">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowEditModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn"
+                        style={{ backgroundColor: "#3daaaa", color: "white" }}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            ></span>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Changes"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DELETE MODAL */}
-      <div
-        className={`modal fade ${showDeleteModal ? "show" : ""}`}
-        style={{
-          display: showDeleteModal ? "block" : "none",
-          backgroundColor: "rgba(0,0,0,0.5)",
-        }}
-        tabIndex="-1"
-      >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content border-0" style={{ borderRadius: 16 }}>
-            <div className="modal-body text-center py-4">
-              <div
-                className="mx-auto mb-3"
-                style={{
-                  width: 70,
-                  height: 70,
-                  background: "#FFF5F2",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <FaTrash size={32} color="#F04438" />
-              </div>
-              <h4 className="fw-bold mb-2">Delete Income Voucher</h4>
-              <p className="mb-4" style={{ color: "#555" }}>
-                Are you sure you want to delete this income voucher?
-              </p>
-              <div className="d-flex justify-content-center gap-3">
-                <button
-                  className="btn btn-dark"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  No, Cancel
-                </button>
-                <button
-                  className="btn"
+      {incomePermissions.can_delete && (
+        <div
+          className={`modal fade ${showDeleteModal ? "show" : ""}`}
+          style={{
+            display: showDeleteModal ? "block" : "none",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+          tabIndex="-1"
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0" style={{ borderRadius: 16 }}>
+              <div className="modal-body text-center py-4">
+                <div
+                  className="mx-auto mb-3"
                   style={{
-                    background: "#3daaaa",
-                    color: "#fff",
-                    fontWeight: 600,
+                    width: 70,
+                    height: 70,
+                    background: "#FFF5F2",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                  onClick={confirmDelete}
-                  disabled={loading}
                 >
-                  {loading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                      Deleting...
-                    </>
-                  ) : (
-                    "Yes, Delete"
-                  )}
-                </button>
+                  <FaTrash size={32} color="#F04438" />
+                </div>
+                <h4 className="fw-bold mb-2">Delete Income Voucher</h4>
+                <p className="mb-4" style={{ color: "#555" }}>
+                  Are you sure you want to delete this income voucher?
+                </p>
+                <div className="d-flex justify-content-center gap-3">
+                  <button
+                    className="btn btn-dark"
+                    onClick={() => setShowDeleteModal(false)}
+                  >
+                    No, Cancel
+                  </button>
+                  <button
+                    className="btn"
+                    style={{
+                      background: "#3daaaa",
+                      color: "#fff",
+                      fontWeight: 600,
+                    }}
+                    onClick={confirmDelete}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                        Deleting...
+                      </>
+                    ) : (
+                      "Yes, Delete"
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Page Info */}
       <Card className="mb-4 p-3 shadow rounded-4 mt-2">

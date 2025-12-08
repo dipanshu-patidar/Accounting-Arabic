@@ -262,7 +262,7 @@ const mapApiVoucherToLocal = (apiVoucher) => {
 };
 
 // ✅ CreateVoucherModal
-const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId }) => {
+const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId, permissions }) => {
   const [voucherType, setVoucherType] = useState(editData?.voucherType || "Expense");
   const [formData, setFormData] = useState(editData || initialFormData);
   const [isSaving, setIsSaving] = useState(false); // ✅ ADDED: Loading state for save operation
@@ -1512,7 +1512,7 @@ const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId }) => {
                 <Button 
                   style={{ backgroundColor: "#53b2a5", border: "none", borderRadius: "50px", fontWeight: 600 }} 
                   onClick={handleSubmit}
-                  disabled={isSaving} // ✅ UPDATED: Disable button when saving
+                  disabled={isSaving || !permissions.can_update} // ✅ UPDATED: Disable button when saving or no update permission
                 >
                   {isSaving ? ( // ✅ UPDATED: Show spinner when saving
                     <>
@@ -1549,7 +1549,7 @@ const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId }) => {
 };
 
 // VoucherViewModal
-const VoucherViewModal = ({ show, onHide, voucher }) => {
+const VoucherViewModal = ({ show, onHide, voucher, permissions }) => {
   const pdfRef = useRef();
   if (!voucher) return <Modal show={show} onHide={onHide}><Modal.Body>No data</Modal.Body></Modal>;
 
@@ -1608,7 +1608,9 @@ const VoucherViewModal = ({ show, onHide, voucher }) => {
         {voucher.signature && <div><h6>Signature:</h6><img src={voucher.signature} alt="sig" style={{ maxWidth: "200px" }} /></div>}
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="outline-info" onClick={handlePrint}>🖨️ Print</Button>
+        {permissions.can_update && (
+          <Button variant="outline-info" onClick={handlePrint}>🖨️ Print</Button>
+        )}
         <Button variant="secondary" onClick={onHide}>Close</Button>
       </Modal.Footer>
     </Modal>
@@ -1624,9 +1626,66 @@ const CreateVoucher = () => {
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const companyId = GetCompanyId();
+  
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [createVoucherPermissions, setCreateVoucherPermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setCreateVoucherPermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Create_Voucher module
+        const createVoucherPermission = permissions.find(p => p.module_name === "Create_Voucher");
+        if (createVoucherPermission) {
+          setCreateVoucherPermissions({
+            can_create: createVoucherPermission.can_create,
+            can_view: createVoucherPermission.can_view,
+            can_update: createVoucherPermission.can_update,
+            can_delete: createVoucherPermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setCreateVoucherPermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setCreateVoucherPermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
 
   const fetchVouchers = async () => {
-    if (!companyId) {
+    if (!companyId || !createVoucherPermissions.can_view) {
       setLoading(false);
       return;
     }
@@ -1649,7 +1708,7 @@ const CreateVoucher = () => {
 
   useEffect(() => {
     fetchVouchers(); 
-  }, [companyId]);
+  }, [companyId, createVoucherPermissions.can_view]);
 
   const handleSaveVoucher = async (voucher, vendors, customers, accounts) => {
     try {
@@ -1708,6 +1767,18 @@ const CreateVoucher = () => {
     setShowViewModal(true);
   };
 
+  // If user doesn't have view permission, show access denied message
+  if (!createVoucherPermissions.can_view) {
+    return (
+      <div className="container py-4">
+        <div className="text-center py-5">
+          <h3 className="text-danger">Access Denied</h3>
+          <p>You don't have permission to view the Create Voucher module.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-4">
       {/* Toast Container */}
@@ -1715,12 +1786,14 @@ const CreateVoucher = () => {
       
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4>Vouchers</h4>
-        <Button
-          style={{ backgroundColor: "#53b2a5", border: "none", borderRadius: "50px", fontWeight: 600 }}
-          onClick={() => { setEditVoucher(null); setShowModal(true); }}
-        >
-          Create Voucher
-        </Button>
+        {createVoucherPermissions.can_create && (
+          <Button
+            style={{ backgroundColor: "#53b2a5", border: "none", borderRadius: "50px", fontWeight: 600 }}
+            onClick={() => { setEditVoucher(null); setShowModal(true); }}
+          >
+            Create Voucher
+          </Button>
+        )}
       </div>
       {loading ? (
         <div className="text-center my-4">
@@ -1751,9 +1824,15 @@ const CreateVoucher = () => {
                   <td>{v.voucherNo}</td>
                   <td>₹{v.items.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}</td>
                   <td>
-                    <button className="btn text-primary" onClick={() => handleView(i)} aria-label="View"><FaEye /></button>
-                    <button className="btn text-success" onClick={() => handleEdit(i)} aria-label="Edit"><FaEdit /></button>
-                    <button className="btn text-danger" onClick={() => handleDelete(i)} aria-label="Delete"><FaTrash /></button>
+                    {createVoucherPermissions.can_view && (
+                      <button className="btn text-primary" onClick={() => handleView(i)} aria-label="View"><FaEye /></button>
+                    )}
+                    {createVoucherPermissions.can_update && (
+                      <button className="btn text-success" onClick={() => handleEdit(i)} aria-label="Edit"><FaEdit /></button>
+                    )}
+                    {createVoucherPermissions.can_delete && (
+                      <button className="btn text-danger" onClick={() => handleDelete(i)} aria-label="Delete"><FaTrash /></button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -1771,12 +1850,14 @@ const CreateVoucher = () => {
         onSave={handleSaveVoucher}
         editData={editVoucher !== null ? vouchers[editVoucher] : null}
         companyId={companyId}
+        permissions={createVoucherPermissions}
       />
 
       <VoucherViewModal
         show={showViewModal}
         onHide={() => setShowViewModal(false)}
         voucher={viewVoucher}
+        permissions={createVoucherPermissions}
       />
     </div>
   ); 
