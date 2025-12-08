@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Button, 
-  Card, 
-  Table, 
-  Form, 
-  Row, 
-  Col, 
-  Modal, 
+import {
+  Button,
+  Card,
+  Table,
+  Form,
+  Row,
+  Col,
+  Modal,
   Badge,
-  Dropdown,
   Container
 } from 'react-bootstrap';
-import { 
-  FaPlus, 
-  FaCalculator, 
-  FaDownload, 
-  FaEnvelope, 
-  FaWhatsapp, 
-  FaEye, 
-  FaCheck, 
+import {
+  FaPlus,
+  FaCalculator,
+  FaDownload,
+  FaEnvelope,
+  FaWhatsapp,
+  FaEye,
+  FaCheck,
   FaTrash,
-  FaEllipsisV,
   FaTimes,
   FaPaperPlane,
   FaFilter,
@@ -28,20 +26,21 @@ import {
   FaBuilding,
   FaUser,
   FaMoneyBillWave,
-  FaArrowUp,
-  FaArrowDown,
   FaCheckCircle
 } from 'react-icons/fa';
+import GetCompanyId from '../../../Api/GetCompanyId';
+import axiosInstance from '../../../Api/axiosInstance';
 
 const GeneratePayroll = () => {
   // State for payroll data
   const [payrollData, setPayrollData] = useState([]);
   const [filteredPayroll, setFilteredPayroll] = useState([]);
-  
+  const companyId = GetCompanyId();
+
   // State for filters
   const [monthFilter, setMonthFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
-  
+
   // State for modal
   const [showModal, setShowModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -49,37 +48,38 @@ const GeneratePayroll = () => {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [remarks, setRemarks] = useState('');
   const [previewData, setPreviewData] = useState([]);
-  
+
   // State for payslip modal
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [currentPayslip, setCurrentPayslip] = useState(null);
-  
+
   // State for actions
   const [selectedRows, setSelectedRows] = useState([]);
-  
-  // Mock data for employees
-  const employees = [
+
+  // Static reference data
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const years = ['2023', '2024', '2025'];
+
+  // Fetch employees (assumed from another API or context)
+  // For now, keep mock if not available via API
+  const [employees, setEmployees] = useState([
     { id: 1, name: 'Rahul Sharma', department: 'Engineering', basicPay: 50000, email: 'rahul.sharma@company.com', phone: '+91 9876543210' },
     { id: 2, name: 'Priya Singh', department: 'HR', basicPay: 45000, email: 'priya.singh@company.com', phone: '+91 9876543211' },
     { id: 3, name: 'Amit Patel', department: 'Finance', basicPay: 55000, email: 'amit.patel@company.com', phone: '+91 9876543212' },
     { id: 4, name: 'Sneha Reddy', department: 'Engineering', basicPay: 60000, email: 'sneha.reddy@company.com', phone: '+91 9876543213' },
     { id: 5, name: 'Vikas Kumar', department: 'Marketing', basicPay: 48000, email: 'vikas.kumar@company.com', phone: '+91 9876543214' },
-  ];
-  
-  // Mock departments
-  const departments = ['All', 'Engineering', 'HR', 'Finance', 'Marketing'];
-  
-  // Mock months
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
-  // Mock years
-  const years = ['2023', '2024', '2025'];
-  
-  // Initialize with some payroll data
+  ]);
+
+  const departments = ['All', ...new Set(employees.map(e => e.department))];
+
+  // Fetch existing payroll data on mount
   useEffect(() => {
+    // In real app, you'd fetch from /api/v1/payrollRequest/list or similar
+    // For now, leave as mock or implement later
     const mockPayroll = [
       {
         id: 1,
@@ -104,67 +104,48 @@ const GeneratePayroll = () => {
         netPay: 49500,
         paymentStatus: 'Pending',
         employeeId: 2
-      },
-      {
-        id: 3,
-        employeeName: 'Amit Patel',
-        department: 'Finance',
-        month: 'February 2024',
-        basicPay: 55000,
-        earnings: 18000,
-        deductions: 9000,
-        netPay: 64000,
-        paymentStatus: 'Paid',
-        employeeId: 3
       }
     ];
-    
     setPayrollData(mockPayroll);
     setFilteredPayroll(mockPayroll);
   }, []);
-  
-  // Handle filter changes
+
   useEffect(() => {
     let result = payrollData;
-    
+
     if (monthFilter) {
       result = result.filter(item => item.month.includes(monthFilter));
     }
-    
+
     if (departmentFilter && departmentFilter !== 'All') {
       result = result.filter(item => item.department === departmentFilter);
     }
-    
+
     setFilteredPayroll(result);
   }, [monthFilter, departmentFilter, payrollData]);
-  
-  // Handle modal show
+
   const handleShowModal = () => {
+    const now = new Date();
+    setSelectedMonth(months[now.getMonth()]);
+    setSelectedYear(now.getFullYear().toString());
     setShowModal(true);
-    // Set current month and year as default
-    const currentDate = new Date();
-    setSelectedMonth(months[currentDate.getMonth()]);
-    setSelectedYear(currentDate.getFullYear().toString());
   };
-  
-  // Handle modal close
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedEmployees([]);
     setRemarks('');
     setPreviewData([]);
   };
-  
-  // Handle employee selection
+
   const handleEmployeeSelect = (employeeId) => {
-    if (selectedEmployees.includes(employeeId)) {
-      setSelectedEmployees(selectedEmployees.filter(id => id !== employeeId));
-    } else {
-      setSelectedEmployees([...selectedEmployees, employeeId]);
-    }
+    setSelectedEmployees(prev =>
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
   };
-  
-  // Handle select all employees
+
   const handleSelectAll = () => {
     if (selectedEmployees.length === employees.length) {
       setSelectedEmployees([]);
@@ -172,63 +153,97 @@ const GeneratePayroll = () => {
       setSelectedEmployees(employees.map(emp => emp.id));
     }
   };
-  
-  // Handle preview calculation
+
   const handlePreview = () => {
     if (selectedEmployees.length === 0) {
       alert('Please select at least one employee');
       return;
     }
-    
+
+    // In real-world, this preview would come from a /preview API
+    // But since your backend only supports /generate, we simulate
     const preview = selectedEmployees.map(empId => {
-      const employee = employees.find(emp => emp.id === empId);
-      // Mock calculation
-      const earnings = Math.round(employee.basicPay * 0.3);
-      const deductions = Math.round(employee.basicPay * 0.15);
-      const netPay = employee.basicPay + earnings - deductions;
-      
+      const emp = employees.find(e => e.id === empId);
+      const earnings = Math.round(emp.basicPay * 0.3);
+      const deductions = Math.round(emp.basicPay * 0.15);
+      const netPay = emp.basicPay + earnings - deductions;
+
       return {
         id: empId,
-        employeeName: employee.name,
-        department: employee.department,
-        basicPay: employee.basicPay,
+        employeeName: emp.name,
+        department: emp.department,
+        basicPay: emp.basicPay,
         earnings,
         deductions,
         netPay
       };
     });
-    
+
     setPreviewData(preview);
   };
-  
-  // Handle generate payroll
-  const handleGeneratePayroll = () => {
+
+  const handleGeneratePayroll = async () => {
     if (previewData.length === 0) {
       alert('Please preview the payroll first');
       return;
     }
-    
-    const newPayroll = previewData.map(item => ({
-      ...item,
-      month: `${selectedMonth} ${selectedYear}`,
-      paymentStatus: 'Pending'
-    }));
-    
-    setPayrollData([...payrollData, ...newPayroll]);
-    handleCloseModal();
-    alert('Payroll generated successfully!');
-  };
-  
-  // Handle row selection
-  const handleRowSelect = (id) => {
-    if (selectedRows.includes(id)) {
-      setSelectedRows(selectedRows.filter(rowId => rowId !== id));
-    } else {
-      setSelectedRows([...selectedRows, id]);
+
+    if (!companyId) {
+      alert('Company ID not found');
+      return;
+    }
+
+    try {
+      const payload = {
+        companyId: parseInt(companyId, 10),
+        year: selectedYear,
+        month: selectedMonth,
+        selectedEmployees: selectedEmployees
+      };
+
+      const response = await axiosInstance.post(
+        '/payrollRequest/generatePayroll',
+        payload
+      );
+
+      if (response.data.success) {
+        // Transform API response to UI format
+        const newPayroll = response.data.data.map(item => ({
+          id: item.payroll_id,
+          employeeId: item.employee_id,
+          employeeName: item.Employee_Name,
+          department: item.Department,
+          month: item.Month,
+          basicPay: item.Basic_Pay,
+          earnings: item.Earnings,
+          deductions: item.Deductions,
+          netPay: item.Net_Pay,
+          paymentStatus: item.Payment_Status || 'Pending',
+          designation: item.designation,
+          allowances: item.allowances,
+          bonus: item.bonus,
+          overtime_pay: item.overtime_pay,
+          payment_date: item.payment_date
+        }));
+
+        setPayrollData(prev => [...prev, ...newPayroll]);
+        handleCloseModal();
+        alert('Payroll generated successfully!');
+      } else {
+        alert(response.data.message || 'Failed to generate payroll');
+      }
+    } catch (error) {
+      console.error('Payroll generation error:', error);
+      alert('Error generating payroll. Please try again.');
     }
   };
-  
-  // Handle select all rows
+
+  const handleRowSelect = (id) => {
+    setSelectedRows(prev =>
+      prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
+    );
+  };
+
   const handleSelectAllRows = () => {
     if (selectedRows.length === filteredPayroll.length) {
       setSelectedRows([]);
@@ -236,51 +251,51 @@ const GeneratePayroll = () => {
       setSelectedRows(filteredPayroll.map(item => item.id));
     }
   };
-  
-  // Handle approve payment
+
   const handleApprovePayment = (id) => {
-    setPayrollData(payrollData.map(item => 
-      item.id === id ? { ...item, paymentStatus: 'Paid' } : item
-    ));
+    // Update status locally; in real app, call /approve API
+    setPayrollData(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, paymentStatus: 'Paid' } : item
+      )
+    );
   };
-  
-  // Handle delete payroll
+
   const handleDeletePayroll = (id, employeeName) => {
     if (window.confirm(`Are you sure you want to delete payroll for ${employeeName}?`)) {
-      setPayrollData(payrollData.filter(item => item.id !== id));
+      setPayrollData(prev => prev.filter(item => item.id !== id));
     }
   };
-  
-  // Handle bulk approve
+
   const handleBulkApprove = () => {
     if (selectedRows.length === 0) {
       alert('Please select at least one row');
       return;
     }
-    
-    setPayrollData(payrollData.map(item => 
-      selectedRows.includes(item.id) ? { ...item, paymentStatus: 'Paid' } : item
-    ));
+
+    setPayrollData(prev =>
+      prev.map(item =>
+        selectedRows.includes(item.id)
+          ? { ...item, paymentStatus: 'Paid' }
+          : item
+      )
+    );
     setSelectedRows([]);
     alert('Selected payroll records approved successfully!');
   };
-  
-  // Handle download all payslips
+
   const handleDownloadAll = () => {
     alert('Downloading all payslips as PDF...');
   };
-  
-  // Handle send via email
+
   const handleSendEmail = (employeeName) => {
     alert(`Sending payslip for ${employeeName} via email`);
   };
-  
-  // Handle send via WhatsApp
+
   const handleSendWhatsApp = (employeeName) => {
     alert(`Sending payslip for ${employeeName} via WhatsApp`);
   };
-  
-  // Handle view payslip
+
   const handleViewPayslip = (payslipId) => {
     const payslip = payrollData.find(item => item.id === payslipId);
     if (payslip) {
@@ -305,20 +320,20 @@ const GeneratePayroll = () => {
               {row.department}
             </Card.Subtitle>
           </div>
-          <Form.Check 
+          <Form.Check
             type="checkbox"
             checked={selectedRows.includes(row.id)}
             onChange={() => handleRowSelect(row.id)}
           />
         </div>
-        
+
         <div className="mb-2">
           <Badge bg={row.paymentStatus === 'Paid' ? 'success' : 'warning'}>
             {row.paymentStatus}
           </Badge>
           <span className="ms-2 small text-muted">{row.month}</span>
         </div>
-        
+
         <div className="d-flex justify-content-between mb-3">
           <div>
             <div className="small text-muted">Basic Pay</div>
@@ -337,19 +352,19 @@ const GeneratePayroll = () => {
             <div className="fw-bold" style={{ color: '#023347' }}>₹{row.netPay.toLocaleString()}</div>
           </div>
         </div>
-        
+
         <div className="d-flex gap-1 flex-wrap">
-          <Button 
+          <Button
             variant="light"
             size="sm"
             onClick={() => handleViewPayslip(row.id)}
             className="d-flex align-items-center"
             style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
           >
-            <FaEye className="me-1" /> 
+            <FaEye className="me-1" />
           </Button>
           {row.paymentStatus === 'Pending' && (
-            <Button 
+            <Button
               variant="light"
               size="sm"
               onClick={() => handleApprovePayment(row.id)}
@@ -359,7 +374,7 @@ const GeneratePayroll = () => {
               <FaCheck className="me-1" />
             </Button>
           )}
-          <Button 
+          <Button
             variant="light"
             size="sm"
             onClick={() => handleSendEmail(row.employeeName)}
@@ -368,23 +383,23 @@ const GeneratePayroll = () => {
           >
             <FaEnvelope className="me-1" />
           </Button>
-          <Button 
+          <Button
             variant="light"
             size="sm"
             onClick={() => handleSendWhatsApp(row.employeeName)}
             className="d-flex align-items-center"
             style={{ color: '#25D366', backgroundColor: '#e6f3f5' }}
           >
-            <FaWhatsapp className="me-1" /> 
+            <FaWhatsapp className="me-1" />
           </Button>
-          <Button 
+          <Button
             variant="light"
             size="sm"
             onClick={() => handleDeletePayroll(row.id, row.employeeName)}
             className="d-flex align-items-center"
             style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
           >
-            <FaTrash className="me-1" /> 
+            <FaTrash className="me-1" />
           </Button>
         </div>
       </Card.Body>
@@ -394,7 +409,7 @@ const GeneratePayroll = () => {
   return (
     <Container fluid className="p-3 p-md-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
       <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-        <Card.Header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center" >
+        <Card.Header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
           <h4 className="mb-3 mb-md-0">Payroll Management</h4>
           <Button style={{ backgroundColor: '#2a8e9c', border: 'none' }} onClick={handleShowModal} className='d-flex justify-content-center align-items-center w-30 w-md-auto'>
             <FaPlus className="me-2" /> Generate Payroll
@@ -412,8 +427,8 @@ const GeneratePayroll = () => {
                 <Col xs={12} sm={6} md={3} className="mb-3 mb-md-0">
                   <Form.Group>
                     <Form.Label className='d-flex align-items-center'><FaCalendarAlt className="me-1" /> Month</Form.Label>
-                    <Form.Select 
-                      value={monthFilter} 
+                    <Form.Select
+                      value={monthFilter}
                       onChange={(e) => setMonthFilter(e.target.value)}
                       style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
                     >
@@ -427,8 +442,8 @@ const GeneratePayroll = () => {
                 <Col xs={12} sm={6} md={3} className="mb-3 mb-md-0">
                   <Form.Group>
                     <Form.Label className='d-flex align-items-center'><FaBuilding className="me-1" /> Department</Form.Label>
-                    <Form.Select 
-                      value={departmentFilter} 
+                    <Form.Select
+                      value={departmentFilter}
                       onChange={(e) => setDepartmentFilter(e.target.value)}
                       style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
                     >
@@ -441,8 +456,8 @@ const GeneratePayroll = () => {
                 <Col xs={12} sm={6} md={3} className="mb-3 mb-md-0">
                   <Form.Group>
                     <Form.Label>&nbsp;</Form.Label>
-                    <Button 
-                      variant="outline-secondary" 
+                    <Button
+                      variant="outline-secondary"
                       onClick={() => {
                         setMonthFilter('');
                         setDepartmentFilter('');
@@ -457,13 +472,13 @@ const GeneratePayroll = () => {
                 <Col xs={12} sm={6} md={3} className="mb-3 mb-md-0">
                   <Form.Group>
                     <Form.Label>&nbsp;</Form.Label>
-                    <Button 
+                    <Button
                       style={{ backgroundColor: '#2a8e9c', border: 'none' }}
                       onClick={handleBulkApprove}
                       disabled={selectedRows.length === 0}
                       className="d-block w-100 d-flex align-items-center justify-content-center"
                     >
-                      <FaCheckCircle className="me-2" /> 
+                      <FaCheckCircle className="me-2" />
                       Bulk Approve ({selectedRows.length})
                     </Button>
                   </Form.Group>
@@ -471,7 +486,7 @@ const GeneratePayroll = () => {
               </Row>
             </Card.Body>
           </Card>
-          
+
           {/* Desktop Table View */}
           <div className="d-none d-md-block">
             <div className="table-responsive">
@@ -479,7 +494,7 @@ const GeneratePayroll = () => {
                 <thead>
                   <tr>
                     <th>
-                      <Form.Check 
+                      <Form.Check
                         type="checkbox"
                         checked={selectedRows.length === filteredPayroll.length && filteredPayroll.length > 0}
                         onChange={handleSelectAllRows}
@@ -500,7 +515,7 @@ const GeneratePayroll = () => {
                   {filteredPayroll.map((row) => (
                     <tr key={row.id}>
                       <td>
-                        <Form.Check 
+                        <Form.Check
                           type="checkbox"
                           checked={selectedRows.includes(row.id)}
                           onChange={() => handleRowSelect(row.id)}
@@ -520,7 +535,7 @@ const GeneratePayroll = () => {
                       </td>
                       <td>
                         <div className="d-flex gap-1">
-                          <Button 
+                          <Button
                             variant="light"
                             size="sm"
                             onClick={() => handleViewPayslip(row.id)}
@@ -530,7 +545,7 @@ const GeneratePayroll = () => {
                             <FaEye />
                           </Button>
                           {row.paymentStatus === 'Pending' && (
-                            <Button 
+                            <Button
                               variant="light"
                               size="sm"
                               onClick={() => handleApprovePayment(row.id)}
@@ -540,7 +555,7 @@ const GeneratePayroll = () => {
                               <FaCheck />
                             </Button>
                           )}
-                          <Button 
+                          <Button
                             variant="light"
                             size="sm"
                             onClick={() => handleSendEmail(row.employeeName)}
@@ -549,7 +564,7 @@ const GeneratePayroll = () => {
                           >
                             <FaEnvelope />
                           </Button>
-                          <Button 
+                          <Button
                             variant="light"
                             size="sm"
                             onClick={() => handleSendWhatsApp(row.employeeName)}
@@ -558,7 +573,7 @@ const GeneratePayroll = () => {
                           >
                             <FaWhatsapp />
                           </Button>
-                          <Button 
+                          <Button
                             variant="light"
                             size="sm"
                             onClick={() => handleDeletePayroll(row.id, row.employeeName)}
@@ -575,14 +590,14 @@ const GeneratePayroll = () => {
               </Table>
             </div>
           </div>
-          
+
           {/* Mobile Card View */}
           <div className="d-md-none">
             {filteredPayroll.map((row) => (
               <PayrollCard key={row.id} row={row} />
             ))}
           </div>
-          
+
           {/* Generate Payroll Modal */}
           <Modal show={showModal} onHide={handleCloseModal} size="lg" fullscreen="sm-down">
             <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -618,7 +633,7 @@ const GeneratePayroll = () => {
                     </Form.Select>
                   </Form.Group>
                 </Col>
-                
+
                 <Col xs={12}>
                   <Form.Label className="mt-2 mb-2"><FaUser className="me-1" /> Select Employees</Form.Label>
                   <Form.Check
@@ -641,7 +656,7 @@ const GeneratePayroll = () => {
                     ))}
                   </div>
                 </Col>
-                
+
                 <Col xs={12}>
                   <Form.Group className="mb-3">
                     <Form.Label>Remarks (Optional)</Form.Label>
@@ -654,19 +669,19 @@ const GeneratePayroll = () => {
                     />
                   </Form.Group>
                 </Col>
-                
+
                 <Col xs={12}>
                   <div className="d-flex flex-column flex-sm-row justify-content-between mt-3 gap-2">
-                    <Button 
-                      variant="outline-primary" 
+                    <Button
+                      variant="outline-primary"
                       onClick={handlePreview}
                       className='d-flex justify-content-center align-items-center flex-grow-1'
                       style={{ borderColor: '#023347', color: '#023347' }}
                     >
                       <FaCalculator className="me-2" /> Preview & Calculate
                     </Button>
-                    <Button 
-                      variant="outline-secondary" 
+                    <Button
+                      variant="outline-secondary"
                       onClick={handleDownloadAll}
                       className='d-flex justify-content-center align-items-center flex-grow-1'
                       style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}
@@ -675,7 +690,7 @@ const GeneratePayroll = () => {
                     </Button>
                   </div>
                 </Col>
-                
+
                 {previewData.length > 0 && (
                   <>
                     <Col xs={12}>
@@ -715,16 +730,16 @@ const GeneratePayroll = () => {
               <Button variant="secondary" onClick={handleCloseModal} style={{ border: '1px solid #ced4da' }}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 style={{ backgroundColor: '#023347', border: 'none' }}
                 onClick={handleGeneratePayroll}
                 disabled={previewData.length === 0}
               >
-                 Generate Payroll
+                Generate Payroll
               </Button>
             </Modal.Footer>
           </Modal>
-          
+
           {/* Payslip View Modal */}
           <Modal show={showPayslipModal} onHide={() => setShowPayslipModal(false)} size="lg" fullscreen="sm-down">
             <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -754,6 +769,10 @@ const GeneratePayroll = () => {
                             <td><strong>Phone:</strong></td>
                             <td>{currentPayslip.employeeDetails?.phone || 'N/A'}</td>
                           </tr>
+                          <tr>
+                            <td><strong>Designation:</strong></td>
+                            <td>{currentPayslip.designation || 'N/A'}</td>
+                          </tr>
                         </tbody>
                       </Table>
                     </Col>
@@ -777,7 +796,7 @@ const GeneratePayroll = () => {
                       </Table>
                     </Col>
                   </Row>
-                  
+
                   <Row>
                     <Col xs={12}>
                       <h5 style={{ color: '#023347' }}><FaMoneyBillWave className="me-2" />Salary Details</h5>
