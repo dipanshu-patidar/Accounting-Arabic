@@ -4,47 +4,112 @@ import {
 } from 'react-bootstrap';
 import {
   BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import GetCompanyId from '../../../Api/GetCompanyId';
+import axiosInstance from '../../../Api/axiosInstance';
 
 const DepartmentalAnalyticsDashboard = () => {
-  // Mock data
-  const [totalEmployees] = useState(142);
-  const [payrollData] = useState([
-    { department: 'IT', amount: 420000 },
-    { department: 'HR', amount: 180000 },
-    { department: 'Finance', amount: 210000 },
-    { department: 'Operations', amount: 350000 },
-    { department: 'Sales', amount: 290000 }
-  ]);
-  const [leaveData] = useState({ approved: 24, pending: 8 });
-  const [attendanceData] = useState([
-    { day: 'Mon', present: 132 },
-    { day: 'Tue', present: 136 },
-    { day: 'Wed', present: 128 },
-    { day: 'Thu', present: 138 },
-    { day: 'Fri', present: 130 }
-  ]);
-  const [expenseData] = useState([
-    { month: 'Jun', amount: 85000 },
-    { month: 'Jul', amount: 92000 },
-    { month: 'Aug', amount: 78000 },
-    { month: 'Sep', amount: 95000 },
-    { month: 'Oct', amount: 102000 }
-  ]);
-  const [taskStatusData] = useState([
-    { name: 'Completed', value: 62 },
-    { name: 'In Progress', value: 24 },
-    { name: 'Pending', value: 14 }
-  ]);
+  const companyIdRaw = GetCompanyId();
+  const companyId = Number(companyIdRaw);
 
+  // State
+  const [loading, setLoading] = useState(true);
+  const [totalEmployees, setTotalEmployees] = useState(0);
+  const [payrollData, setPayrollData] = useState([]);
+  const [leaveData, setLeaveData] = useState({ approved: 0, pending: 0 });
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [expenseData, setExpenseData] = useState([]);
+  const [taskStatusData, setTaskStatusData] = useState([]);
+
+  // Colors
   const COLORS = ['#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1'];
   const TASK_COLORS = ['#28a745', '#17a2b8', '#ffc107'];
+
+  // Fetch data
+  useEffect(() => {
+    if (isNaN(companyId) || companyId <= 0) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchAnalytics = async () => {
+      try {
+        const res = await axiosInstance.get(`dashboard/analytic/hrpayroll?company_id=${companyId}`);
+        const data = res.data;
+
+        // Total Employees
+        setTotalEmployees(data.totalEmployees || 0);
+
+        // Department-wise Payroll
+        const payroll = (data.departmentWisePayroll || []).map(item => ({
+          department: item.department,
+          amount: parseFloat(item.payroll) || 0
+        }));
+        setPayrollData(payroll);
+
+        // Leave Summary
+        setLeaveData({
+          approved: data.leaveSummary?.approved || 0,
+          pending: data.leaveSummary?.pending || 0
+        });
+
+        // Attendance (Map full day names to short: Monday → Mon)
+        const dayMap = {
+          'Monday': 'Mon',
+          'Tuesday': 'Tue',
+          'Wednesday': 'Wed',
+          'Thursday': 'Thu',
+          'Friday': 'Fri',
+          'Saturday': 'Sat',
+          'Sunday': 'Sun'
+        };
+        const attendance = (data.attendanceOverview || []).map(item => ({
+          day: dayMap[item.day] || item.day,
+          present: item.present || 0
+        }));
+        setAttendanceData(attendance);
+
+        // Monthly Expenses
+        const expenses = (data.monthlyExpenses || []).map(item => ({
+          month: item.month,
+          amount: parseFloat(item.amount) || 0
+        }));
+        setExpenseData(expenses);
+
+        // Task Status
+        const tasks = (data.taskStatus || []).map(item => ({
+          name: item.name,
+          value: item.value || 0
+        }));
+        setTaskStatusData(tasks);
+      } catch (err) {
+        console.error('Failed to fetch HR analytics:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [companyId]);
+
+  // Format INR
+  const formatINR = (value) => {
+    if (value == null) return '₹0';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '₹0';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(num);
+  };
 
   return (
     <Container fluid className="p-3 p-md-4" style={{ backgroundColor: '#f8fbfc', minHeight: '100vh' }}>
       <div className="mb-4">
-        <h2 className="text-primary fw-bold" style={{ color: '#023347' }}>Departmental Analytics Dashboard</h2>
+        <h2 className="fw-bold">Departmental Analytics Dashboard</h2>
         <p className="text-muted">Real-time insights across HR, payroll, attendance, and operations.</p>
       </div>
 
@@ -79,11 +144,11 @@ const DepartmentalAnalyticsDashboard = () => {
               <div className="progress" style={{ height: '8px' }}>
                 <div
                   className="progress-bar bg-success"
-                  style={{ width: `${(leaveData.approved / (leaveData.approved + leaveData.pending)) * 100}%` }}
+                  style={{ width: leaveData.approved + leaveData.pending > 0 ? `${(leaveData.approved / (leaveData.approved + leaveData.pending)) * 100}%` : '0%' }}
                 ></div>
                 <div
                   className="progress-bar bg-warning"
-                  style={{ width: `${(leaveData.pending / (leaveData.approved + leaveData.pending)) * 100}%` }}
+                  style={{ width: leaveData.approved + leaveData.pending > 0 ? `${(leaveData.pending / (leaveData.approved + leaveData.pending)) * 100}%` : '0%' }}
                 ></div>
               </div>
             </Card.Body>
@@ -100,8 +165,8 @@ const DepartmentalAnalyticsDashboard = () => {
                   <LineChart data={attendanceData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="day" axisLine={false} tickLine={false} />
-                    <YAxis hide domain={[120, 140]} />
-                    <Tooltip />
+                    <YAxis hide domain={['auto', 'auto']} />
+                    <Tooltip formatter={(value) => [formatINR(value), 'Present']} />
                     <Line
                       type="monotone"
                       dataKey="present"
@@ -114,21 +179,21 @@ const DepartmentalAnalyticsDashboard = () => {
                 </ResponsiveContainer>
               </div>
               <div className="d-flex justify-content-between mt-2 small text-muted">
-                <span>Avg: 132</span>
-                <span>Present: {attendanceData.reduce((a, b) => a + b.present, 0)}</span>
+                <span>Avg: {attendanceData.length ? Math.round(attendanceData.reduce((a, b) => a + b.present, 0) / attendanceData.length) : 0}</span>
+                <span>Total: {attendanceData.reduce((a, b) => a + b.present, 0)}</span>
               </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
 
-      {/* Row 2: Department-wise Payroll + Expense Chart + Task Status */}
+      {/* Row 2: Charts */}
       <Row className="g-4">
         {/* Department-wise Payroll */}
         <Col lg={4}>
           <Card className="shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
             <Card.Header className="bg-white py-2">
-              <h6 className="mb-0 fw-bold" style={{ color: '#023347' }}>Department-wise Payroll (SAR)</h6>
+              <h6 className="mb-0 fw-bold" style={{ color: '#023347' }}>Department-wise Payroll</h6>
             </Card.Header>
             <Card.Body>
               <div style={{ height: '250px' }}>
@@ -137,7 +202,7 @@ const DepartmentalAnalyticsDashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" hide />
                     <YAxis dataKey="department" type="category" width={80} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => [`SAR ${Number(value).toLocaleString()}`, 'Amount']} />
+                    <Tooltip formatter={(value) => [formatINR(value), 'Amount']} />
                     <Bar dataKey="amount" fill="#2a8e9c" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -146,11 +211,11 @@ const DepartmentalAnalyticsDashboard = () => {
           </Card>
         </Col>
 
-        {/* Expense Chart */}
+        {/* Monthly Expenses */}
         <Col lg={4}>
           <Card className="shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
             <Card.Header className="bg-white py-2">
-              <h6 className="mb-0 fw-bold" style={{ color: '#023347' }}>Monthly Expenses (SAR)</h6>
+              <h6 className="mb-0 fw-bold" style={{ color: '#023347' }}>Monthly Expenses</h6>
             </Card.Header>
             <Card.Body>
               <div style={{ height: '250px' }}>
@@ -159,11 +224,11 @@ const DepartmentalAnalyticsDashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} />
                     <YAxis
-                      tickFormatter={(value) => `SAR ${value / 1000}k`}
+                      tickFormatter={(value) => `₹${value / 1000}k`}
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip formatter={(value) => [`SAR ${Number(value).toLocaleString()}`, 'Expense']} />
+                    <Tooltip formatter={(value) => [formatINR(value), 'Expense']} />
                     <Bar dataKey="amount" fill="#fd7e14" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -172,7 +237,7 @@ const DepartmentalAnalyticsDashboard = () => {
           </Card>
         </Col>
 
-        {/* Task Status Pie */}
+        {/* Task Status */}
         <Col lg={4}>
           <Card className="shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
             <Card.Header className="bg-white py-2">

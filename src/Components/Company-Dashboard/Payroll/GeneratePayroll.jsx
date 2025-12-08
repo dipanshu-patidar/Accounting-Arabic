@@ -32,16 +32,20 @@ import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
 
 const GeneratePayroll = () => {
-  // State for payroll data
+  const companyIdRaw = GetCompanyId();
+  const companyId = Number(companyIdRaw);
+
   const [payrollData, setPayrollData] = useState([]);
   const [filteredPayroll, setFilteredPayroll] = useState([]);
-  const companyId = GetCompanyId();
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState(['All']);
+  const [loading, setLoading] = useState(true);
 
-  // State for filters
+  // Filters
   const [monthFilter, setMonthFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
 
-  // State for modal
+  // Modals
   const [showModal, setShowModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
@@ -49,67 +53,73 @@ const GeneratePayroll = () => {
   const [remarks, setRemarks] = useState('');
   const [previewData, setPreviewData] = useState([]);
 
-  // State for payslip modal
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [currentPayslip, setCurrentPayslip] = useState(null);
 
-  // State for actions
+  // Actions
   const [selectedRows, setSelectedRows] = useState([]);
 
-  // Static reference data
+  // Static data
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
-
   const years = ['2023', '2024', '2025'];
 
-  // Fetch employees (assumed from another API or context)
-  // For now, keep mock if not available via API
-  const [employees, setEmployees] = useState([
-    { id: 1, name: 'Rahul Sharma', department: 'Engineering', basicPay: 50000, email: 'rahul.sharma@company.com', phone: '+91 9876543210' },
-    { id: 2, name: 'Priya Singh', department: 'HR', basicPay: 45000, email: 'priya.singh@company.com', phone: '+91 9876543211' },
-    { id: 3, name: 'Amit Patel', department: 'Finance', basicPay: 55000, email: 'amit.patel@company.com', phone: '+91 9876543212' },
-    { id: 4, name: 'Sneha Reddy', department: 'Engineering', basicPay: 60000, email: 'sneha.reddy@company.com', phone: '+91 9876543213' },
-    { id: 5, name: 'Vikas Kumar', department: 'Marketing', basicPay: 48000, email: 'vikas.kumar@company.com', phone: '+91 9876543214' },
-  ]);
-
-  const departments = ['All', ...new Set(employees.map(e => e.department))];
-
-  // Fetch existing payroll data on mount
+  // Fetch employees and payroll history
   useEffect(() => {
-    // In real app, you'd fetch from /api/v1/payrollRequest/list or similar
-    // For now, leave as mock or implement later
-    const mockPayroll = [
-      {
-        id: 1,
-        employeeName: 'Rahul Sharma',
-        department: 'Engineering',
-        month: 'January 2024',
-        basicPay: 50000,
-        earnings: 15000,
-        deductions: 8000,
-        netPay: 57000,
-        paymentStatus: 'Paid',
-        employeeId: 1
-      },
-      {
-        id: 2,
-        employeeName: 'Priya Singh',
-        department: 'HR',
-        month: 'January 2024',
-        basicPay: 45000,
-        earnings: 12000,
-        deductions: 7500,
-        netPay: 49500,
-        paymentStatus: 'Pending',
-        employeeId: 2
-      }
-    ];
-    setPayrollData(mockPayroll);
-    setFilteredPayroll(mockPayroll);
-  }, []);
+    if (isNaN(companyId) || companyId <= 0) {
+      setLoading(false);
+      return;
+    }
 
+    const fetchData = async () => {
+      try {
+        // Fetch employees
+        const empRes = await axiosInstance.get(`employee?company_id=${companyId}`);
+        const empList = empRes.data?.data?.employees || [];
+        const mappedEmployees = empList.map(emp => ({
+          id: emp.id,
+          name: emp.full_name,
+          department: emp.department?.name || 'N/A',
+          basic_salary: emp.basic_salary || '0'
+        }));
+        setEmployees(mappedEmployees);
+        const depts = ['All', ...new Set(mappedEmployees.map(e => e.department))];
+        setDepartments(depts);
+
+        // 🔥 Fetch payroll data using the new API endpoint
+        const payrollRes = await axiosInstance.get(`payrollReport/payroll?companyId=${companyId}`);
+        const payrollResponse = payrollRes.data;
+
+        // Extract and map employeeReport
+        const payrollList = (payrollResponse.employeeReport || []).map(item => ({
+          id: item.Employee, // temporary; use payroll_id if available
+          employeeId: item.Employee, // will update if backend sends id
+          employeeName: item.Employee,
+          department: item.Department || 'N/A',
+          month: item.Month, // e.g., "November, 2025"
+          basicPay: parseFloat(item.Gross_Pay) || 0, // Gross_Pay is used as basic for now
+          earnings: 0, // not in current response
+          deductions: parseFloat(item.Deductions) || 0,
+          netPay: parseFloat(item.Net_Pay) || 0,
+          paymentStatus: item.Status || 'Pending'
+        }));
+
+        setPayrollData(payrollList);
+        setFilteredPayroll(payrollList);
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        alert('Error loading payroll or employee data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [companyId]);
+
+  // Apply filters
   useEffect(() => {
     let result = payrollData;
 
@@ -124,10 +134,13 @@ const GeneratePayroll = () => {
     setFilteredPayroll(result);
   }, [monthFilter, departmentFilter, payrollData]);
 
+  // Modal handlers
   const handleShowModal = () => {
     const now = new Date();
     setSelectedMonth(months[now.getMonth()]);
     setSelectedYear(now.getFullYear().toString());
+    setSelectedEmployees([]);
+    setPreviewData([]);
     setShowModal(true);
   };
 
@@ -160,19 +173,18 @@ const GeneratePayroll = () => {
       return;
     }
 
-    // In real-world, this preview would come from a /preview API
-    // But since your backend only supports /generate, we simulate
     const preview = selectedEmployees.map(empId => {
       const emp = employees.find(e => e.id === empId);
-      const earnings = Math.round(emp.basicPay * 0.3);
-      const deductions = Math.round(emp.basicPay * 0.15);
-      const netPay = emp.basicPay + earnings - deductions;
+      const basic = parseFloat(emp.basic_salary) || 0;
+      const earnings = Math.round(basic * 0.3);
+      const deductions = Math.round(basic * 0.15);
+      const netPay = basic + earnings - deductions;
 
       return {
         id: empId,
         employeeName: emp.name,
         department: emp.department,
-        basicPay: emp.basicPay,
+        basicPay: basic,
         earnings,
         deductions,
         netPay
@@ -188,42 +200,29 @@ const GeneratePayroll = () => {
       return;
     }
 
-    if (!companyId) {
-      alert('Company ID not found');
-      return;
-    }
-
     try {
       const payload = {
-        companyId: parseInt(companyId, 10),
+        companyId: companyId,
         year: selectedYear,
         month: selectedMonth,
         selectedEmployees: selectedEmployees
       };
 
-      const response = await axiosInstance.post(
-        '/payrollRequest/generatePayroll',
-        payload
-      );
+      const response = await axiosInstance.post(`payrollRequest/generatePayroll`, payload);
 
       if (response.data.success) {
-        // Transform API response to UI format
+        // Map new payroll using **actual API response structure**
         const newPayroll = response.data.data.map(item => ({
           id: item.payroll_id,
           employeeId: item.employee_id,
           employeeName: item.Employee_Name,
           department: item.Department,
-          month: item.Month,
-          basicPay: item.Basic_Pay,
-          earnings: item.Earnings,
-          deductions: item.Deductions,
-          netPay: item.Net_Pay,
-          paymentStatus: item.Payment_Status || 'Pending',
-          designation: item.designation,
-          allowances: item.allowances,
-          bonus: item.bonus,
-          overtime_pay: item.overtime_pay,
-          payment_date: item.payment_date
+          month: item.Month, // Already in "November, 2025" format
+          basicPay: parseFloat(item.Basic_Pay) || 0,
+          earnings: parseFloat(item.Earnings) || 0,
+          deductions: parseFloat(item.Deductions) || 0,
+          netPay: parseFloat(item.Net_Pay) || 0,
+          paymentStatus: item.Payment_Status || 'Pending'
         }));
 
         setPayrollData(prev => [...prev, ...newPayroll]);
@@ -233,11 +232,12 @@ const GeneratePayroll = () => {
         alert(response.data.message || 'Failed to generate payroll');
       }
     } catch (error) {
-      console.error('Payroll generation error:', error);
+      console.error('Error:', error);
       alert('Error generating payroll. Please try again.');
     }
   };
 
+  // UI Helpers
   const handleRowSelect = (id) => {
     setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
@@ -245,7 +245,7 @@ const GeneratePayroll = () => {
   };
 
   const handleSelectAllRows = () => {
-    if (selectedRows.length === filteredPayroll.length) {
+    if (selectedRows.length === filteredPayroll.length && filteredPayroll.length > 0) {
       setSelectedRows([]);
     } else {
       setSelectedRows(filteredPayroll.map(item => item.id));
@@ -253,7 +253,6 @@ const GeneratePayroll = () => {
   };
 
   const handleApprovePayment = (id) => {
-    // Update status locally; in real app, call /approve API
     setPayrollData(prev =>
       prev.map(item =>
         item.id === id ? { ...item, paymentStatus: 'Paid' } : item
@@ -272,7 +271,6 @@ const GeneratePayroll = () => {
       alert('Please select at least one row');
       return;
     }
-
     setPayrollData(prev =>
       prev.map(item =>
         selectedRows.includes(item.id)
@@ -282,10 +280,6 @@ const GeneratePayroll = () => {
     );
     setSelectedRows([]);
     alert('Selected payroll records approved successfully!');
-  };
-
-  const handleDownloadAll = () => {
-    alert('Downloading all payslips as PDF...');
   };
 
   const handleSendEmail = (employeeName) => {
@@ -299,16 +293,23 @@ const GeneratePayroll = () => {
   const handleViewPayslip = (payslipId) => {
     const payslip = payrollData.find(item => item.id === payslipId);
     if (payslip) {
-      const employee = employees.find(emp => emp.id === payslip.employeeId);
-      setCurrentPayslip({
-        ...payslip,
-        employeeDetails: employee
-      });
+      setCurrentPayslip(payslip);
       setShowPayslipModal(true);
     }
   };
 
-  // Mobile-friendly payroll card
+  const formatINR = (value) => {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '₹0';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(num);
+  };
+
+  // Mobile Card Component
   const PayrollCard = ({ row }) => (
     <Card className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
       <Card.Body>
@@ -335,22 +336,7 @@ const GeneratePayroll = () => {
         </div>
 
         <div className="d-flex justify-content-between mb-3">
-          <div>
-            <div className="small text-muted">Basic Pay</div>
-            <div>₹{row.basicPay.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="small text-muted">Earnings</div>
-            <div className="text-success">₹{row.earnings.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="small text-muted">Deductions</div>
-            <div className="text-danger">₹{row.deductions.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="small text-muted">Net Pay</div>
-            <div className="fw-bold" style={{ color: '#023347' }}>₹{row.netPay.toLocaleString()}</div>
-          </div>
+          <div><div className="small text-muted">Net Pay</div><div className="fw-bold" style={{ color: '#023347' }}>{formatINR(row.netPay)}</div></div>
         </div>
 
         <div className="d-flex gap-1 flex-wrap">
@@ -433,7 +419,8 @@ const GeneratePayroll = () => {
                       style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
                     >
                       <option value="">All Months</option>
-                      {months.map(month => (
+                      {/* Extract unique months from payroll data */}
+                      {[...new Set(payrollData.map(p => p.month))].map(month => (
                         <option key={month} value={month}>{month}</option>
                       ))}
                     </Form.Select>
@@ -487,7 +474,7 @@ const GeneratePayroll = () => {
             </Card.Body>
           </Card>
 
-          {/* Desktop Table View */}
+          {/* Desktop Table */}
           <div className="d-none d-md-block">
             <div className="table-responsive">
               <Table striped bordered hover>
@@ -503,9 +490,6 @@ const GeneratePayroll = () => {
                     <th>Employee Name</th>
                     <th>Department</th>
                     <th>Month</th>
-                    <th>Basic Pay</th>
-                    <th>Earnings</th>
-                    <th>Deductions</th>
                     <th>Net Pay</th>
                     <th>Payment Status</th>
                     <th>Actions</th>
@@ -524,10 +508,7 @@ const GeneratePayroll = () => {
                       <td>{row.employeeName}</td>
                       <td>{row.department}</td>
                       <td>{row.month}</td>
-                      <td>₹{row.basicPay.toLocaleString()}</td>
-                      <td>₹{row.earnings.toLocaleString()}</td>
-                      <td>₹{row.deductions.toLocaleString()}</td>
-                      <td>₹{row.netPay.toLocaleString()}</td>
+                      <td>{formatINR(row.netPay)}</td>
                       <td>
                         <Badge bg={row.paymentStatus === 'Paid' ? 'success' : 'warning'}>
                           {row.paymentStatus}
@@ -591,7 +572,7 @@ const GeneratePayroll = () => {
             </div>
           </div>
 
-          {/* Mobile Card View */}
+          {/* Mobile Cards */}
           <div className="d-md-none">
             {filteredPayroll.map((row) => (
               <PayrollCard key={row.id} row={row} />
@@ -680,49 +661,33 @@ const GeneratePayroll = () => {
                     >
                       <FaCalculator className="me-2" /> Preview & Calculate
                     </Button>
-                    <Button
-                      variant="outline-secondary"
-                      onClick={handleDownloadAll}
-                      className='d-flex justify-content-center align-items-center flex-grow-1'
-                      style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}
-                    >
-                      <FaDownload className="me-2" /> Download All Payslips
-                    </Button>
                   </div>
                 </Col>
 
                 {previewData.length > 0 && (
-                  <>
-                    <Col xs={12}>
-                      <h5 className="mt-3 mb-3" style={{ color: '#023347' }}>Preview</h5>
-                      <div className="table-responsive">
-                        <Table striped bordered hover size="sm">
-                          <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
-                            <tr>
-                              <th>Employee Name</th>
-                              <th>Department</th>
-                              <th>Basic Pay</th>
-                              <th>Earnings</th>
-                              <th>Deductions</th>
-                              <th>Net Pay</th>
+                  <Col xs={12}>
+                    <h5 className="mt-3 mb-3" style={{ color: '#023347' }}>Preview</h5>
+                    <div className="table-responsive">
+                      <Table striped bordered hover size="sm">
+                        <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+                          <tr>
+                            <th>Employee Name</th>
+                            <th>Department</th>
+                            <th>Net Pay</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewData.map((item) => (
+                            <tr key={item.id}>
+                              <td>{item.employeeName}</td>
+                              <td>{item.department}</td>
+                              <td>{formatINR(item.netPay)}</td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {previewData.map((item) => (
-                              <tr key={item.id}>
-                                <td>{item.employeeName}</td>
-                                <td>{item.department}</td>
-                                <td>₹{item.basicPay.toLocaleString()}</td>
-                                <td>₹{item.earnings.toLocaleString()}</td>
-                                <td>₹{item.deductions.toLocaleString()}</td>
-                                <td>₹{item.netPay.toLocaleString()}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                    </Col>
-                  </>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </Col>
                 )}
               </Row>
             </Modal.Body>
@@ -740,7 +705,7 @@ const GeneratePayroll = () => {
             </Modal.Footer>
           </Modal>
 
-          {/* Payslip View Modal */}
+          {/* Payslip Modal */}
           <Modal show={showPayslipModal} onHide={() => setShowPayslipModal(false)} size="lg" fullscreen="sm-down">
             <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
               <Modal.Title>Payslip Details</Modal.Title>
@@ -753,26 +718,9 @@ const GeneratePayroll = () => {
                       <h5 style={{ color: '#023347' }}><FaUser className="me-2" />Employee Information</h5>
                       <Table borderless>
                         <tbody>
-                          <tr>
-                            <td><strong>Name:</strong></td>
-                            <td>{currentPayslip.employeeName}</td>
-                          </tr>
-                          <tr>
-                            <td><strong>Department:</strong></td>
-                            <td>{currentPayslip.department}</td>
-                          </tr>
-                          <tr>
-                            <td><strong>Email:</strong></td>
-                            <td>{currentPayslip.employeeDetails?.email || 'N/A'}</td>
-                          </tr>
-                          <tr>
-                            <td><strong>Phone:</strong></td>
-                            <td>{currentPayslip.employeeDetails?.phone || 'N/A'}</td>
-                          </tr>
-                          <tr>
-                            <td><strong>Designation:</strong></td>
-                            <td>{currentPayslip.designation || 'N/A'}</td>
-                          </tr>
+                          <tr><td><strong>Name:</strong></td><td>{currentPayslip.employeeName}</td></tr>
+                          <tr><td><strong>Department:</strong></td><td>{currentPayslip.department}</td></tr>
+                          <tr><td><strong>Designation:</strong></td><td>{currentPayslip.designation || 'N/A'}</td></tr>
                         </tbody>
                       </Table>
                     </Col>
@@ -780,10 +728,7 @@ const GeneratePayroll = () => {
                       <h5 style={{ color: '#023347' }}><FaCalendarAlt className="me-2" />Pay Period</h5>
                       <Table borderless>
                         <tbody>
-                          <tr>
-                            <td><strong>Month:</strong></td>
-                            <td>{currentPayslip.month}</td>
-                          </tr>
+                          <tr><td><strong>Month:</strong></td><td>{currentPayslip.month}</td></tr>
                           <tr>
                             <td><strong>Payment Status:</strong></td>
                             <td>
@@ -803,18 +748,16 @@ const GeneratePayroll = () => {
                       <Table striped bordered>
                         <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
                           <tr>
-                            <th>Basic Pay</th>
-                            <th>Earnings</th>
+                            <th>Gross Pay</th>
                             <th>Deductions</th>
                             <th>Net Pay</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td>₹{currentPayslip.basicPay.toLocaleString()}</td>
-                            <td className="text-success">₹{currentPayslip.earnings.toLocaleString()}</td>
-                            <td className="text-danger">₹{currentPayslip.deductions.toLocaleString()}</td>
-                            <td><strong style={{ color: '#023347' }}>₹{currentPayslip.netPay.toLocaleString()}</strong></td>
+                            <td>{formatINR(currentPayslip.basicPay)}</td>
+                            <td className="text-danger">{formatINR(currentPayslip.deductions)}</td>
+                            <td><strong style={{ color: '#023347' }}>{formatINR(currentPayslip.netPay)}</strong></td>
                           </tr>
                         </tbody>
                       </Table>

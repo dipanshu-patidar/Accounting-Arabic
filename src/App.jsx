@@ -390,12 +390,6 @@ useEffect(() => {
           <Route path="/company/audit-logs" element={<AuditLogs />} />
           <Route path="/company/income-statement-report" element={<IncomeStatementReport />} />
           <Route path="/company/account-statement-report" element={<AccountStatementReport/>}/>
-
-
-
-
-
-
         </Route>
       </Routes>
     );

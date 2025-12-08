@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Tabs,
     Tab,
     Table,
     Button,
-    ButtonGroup,
-    Dropdown,
-    DropdownButton,
     Form,
     Row,
     Col,
@@ -17,73 +14,243 @@ import {
     FaFilePdf,
     FaFileExcel,
     FaFileCsv,
-    FaFilter,
     FaPrint,
-    FaChartBar,
-    FaChartPie,
     FaEye,
     FaSearch
 } from 'react-icons/fa';
+import GetCompanyId from '../../../Api/GetCompanyId';
+import axiosInstance from '../../../Api/axiosInstance';
 
+// Mapping short to full month
+const SHORT_TO_FULL = {
+    Jan: 'January',
+    Feb: 'February',
+    Mar: 'March',
+    Apr: 'April',
+    May: 'May',
+    Jun: 'June',
+    Jul: 'July',
+    Aug: 'August',
+    Sep: 'September',
+    Oct: 'October',
+    Nov: 'November',
+    Dec: 'December'
+};
+
+const FULL_TO_SHORT = Object.fromEntries(
+    Object.entries(SHORT_TO_FULL).map(([short, full]) => [full, short])
+);
+
+// Format as INR
+const formatINR = (value) => {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '₹0';
+    return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(num);
+};
+
+const apiMonthToUIMonth = (apiMonth) => {
+    // Input: "December, 2025"
+    const [full, yearStr] = apiMonth.split(', ');
+    const year = yearStr?.trim();
+    const short = FULL_TO_SHORT[full] || 'Jan';
+    return `${short} ${year}`; // Output: "Dec 2025"
+};
+
+const uiMonthToApiParams = (uiMonth) => {
+    if (!uiMonth || typeof uiMonth !== 'string') {
+        return { month: 'January', year: null };
+    }
+
+    const parts = uiMonth.trim().split(/\s+/); // Split by one or more spaces
+    const short = parts[0] || 'Jan';
+    const yearStr = parts[1] || '2025';
+
+    const year = parseInt(yearStr, 10);
+    const month = SHORT_TO_FULL[short] || 'January';
+
+    return {
+        month,
+        year: isNaN(year) ? null : year
+    };
+};
 const PayrollReports = () => {
+    const companyIdRaw = GetCompanyId();
+    const companyId = Number(companyIdRaw);
+
+    // Early validation
+    if (isNaN(companyId) || companyId <= 0) {
+        return <div className="text-center py-5">Invalid Company ID</div>;
+    }
+
     const [key, setKey] = useState('monthly');
-    const [selectedMonth, setSelectedMonth] = useState('Oct 2025');
+    const [selectedMonth, setSelectedMonth] = useState('Dec 2025'); // Default to latest
     const [selectedDepartment, setSelectedDepartment] = useState('All');
     const [searchEmployee, setSearchEmployee] = useState('');
-    
-    // Modal states
+
     const [showMonthlyModal, setShowMonthlyModal] = useState(false);
     const [showDepartmentModal, setShowDepartmentModal] = useState(false);
     const [selectedMonthlyData, setSelectedMonthlyData] = useState(null);
     const [selectedDepartmentData, setSelectedDepartmentData] = useState(null);
 
-    // Sample data
-    const monthlyData = [
-        { month: 'Oct 2025', totalEmployees: 25, grossPay: '₹8,50,000', deductions: '₹85,000', netPay: '₹7,65,000' },
-        { month: 'Sep 2025', totalEmployees: 24, grossPay: '₹8,20,000', deductions: '₹82,000', netPay: '₹7,38,000' },
-        { month: 'Aug 2025', totalEmployees: 24, grossPay: '₹8,30,000', deductions: '₹83,000', netPay: '₹7,47,000' },
-    ];
+    const [monthlyData, setMonthlyData] = useState([]);
+    const [departmentData, setDepartmentData] = useState([]);
+    const [employeeHistoryData, setEmployeeHistoryData] = useState([]);
+    const [taxDeductionData, setTaxDeductionData] = useState([]);
 
-    const departmentData = [
-        { department: 'Sales', employees: 5, totalSalary: '₹2,00,000', avgSalary: '₹40,000' },
-        { department: 'Marketing', employees: 4, totalSalary: '₹1,80,000', avgSalary: '₹45,000' },
-        { department: 'IT', employees: 8, totalSalary: '₹3,20,000', avgSalary: '₹40,000' },
-        { department: 'HR', employees: 3, totalSalary: '₹1,20,000', avgSalary: '₹40,000' },
-        { department: 'Finance', employees: 5, totalSalary: '₹2,30,000', avgSalary: '₹46,000' },
-    ];
+    const [months, setMonths] = useState([]);
+    const [departments, setDepartments] = useState(['All']);
+    const [loading, setLoading] = useState(true);
 
-    const employeeHistoryData = [
-        { employee: 'John Doe', month: 'Oct 2025', grossPay: '₹45,000', deductions: '₹4,500', netPay: '₹40,500', status: 'Paid' },
-        { employee: 'Jane Smith', month: 'Oct 2025', grossPay: '₹42,000', deductions: '₹4,200', netPay: '₹37,800', status: 'Paid' },
-        { employee: 'Robert Johnson', month: 'Oct 2025', grossPay: '₹50,000', deductions: '₹5,000', netPay: '₹45,000', status: 'Paid' },
-        { employee: 'Emily Davis', month: 'Oct 2025', grossPay: '₹38,000', deductions: '₹3,800', netPay: '₹34,200', status: 'Pending' },
-        { employee: 'Michael Wilson', month: 'Oct 2025', grossPay: '₹48,000', deductions: '₹4,800', netPay: '₹43,200', status: 'Paid' },
-    ];
+    // Fetch main report
+    useEffect(() => {
+        const fetchReport = async () => {
+            try {
+                const res = await axiosInstance.get(`payrollReport/payroll?companyId=${companyId}`);
+                const data = res.data;
 
-    const taxDeductionData = [
-        { month: 'Oct 2025', tax: '₹50,000', pf: '₹25,000', insurance: '₹7,000', other: '₹3,000', totalDeductions: '₹85,000' },
-        { month: 'Sep 2025', tax: '₹48,000', pf: '₹24,000', insurance: '₹7,000', other: '₹3,000', totalDeductions: '₹82,000' },
-        { month: 'Aug 2025', tax: '₹49,000', pf: '₹24,500', insurance: '₹7,000', other: '₹2,500', totalDeductions: '₹83,000' },
-    ];
+                // Convert all API months to UI format
+                const monthly = (data.monthlySummaryReport || []).map(item => ({
+                    month: apiMonthToUIMonth(item.Month),
+                    totalEmployees: item.Total_Employees,
+                    grossPay: formatINR(item.Gross_Pay),
+                    deductions: formatINR(item.Deductions),
+                    netPay: formatINR(item.Net_Pay)
+                }));
 
-    const months = ['Oct 2025', 'Sep 2025', 'Aug 2025', 'Jul 2025', 'Jun 2025'];
-    const departments = ['All', 'Sales', 'Marketing', 'IT', 'HR', 'Finance'];
+                const departmentsFromApi = (data.departmentReport || []).map(item => ({
+                    department: item.Department,
+                    employees: item.Employees,
+                    totalSalary: formatINR(item.Total_Salary),
+                    avgSalary: formatINR(item.Avg_Salary)
+                }));
 
-    // Functions to handle modal opening
-    const handleMonthlyView = (data) => {
-        setSelectedMonthlyData(data);
-        setShowMonthlyModal(true);
+                const employees = (data.employeeReport || []).map(item => ({
+                    employee: item.Employee,
+                    month: apiMonthToUIMonth(item.Month),
+                    grossPay: formatINR(item.Gross_Pay),
+                    deductions: formatINR(item.Deductions),
+                    netPay: formatINR(item.Net_Pay),
+                    status: item.Status || 'Pending'
+                }));
+
+                const taxDeductions = (data.taxAndDeductionReport || []).map(item => ({
+                    month: apiMonthToUIMonth(item.Month),
+                    tax: formatINR(item.Tax),
+                    pf: formatINR(item.PF),
+                    insurance: formatINR(item.Insurance),
+                    other: formatINR(item.Other),
+                    totalDeductions: formatINR(item.Total_Deductions)
+                }));
+
+                const uniqueMonths = [...new Set(monthly.map(m => m.month))].sort().reverse();
+                const uniqueDepts = ['All', ...new Set(departmentsFromApi.map(d => d.department))];
+
+                setMonthlyData(monthly);
+                setDepartmentData(departmentsFromApi);
+                setEmployeeHistoryData(employees);
+                setTaxDeductionData(taxDeductions);
+                setMonths(uniqueMonths);
+                setDepartments(uniqueDepts);
+
+                if (uniqueMonths.length > 0) {
+                    setSelectedMonth(uniqueMonths[0]);
+                }
+            } catch (err) {
+                console.error('Failed to load payroll report:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReport();
+    }, [companyId]);
+
+    // Handle Monthly View (API call)
+    const handleMonthlyView = async (data) => {
+        const { month, year } = uiMonthToApiParams(data.month); // e.g., month="December", year=2025
+
+        console.log('Invalid year in:', data.month);
+
+        try {
+            const res = await axiosInstance.get(
+                `payrollReport/monthly-details?companyId=${companyId}&month=${month}&year=${year}`
+            );
+            const apiData = res.data;
+
+            const mappedData = {
+                month: apiData.employeeInformation.Month, // "December, 2025"
+                totalEmployees: apiData.employeeInformation.Total_Employees,
+                grossPay: formatINR(apiData.financialSummary.Gross_Pay),
+                deductions: formatINR(apiData.financialSummary.Deductions),
+                netPay: formatINR(apiData.financialSummary.Net_Pay),
+                employeeBreakdown: (apiData.employeeBreakdown || []).map(emp => ({
+                    employee: emp.EMPLOYEE_NAME,
+                    department: emp.DEPARTMENT || 'N/A',
+                    grossPay: formatINR(emp.GROSS_PAY),
+                    deductions: formatINR(emp.DEDUCTIONS),
+                    netPay: formatINR(emp.NET_PAY),
+                    status: emp.STATUS || 'Pending',
+                    month: emp.MONTH // "December, 2025"
+                }))
+            };
+
+            setSelectedMonthlyData(mappedData);
+            setShowMonthlyModal(true);
+        } catch (err) {
+            console.error('Failed to fetch monthly details:', err);
+        }
     };
 
-    const handleDepartmentView = (data) => {
-        setSelectedDepartmentData(data);
-        setShowDepartmentModal(true);
+    // Handle Department View
+    const handleDepartmentView = async (data) => {
+        const deptName = data.department;
+        try {
+            const res = await axiosInstance.get(
+                `payrollReport/department-details?companyId=${companyId}&departmentName=${encodeURIComponent(deptName)}`
+            );
+            const apiData = res.data;
+
+            const mappedData = {
+                department: apiData.department,
+                employees: apiData.employees,
+                totalSalary: formatINR(apiData.total_salary),
+                avgSalary: formatINR(apiData.avg_salary),
+                employeeBreakdown: (apiData.employeeBreakdown || []).map(emp => ({
+                    employee: emp.EMPLOYEE_NAME,
+                    month: emp.MONTH,
+                    grossPay: formatINR(emp.GROSS_PAY),
+                    deductions: formatINR(emp.DEDUCTIONS),
+                    netPay: formatINR(emp.NET_PAY),
+                    status: emp.STATUS || 'Pending'
+                }))
+            };
+
+            setSelectedDepartmentData(mappedData);
+            setShowDepartmentModal(true);
+        } catch (err) {
+            console.error('Failed to fetch department details:', err);
+        }
     };
+
+    // Filter employee history
+    const filteredEmployeeHistory = employeeHistoryData.filter(emp => {
+        const matchesSearch = emp.employee.toLowerCase().includes(searchEmployee.toLowerCase());
+        const matchesMonth = !selectedMonth || emp.month === selectedMonth;
+        return matchesSearch && matchesMonth;
+    });
+
+    if (loading) {
+        return <div className="text-center py-5">Loading payroll reports...</div>;
+    }
 
     return (
         <div className="container-fluid px-3 px-md-4 py-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
             <h2 className="mb-4 text-center text-md-start" style={{ color: '#023347' }}>Payroll Reports</h2>
-
             <Card className="mb-4" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
                 <Card.Body>
                     <Row className="align-items-center mb-3">
@@ -93,21 +260,20 @@ const PayrollReports = () => {
                         <Col xs={12} md={5} className="text-center text-md-end">
                             <div className="d-flex flex-wrap justify-content-center justify-content-md-end gap-2">
                                 <Button variant="outline-primary" size="sm" className="d-flex align-items-center" style={{ borderColor: '#023347', color: '#023347' }}>
-                                    <FaFilePdf className="me-1" /> <span className="d-none d-sm-inline">PDF</span>
+                                    <FaFilePdf className="me-1" /> PDF
                                 </Button>
                                 <Button variant="outline-success" size="sm" className="d-flex align-items-center" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}>
-                                    <FaFileExcel className="me-1" /> <span className="d-none d-sm-inline">Excel</span>
+                                    <FaFileExcel className="me-1" /> Excel
                                 </Button>
                                 <Button variant="outline-info" size="sm" className="d-flex align-items-center" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}>
-                                    <FaFileCsv className="me-1" /> <span className="d-none d-sm-inline">CSV</span>
+                                    <FaFileCsv className="me-1" /> CSV
                                 </Button>
                                 <Button variant="outline-secondary" size="sm" className="d-flex align-items-center" style={{ borderColor: '#ced4da', color: '#023347' }}>
-                                    <FaPrint className="me-1" /> <span className="d-none d-sm-inline">Print</span>
+                                    <FaPrint className="me-1" /> Print
                                 </Button>
                             </div>
                         </Col>
                     </Row>
-
                     <Row className="mb-3">
                         <Col xs={12} sm={6} md={4} className="mb-3 mb-md-0">
                             <Form.Group>
@@ -163,8 +329,8 @@ const PayrollReports = () => {
                         className="mb-3"
                         fill
                     >
+                        {/* Monthly Tab */}
                         <Tab eventKey="monthly" title="Monthly Summary">
-                            {/* Desktop Table View */}
                             <div className="d-none d-md-block">
                                 <Table striped bordered hover responsive>
                                     <thead>
@@ -186,7 +352,7 @@ const PayrollReports = () => {
                                                 <td>{data.deductions}</td>
                                                 <td>{data.netPay}</td>
                                                 <td>
-                                                    <Button 
+                                                    <Button
                                                         variant="light"
                                                         size="sm"
                                                         onClick={() => handleMonthlyView(data)}
@@ -200,15 +366,13 @@ const PayrollReports = () => {
                                     </tbody>
                                 </Table>
                             </div>
-                            
-                            {/* Mobile Card View */}
                             <div className="d-md-none">
                                 {monthlyData.map((data, index) => (
                                     <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
                                         <Card.Body>
                                             <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
                                                 <span>{data.month}</span>
-                                                <Button 
+                                                <Button
                                                     variant="light"
                                                     size="sm"
                                                     onClick={() => handleMonthlyView(data)}
@@ -241,8 +405,8 @@ const PayrollReports = () => {
                             </div>
                         </Tab>
 
+                        {/* Department Tab */}
                         <Tab eventKey="department" title="Department Report">
-                            {/* Desktop Table View */}
                             <div className="d-none d-md-block">
                                 <Table striped bordered hover responsive>
                                     <thead style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -262,13 +426,13 @@ const PayrollReports = () => {
                                                 <td>{data.totalSalary}</td>
                                                 <td>{data.avgSalary}</td>
                                                 <td>
-                                                    <Button 
+                                                    <Button
                                                         variant="light"
                                                         size="sm"
                                                         onClick={() => handleDepartmentView(data)}
                                                         style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
                                                     >
-                                                        <FaEye className="me-1" /> 
+                                                        <FaEye className="me-1" />
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -276,15 +440,13 @@ const PayrollReports = () => {
                                     </tbody>
                                 </Table>
                             </div>
-                            
-                            {/* Mobile Card View */}
                             <div className="d-md-none">
                                 {departmentData.map((data, index) => (
                                     <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
                                         <Card.Body>
                                             <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
                                                 <span>{data.department}</span>
-                                                <Button 
+                                                <Button
                                                     variant="light"
                                                     size="sm"
                                                     onClick={() => handleDepartmentView(data)}
@@ -313,8 +475,8 @@ const PayrollReports = () => {
                             </div>
                         </Tab>
 
+                        {/* Employee History */}
                         <Tab eventKey="employee" title="Employee History">
-                            {/* Desktop Table View */}
                             <div className="d-none d-md-block">
                                 <Table striped bordered hover responsive>
                                     <thead style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -328,7 +490,7 @@ const PayrollReports = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {employeeHistoryData.map((data, index) => (
+                                        {filteredEmployeeHistory.map((data, index) => (
                                             <tr key={index}>
                                                 <td>{data.employee}</td>
                                                 <td>{data.month}</td>
@@ -345,10 +507,8 @@ const PayrollReports = () => {
                                     </tbody>
                                 </Table>
                             </div>
-                            
-                            {/* Mobile Card View */}
                             <div className="d-md-none">
-                                {employeeHistoryData.map((data, index) => (
+                                {filteredEmployeeHistory.map((data, index) => (
                                     <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
                                         <Card.Body>
                                             <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
@@ -381,8 +541,8 @@ const PayrollReports = () => {
                             </div>
                         </Tab>
 
+                        {/* Tax & Deduction */}
                         <Tab eventKey="tax" title="Tax & Deduction Report">
-                            {/* Desktop Table View */}
                             <div className="d-none d-md-block">
                                 <Table striped bordered hover responsive>
                                     <thead style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -409,8 +569,6 @@ const PayrollReports = () => {
                                     </tbody>
                                 </Table>
                             </div>
-                            
-                            {/* Mobile Card View */}
                             <div className="d-md-none">
                                 {taxDeductionData.map((data, index) => (
                                     <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
@@ -447,13 +605,11 @@ const PayrollReports = () => {
                 </Card.Body>
             </Card>
 
-            {/* Monthly Summary Modal */}
-            <Modal 
-                show={showMonthlyModal} 
-                onHide={() => setShowMonthlyModal(false)} 
+            {/* Monthly Modal */}
+            <Modal
+                show={showMonthlyModal}
+                onHide={() => setShowMonthlyModal(false)}
                 size="lg"
-                fullscreen="md-down"
-                dialogClassName="modal-90w"
             >
                 <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
                     <Modal.Title>Monthly Details - {selectedMonthlyData?.month}</Modal.Title>
@@ -498,22 +654,20 @@ const PayrollReports = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {employeeHistoryData
-                                                    .filter(emp => emp.month === selectedMonthlyData.month)
-                                                    .map((emp, index) => (
-                                                        <tr key={index}>
-                                                            <td>{emp.employee}</td>
-                                                            <td>{departmentData.find(dept => dept.employees > 0)?.department || 'N/A'}</td>
-                                                            <td>{emp.grossPay}</td>
-                                                            <td>{emp.deductions}</td>
-                                                            <td>{emp.netPay}</td>
-                                                            <td>
-                                                                <span className={`badge ${emp.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
-                                                                    {emp.status}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
+                                                {selectedMonthlyData.employeeBreakdown.map((emp, index) => (
+                                                    <tr key={index}>
+                                                        <td>{emp.employee}</td>
+                                                        <td>{emp.department}</td>
+                                                        <td>{emp.grossPay}</td>
+                                                        <td>{emp.deductions}</td>
+                                                        <td>{emp.netPay}</td>
+                                                        <td>
+                                                            <span className={`badge ${emp.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
+                                                                {emp.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </Table>
                                     </div>
@@ -522,8 +676,8 @@ const PayrollReports = () => {
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-                    <Button variant="secondary" onClick={() => setShowMonthlyModal(false)} className="w-100 w-md-auto mb-2 mb-md-0" style={{ border: '1px solid #ced4da' }}>
+                <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8' }}>
+                    <Button variant="secondary" onClick={() => setShowMonthlyModal(false)} className="w-100 w-md-auto mb-2 mb-md-0">
                         Close
                     </Button>
                     <Button style={{ backgroundColor: '#023347', border: 'none' }} className="w-100 w-md-auto">
@@ -532,13 +686,11 @@ const PayrollReports = () => {
                 </Modal.Footer>
             </Modal>
 
-            {/* Department Report Modal */}
-            <Modal 
-                show={showDepartmentModal} 
-                onHide={() => setShowDepartmentModal(false)} 
+            {/* Department Modal */}
+            <Modal
+                show={showDepartmentModal}
+                onHide={() => setShowDepartmentModal(false)}
                 size="lg"
-                fullscreen="md-down"
-                dialogClassName="modal-90w"
             >
                 <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
                     <Modal.Title>Department Details - {selectedDepartmentData?.department}</Modal.Title>
@@ -552,7 +704,7 @@ const PayrollReports = () => {
                                         <Card.Body>
                                             <Card.Title style={{ color: '#023347' }}>Department Information</Card.Title>
                                             <p><strong>Department:</strong> {selectedDepartmentData.department}</p>
-                                            <p><strong>Number of Employees:</strong> {selectedDepartmentData.employees}</p>
+                                            <p><strong>Employees:</strong> {selectedDepartmentData.employees}</p>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -568,7 +720,7 @@ const PayrollReports = () => {
                             </Row>
                             <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
                                 <Card.Body>
-                                    <Card.Title style={{ color: '#023347' }}>Employees in {selectedDepartmentData.department} Department</Card.Title>
+                                    <Card.Title style={{ color: '#023347' }}>Employees in {selectedDepartmentData.department}</Card.Title>
                                     <div className="table-responsive">
                                         <Table striped bordered hover>
                                             <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
@@ -582,12 +734,12 @@ const PayrollReports = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {employeeHistoryData
-                                                    .filter(emp => emp.month === selectedMonth)
-                                                    .map((emp, index) => (
+                                                {selectedDepartmentData.employeeBreakdown.map((emp, index) => {
+                                                    const uiMonth = apiMonthToUIMonth(emp.month);
+                                                    return (
                                                         <tr key={index}>
                                                             <td>{emp.employee}</td>
-                                                            <td>{emp.month}</td>
+                                                            <td>{uiMonth}</td>
                                                             <td>{emp.grossPay}</td>
                                                             <td>{emp.deductions}</td>
                                                             <td>{emp.netPay}</td>
@@ -597,7 +749,8 @@ const PayrollReports = () => {
                                                                 </span>
                                                             </td>
                                                         </tr>
-                                                    ))}
+                                                    );
+                                                })}
                                             </tbody>
                                         </Table>
                                     </div>
@@ -606,8 +759,8 @@ const PayrollReports = () => {
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-                    <Button variant="secondary" onClick={() => setShowDepartmentModal(false)} className="w-100 w-md-auto mb-2 mb-md-0" style={{ border: '1px solid #ced4da' }}>
+                <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8' }}>
+                    <Button variant="secondary" onClick={() => setShowDepartmentModal(false)} className="w-100 w-md-auto mb-2 mb-md-0">
                         Close
                     </Button>
                     <Button style={{ backgroundColor: '#023347', border: 'none' }} className="w-100 w-md-auto">

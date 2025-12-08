@@ -1,29 +1,59 @@
-import React, { useState } from "react";
-import { Card, Button, Table, Modal, Form } from "react-bootstrap";
-import { FaLifeRing, FaEnvelope, FaPlus, FaPaperPlane } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { Card, Button, Table, Modal, Form, Badge } from "react-bootstrap";
+import {
+  FaLifeRing,
+  FaEnvelope,
+  FaPlus,
+  FaPaperPlane,
+  FaTrash,
+  FaSync
+} from "react-icons/fa";
+import GetCompanyId from "../../../Api/GetCompanyId";
+import axiosInstance from "../../../Api/axiosInstance";
 
 const SupportTickets = () => {
-  const [tickets, setTickets] = useState([
-    {
-      id: 1,
-      subject: "Unable to generate invoice",
-      status: "Open",
-      date: "2025-11-04",
-      message: "System shows an error when trying to generate an invoice.",
-    },
-    {
-      id: 2,
-      subject: "Request for feature enhancement",
-      status: "Resolved",
-      date: "2025-10-28",
-      message: "Please add an option to export reports in CSV format.",
-    },
-  ]);
+  const companyIdRaw = GetCompanyId();
+  const companyId = Number(companyIdRaw);
 
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newTicket, setNewTicket] = useState({ subject: "", message: "" });
+  const [error, setError] = useState("");
 
-  const handleShow = () => setShowModal(true);
+  // Fetch all tickets on mount
+  useEffect(() => {
+    if (isNaN(companyId) || companyId <= 0) {
+      setLoading(false);
+      setError("Invalid Company ID");
+      return;
+    }
+
+    const fetchTickets = async () => {
+      try {
+        const response = await axiosInstance.get(`supportTicket?company_id=${companyId}`);
+        const ticketsWithDate = (response.data || []).map(ticket => ({
+          ...ticket,
+          date: ticket.created_at ? ticket.created_at.split('T')[0] : ''
+        }));
+        setTickets(ticketsWithDate);
+      } catch (err) {
+        console.error("Failed to fetch tickets:", err);
+        setError("Failed to load support tickets.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, [companyId]);
+
+  const handleShow = () => {
+    setNewTicket({ subject: "", message: "" });
+    setError("");
+    setShowModal(true);
+  };
+
   const handleClose = () => setShowModal(false);
 
   const handleChange = (e) => {
@@ -31,26 +61,74 @@ const SupportTickets = () => {
     setNewTicket({ ...newTicket, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newTicket.subject || !newTicket.message) return;
-    const newEntry = {
-      id: tickets.length + 1,
-      subject: newTicket.subject,
-      message: newTicket.message,
-      status: "Open",
-      date: new Date().toISOString().slice(0, 10),
-    };
-    setTickets([newEntry, ...tickets]);
-    setNewTicket({ subject: "", message: "" });
-    handleClose();
+    if (!newTicket.subject.trim() || !newTicket.message.trim()) {
+      setError("Both subject and message are required.");
+      return;
+    }
+
+    try {
+      const payload = {
+        subject: newTicket.subject.trim(),
+        message: newTicket.message.trim()
+      };
+
+      const response = await axiosInstance.post(`supportTicket?company_id=${companyId}`, payload);
+
+      const newTicketWithDate = {
+        ...response.data,
+        date: response.data.created_at ? response.data.created_at.split('T')[0] : ''
+      };
+
+      setTickets([newTicketWithDate, ...tickets]);
+      handleClose();
+    } catch (err) {
+      console.error("Failed to create ticket:", err);
+      setError("Failed to submit ticket. Please try again.");
+    }
   };
 
+  const handleUpdateStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === "Open" ? "In Progress" : "Resolved";
+    try {
+      await axiosInstance.put(`supportTicket/${id}?company_id=${companyId}`, { status: newStatus });
+      setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus } : t));
+    } catch (err) {
+      console.error("Failed to update ticket:", err);
+      alert("Failed to update ticket status.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this ticket?")) return;
+    try {
+      await axiosInstance.delete(`supportTicket/${id}`);
+      setTickets(tickets.filter(t => t.id !== id));
+    } catch (err) {
+      console.error("Failed to delete ticket:", err);
+      alert("Failed to delete ticket.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-6" style={{ backgroundColor: "#f0f7f8" }}>
+        <div className="text-center py-5">Loading support tickets...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-6" style={{ backgroundColor: "#f0f7f8" }}>
+        <div className="text-center py-5 text-danger">{error}</div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="min-h-screen p-6"
-      style={{ backgroundColor: "#f0f7f8" }}
-    >
+    <div className="min-h-screen p-6" style={{ backgroundColor: "#f0f7f8" }}>
       <Card
         className="shadow-lg rounded-2xl p-4"
         style={{
@@ -58,9 +136,9 @@ const SupportTickets = () => {
           backgroundColor: "#e6f3f5",
         }}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
           <h2
-            className="text-xl font-bold flex items-center gap-2"
+            className="text-xl font-bold d-flex align-items-center gap-2"
             style={{ color: "#023347" }}
           >
             <FaLifeRing className="text-2xl" style={{ color: "#2a8e9c" }} />
@@ -73,7 +151,6 @@ const SupportTickets = () => {
               border: "none",
               fontWeight: "600",
             }}
-            className="d-flex align-items-center justify-content-center"
           >
             <FaPlus className="me-2" /> New Ticket
           </Button>
@@ -87,6 +164,7 @@ const SupportTickets = () => {
               <th>Message</th>
               <th>Status</th>
               <th>Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -94,25 +172,42 @@ const SupportTickets = () => {
               tickets.map((t) => (
                 <tr key={t.id} className="text-center">
                   <td>{t.id}</td>
-                  <td className="font-semibold">{t.subject}</td>
-                  <td className="text-gray-700">{t.message}</td>
+                  <td className="font-weight-bold">{t.subject}</td>
+                  <td className="text-muted">{t.message}</td>
                   <td>
-                    <span
-                      className={`px-2 py-1 rounded text-white text-xs ${
-                        t.status === "Open"
-                          ? "bg-blue-600"
-                          : "bg-green-600"
-                      }`}
-                    >
-                      {t.status}
-                    </span>
+                    {t.status === "Open" ? (
+                      <Badge bg="warning" text="dark">Open</Badge>
+                    ) : t.status === "In Progress" ? (
+                      <Badge bg="info">In Progress</Badge>
+                    ) : (
+                      <Badge bg="success">Resolved</Badge>
+                    )}
                   </td>
                   <td>{t.date}</td>
+                  <td>
+                    {t.status !== "Resolved" && (
+                      <Button
+                        size="sm"
+                        variant="outline-primary"
+                        className="me-1"
+                        onClick={() => handleUpdateStatus(t.id, t.status)}
+                      >
+                        <FaSync /> Update
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      onClick={() => handleDelete(t.id)}
+                    >
+                      <FaTrash />
+                    </Button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="text-center text-gray-500">
+                <td colSpan="6" className="text-center text-muted">
                   No tickets available.
                 </td>
               </tr>
@@ -127,14 +222,15 @@ const SupportTickets = () => {
           closeButton
           style={{ backgroundColor: "#023347", color: "white" }}
         >
-          <Modal.Title className="d-flex align-items-center justify-content-center">
+          <Modal.Title className="d-flex align-items-center">
             <FaEnvelope className="me-2" /> Submit New Ticket
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body style={{ backgroundColor: "#e6f3f5" }}>
+            {error && <div className="text-danger mb-2">{error}</div>}
             <Form.Group className="mb-3">
-              <Form.Label className="font-semibold">Subject</Form.Label>
+              <Form.Label>Subject</Form.Label>
               <Form.Control
                 type="text"
                 name="subject"
@@ -145,7 +241,7 @@ const SupportTickets = () => {
               />
             </Form.Group>
             <Form.Group>
-              <Form.Label className="font-semibold">Message</Form.Label>
+              <Form.Label>Message</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={4}
@@ -157,9 +253,7 @@ const SupportTickets = () => {
               />
             </Form.Group>
           </Modal.Body>
-          <Modal.Footer
-            style={{ backgroundColor: "#f0f7f8", borderTop: "1px solid #2a8e9c" }}
-          >
+          <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
             <Button variant="secondary" onClick={handleClose}>
               Cancel
             </Button>
@@ -168,9 +262,7 @@ const SupportTickets = () => {
               style={{
                 backgroundColor: "#2a8e9c",
                 border: "none",
-                fontWeight: "600",
               }}
-              className="d-flex align-items-center justify-content-center"
             >
               <FaPaperPlane className="me-2" /> Submit
             </Button>
