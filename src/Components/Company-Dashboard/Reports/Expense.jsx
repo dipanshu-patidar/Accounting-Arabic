@@ -67,6 +67,59 @@ const Expense = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // Permission states
+  const [hasPermission, setHasPermission] = useState(false);
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [expensePermissions, setExpensePermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setHasPermission(true);
+      setExpensePermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Expenses module
+        const expensePermission = permissions.find(p => p.module_name === "Expenses");
+        
+        if (expensePermission) {
+          setHasPermission(true);
+          setExpensePermissions({
+            can_create: expensePermission.can_create || false,
+            can_view: expensePermission.can_view || false,
+            can_update: expensePermission.can_update || false,
+            can_delete: expensePermission.can_delete || false
+          });
+        } else {
+          setHasPermission(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setHasPermission(false);
+      }
+    } else {
+      setHasPermission(false);
+    }
+  }, []);
+
   // ✅ FIXED: Use result.status instead of result.success
   const fetchAccounts = async () => {
     try {
@@ -136,10 +189,12 @@ const Expense = () => {
   };
 
   useEffect(() => {
-    fetchAccounts();
-    fetchVendors();
-    fetchExpenseVouchers();
-  }, []);
+    if (hasPermission && expensePermissions.can_view) {
+      fetchAccounts();
+      fetchVendors();
+      fetchExpenseVouchers();
+    }
+  }, [hasPermission, expensePermissions.can_view]);
 
   // Auto receipt number logic
   useEffect(() => {
@@ -200,7 +255,6 @@ const Expense = () => {
     };
     setTableRows((prevRows) => [...prevRows, newRow]);
   };
-
 
   const handleDeleteRow = (id) => {
     if (tableRows.length > 1) {
@@ -394,14 +448,26 @@ const Expense = () => {
     return account
       ? `${account?.parent_account?.subgroup_name || ""} (${account?.sub_of_subgroup?.name || ""})`
       : "Unknown";
-
-
   };
 
   const getVendorName = (vendorId) => {
     const vendor = vendors.find(v => v.id === vendorId);
     return vendor ? vendor.name_english : "Unknown";
   };
+
+  // If user doesn't have permission to view expenses, show access denied message
+  if (!hasPermission || !expensePermissions.can_view) {
+    return (
+      <div className="p-4 mt-1 product-header">
+        <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+          <div className="text-center">
+            <h3 className="text-danger">Access Denied</h3>
+            <p>You don't have permission to view the Expense module.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 mt-1 product-header">
@@ -414,18 +480,20 @@ const Expense = () => {
         <div className="d-flex align-items-center gap-2 flex-wrap">
           <button className="btn btn-light border text-danger"><FaFilePdf /></button>
           <button className="btn btn-light border text-success"><FaFileExcel /></button>
-          <button
-            className="btn text-white d-flex align-items-center gap-2"
-            style={{ backgroundColor: "#3daaaa" }}
-            onClick={() => setShowCreateModal(true)}
-          >
-            <FaPlusCircle /> Create Voucher
-          </button>
+          {expensePermissions.can_create && (
+            <button
+              className="btn text-white d-flex align-items-center gap-2"
+              style={{ backgroundColor: "#3daaaa" }}
+              onClick={() => setShowCreateModal(true)}
+            >
+              <FaPlusCircle /> Create Voucher
+            </button>
+          )}
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded shadow-sm mb-3">
+      <div className="border p-4 rounded shadow-sm mb-3">
         <div className="row g-3">
           <div className="col-md-3">
             <label className="form-label fw-semibold">Payment No</label>
@@ -517,9 +585,15 @@ const Expense = () => {
                       <td>{exp.narration}</td>
                       <td>
                         <div className="d-flex justify-content-center align-items-center gap-2">
-                          <button className="btn btn-sm text-info p-2" onClick={() => { setSelectedExpense(exp); setShowViewModal(true); }}><FaEye /></button>
-                          <button className="btn btn-sm text-warning p-2" onClick={() => handleEdit(exp)}><FaEdit /></button>
-                          <button className="btn btn-sm text-danger p-2" onClick={() => handleDelete(exp)}><FaTrash /></button>
+                          {expensePermissions.can_view && (
+                            <button className="btn btn-sm text-info p-2" onClick={() => { setSelectedExpense(exp); setShowViewModal(true); }}><FaEye /></button>
+                          )}
+                          {expensePermissions.can_update && (
+                            <button className="btn btn-sm text-warning p-2" onClick={() => handleEdit(exp)}><FaEdit /></button>
+                          )}
+                          {expensePermissions.can_delete && (
+                            <button className="btn btn-sm text-danger p-2" onClick={() => handleDelete(exp)}><FaTrash /></button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -545,281 +619,286 @@ const Expense = () => {
       </div>
 
       {/* Create Voucher Modal */}
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered size="lg">
-        <Modal.Header closeButton><Modal.Title className="fw-bold">Create Voucher</Modal.Title></Modal.Header>
-        <Modal.Body>
-          <form onSubmit={handleSubmit}>
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Auto Receipt No</label>
-                <input type="text" className="form-control" value={autoReceiptNo} readOnly />
+      {expensePermissions.can_create && (
+        <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered size="lg">
+          <Modal.Header closeButton><Modal.Title className="fw-bold">Create Voucher</Modal.Title></Modal.Header>
+          <Modal.Body>
+            <form onSubmit={handleSubmit}>
+              <div className="row mb-3">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Auto Receipt No</label>
+                  <input type="text" className="form-control" value={autoReceiptNo} readOnly />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Manual Receipt No</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={manualReceiptNo}
+                    onChange={(e) => setManualReceiptNo(e.target.value)}
+                    placeholder="Enter manual receipt number"
+                  />
+                </div>
               </div>
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Manual Receipt No</label>
-                <input
-                  type="text"
+              <div className="row mb-3">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Voucher Date</label>
+                  <input type="date" className="form-control" name="voucherDate" defaultValue={new Date().toISOString().split('T')[0]} required />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Paid From</label>
+                  <select className="form-select" value={selectedPaidFrom} onChange={handlePaidFromChange} required>
+                    <option value="">Select Account</option>
+                    {accounts.map((account) => (
+                      <option key={`paid-from-${account.id}`} value={account.id}>
+                        {account?.sub_of_subgroup?.name || 'N/A'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-12">
+                  <label className="form-label fw-semibold">Paid To</label>
+                  <select className="form-select" value={paidTo} onChange={handlePaidToChange} disabled={loading}>
+                    <option value="">{loading ? "Loading..." : "Select Account or Vendor"}</option>
+                    <optgroup label="Accounts">
+                      {accounts.length > 0 ? (
+                        accounts.map((account) => (
+                          <option key={`acc-${account.id}`} value={account.parent_account.subgroup_name}>
+                            {account?.sub_of_subgroup?.name || 'N/A'}
+                          </option>
+                        ))
+                      ) : accountsLoaded ? (
+                        <option disabled>No accounts found</option>
+                      ) : null}
+                    </optgroup>
+                    <optgroup label="Vendors">
+                      {vendors.length > 0 ? (
+                        vendors.map((vendor) => (
+                          <option key={`vend-${vendor.id}`} value={vendor.name_english}>
+                            {vendor.name_english} ({vendor.company_name})
+                          </option>
+                        ))
+                      ) : vendorsLoaded ? (
+                        <option disabled>No vendors found</option>
+                      ) : null}
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="mb-3">
+                <table className="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Amount</th>
+                      <th>Narration</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableRows.map((row) => (
+                      <tr key={row.id}>
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={row.account}
+                            onChange={(e) => handleRowChange(row.id, 'account', e.target.value)}
+                            list="account-options"
+                            required
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={row.amount}
+                            onChange={(e) => handleRowChange(row.id, 'amount', e.target.value)}
+                            min="0"
+                            step="0.01"
+                            required
+                          />
+                        </td>
+
+                        <td>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Narration for this item"
+                            value={row.narration}
+                            onChange={(e) => handleRowChange(row.id, 'narration', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDeleteRow(row.id)}
+                            disabled={tableRows.length <= 1}
+                          >
+                            <FaTrash />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan="2" className="text-end fw-bold">Total: {calculateTotal()}</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                <datalist id="account-options">
+                  {accounts.map((account, idx) => (
+                    <option key={`acc-datalist-${idx}`} value={account.account_name} />
+                  ))}
+                  {vendors.map((vendor, idx) => (
+                    <option key={`vend-datalist-${idx}`} value={vendor.name_english} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="mb-3">
+                <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleAddRow}>+ Add Row</button>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Voucher Narration</label>
+                <textarea
                   className="form-control"
-                  value={manualReceiptNo}
-                  onChange={(e) => setManualReceiptNo(e.target.value)}
-                  placeholder="Enter manual receipt number"
-                />
+                  rows="3"
+                  value={narration}
+                  onChange={(e) => setNarration(e.target.value)}
+                  placeholder="Enter narration for this voucher..."
+                ></textarea>
               </div>
-            </div>
-            <div className="row mb-3">
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Voucher Date</label>
-                <input type="date" className="form-control" name="voucherDate" defaultValue={new Date().toISOString().split('T')[0]} required />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label fw-semibold">Paid From</label>
-                <select className="form-select" value={selectedPaidFrom} onChange={handlePaidFromChange} required>
-                  <option value="">Select Account</option>
-                  {accounts.map((account) => (
 
-                    <option key={`paid-from-${account.id}`} value={account.id}>
-                      {/* {account?.parent_account?.subgroup_name || 'N/A'} */}
-                      {account?.sub_of_subgroup?.name || 'N/A'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="row mb-3">
-              <div className="col-md-12">
-                <label className="form-label fw-semibold">Paid To</label>
-                <select className="form-select" value={paidTo} onChange={handlePaidToChange} disabled={loading}>
-                  <option value="">{loading ? "Loading..." : "Select Account or Vendor"}</option>
-                  <optgroup label="Accounts">
-                    {accounts.length > 0 ? (
-                      accounts.map((account) => (
-                        <option key={`acc-${account.id}`} value={account.parent_account.subgroup_name}>
-                          {/* {account?.parent_account?.subgroup_name || 'N/A'}  */}
-                          {account?.sub_of_subgroup?.name || 'N/A'}
-                        </option>
-                      ))
-                    ) : accountsLoaded ? (
-                      <option disabled>No accounts found</option>
-                    ) : null}
-                  </optgroup>
-                  <optgroup label="Vendors">
-                    {vendors.length > 0 ? (
-                      vendors.map((vendor) => (
-                        <option key={`vend-${vendor.id}`} value={vendor.name_english}>
-                          {vendor.name_english} ({vendor.company_name})
-                        </option>
-                      ))
-                    ) : vendorsLoaded ? (
-                      <option disabled>No vendors found</option>
-                    ) : null}
-                  </optgroup>
-                </select>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="mb-3">
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Amount</th>
-                    <th>Narration</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map((row) => (
-                    <tr key={row.id}>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={row.account}
-                          onChange={(e) => handleRowChange(row.id, 'account', e.target.value)}
-                          list="account-options"
-                          required
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={row.amount}
-                          onChange={(e) => handleRowChange(row.id, 'amount', e.target.value)}
-                          min="0"
-                          step="0.01"
-                          required
-                        />
-                      </td>
-
-                      <td>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Narration for this item"
-                          value={row.narration}
-                          onChange={(e) => handleRowChange(row.id, 'narration', e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDeleteRow(row.id)}
-                          disabled={tableRows.length <= 1}
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan="2" className="text-end fw-bold">Total: {calculateTotal()}</td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-
-              <datalist id="account-options">
-                {accounts.map((account, idx) => (
-                  <option key={`acc-datalist-${idx}`} value={account.account_name} />
-                ))}
-                {vendors.map((vendor, idx) => (
-                  <option key={`vend-datalist-${idx}`} value={vendor.name_english} />
-                ))}
-              </datalist>
-            </div>
-
-            <div className="mb-3">
-              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleAddRow}>+ Add Row</button>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label fw-semibold">Voucher Narration</label>
-              <textarea
-                className="form-control"
-                rows="3"
-                value={narration}
-                onChange={(e) => setNarration(e.target.value)}
-                placeholder="Enter narration for this voucher..."
-              ></textarea>
-            </div>
-
-            <div className="d-flex justify-content-end gap-2">
-              <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-              <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
-                {submitting ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </form>
-        </Modal.Body>
-      </Modal>
-
-      {/* View Modal */}
-      <Modal show={showViewModal} onHide={() => { setShowViewModal(false); setSelectedExpense(null); }} size="lg">
-        <Modal.Header closeButton><Modal.Title>Voucher Details</Modal.Title></Modal.Header>
-        <Modal.Body>
-          {selectedExpense && (
-            <div>
-              <table className="table table-bordered">
-                <tbody>
-                  <tr><td><strong>Date</strong></td><td>{formatDate(selectedExpense.voucher_date)}</td></tr>
-                  <tr><td><strong>Auto Receipt No</strong></td><td>{selectedExpense.auto_receipt_no}</td></tr>
-                  <tr><td><strong>Manual Receipt No</strong></td><td>{selectedExpense.manual_receipt_no || "-"}</td></tr>
-                  <tr><td><strong>Paid From</strong></td><td>{getPaidFromAccountName(selectedExpense.paid_from_account_id)}</td></tr>
-                  <tr><td><strong>Total Amount</strong></td><td>{selectedExpense.total_amount}</td></tr>
-                  <tr><td><strong>Narration</strong></td><td>{selectedExpense.narration}</td></tr>
-                </tbody>
-              </table>
-
-              <h6 className="mt-4 mb-3">Account Details</h6>
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Vendor</th>
-                    <th>Amount</th>
-                    <th>Narration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedExpense.items?.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.account_name || "-"}</td>
-                      <td>{item.vendor_id ? getVendorName(item.vendor_id) : "-"}</td>
-                      <td>{item.amount}</td>
-                      <td>{item.narration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Modal.Body>
-      </Modal>
-
-      {/* Edit Modal */}
-      <Modal show={showEditModal} onHide={() => { setShowEditModal(false); setEditExpense(null); }}>
-        <Modal.Header closeButton><Modal.Title>Edit Voucher</Modal.Title></Modal.Header>
-        <Modal.Body>
-          {editExpense && (
-            <form onSubmit={handleEditSubmit}>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Auto Receipt No</label>
-                <input type="text" className="form-control" name="paymentNo" defaultValue={editExpense.auto_receipt_no} readOnly />
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Manual Receipt No</label>
-                <input type="text" className="form-control" name="manualReceiptNo" defaultValue={editExpense.manual_receipt_no || ''} />
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Voucher Date</label>
-                <input type="date" className="form-control" name="voucherDate" defaultValue={editExpense.voucher_date.split('T')[0]} required />
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Paid From</label>
-                <select className="form-select" name="paidFrom" defaultValue={editExpense.paid_from_account_id}>
-                  {accounts.map(account => (
-                    <option key={`edit-${account.id}`} value={account.id}>
-                      {account?.parent_account?.subgroup_name || 'N/A'} ({account?.sub_of_subgroup?.name || 'N/A'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Narration</label>
-                <textarea className="form-control" rows="3" defaultValue={editExpense.narration} name="narration"></textarea>
-              </div>
-              <div className="d-flex justify-content-end gap-3 mt-4">
-                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+              <div className="d-flex justify-content-end gap-2">
+                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
                 <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
-                  {submitting ? 'Updating...' : 'Save Changes'}
+                  {submitting ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>
-          )}
-        </Modal.Body>
-      </Modal>
+          </Modal.Body>
+        </Modal>
+      )}
+
+      {/* View Modal */}
+      {expensePermissions.can_view && (
+        <Modal show={showViewModal} onHide={() => { setShowViewModal(false); setSelectedExpense(null); }} size="lg">
+          <Modal.Header closeButton><Modal.Title>Voucher Details</Modal.Title></Modal.Header>
+          <Modal.Body>
+            {selectedExpense && (
+              <div>
+                <table className="table table-bordered">
+                  <tbody>
+                    <tr><td><strong>Date</strong></td><td>{formatDate(selectedExpense.voucher_date)}</td></tr>
+                    <tr><td><strong>Auto Receipt No</strong></td><td>{selectedExpense.auto_receipt_no}</td></tr>
+                    <tr><td><strong>Manual Receipt No</strong></td><td>{selectedExpense.manual_receipt_no || "-"}</td></tr>
+                    <tr><td><strong>Paid From</strong></td><td>{getPaidFromAccountName(selectedExpense.paid_from_account_id)}</td></tr>
+                    <tr><td><strong>Total Amount</strong></td><td>{selectedExpense.total_amount}</td></tr>
+                    <tr><td><strong>Narration</strong></td><td>{selectedExpense.narration}</td></tr>
+                  </tbody>
+                </table>
+
+                <h6 className="mt-4 mb-3">Account Details</h6>
+                <table className="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Vendor</th>
+                      <th>Amount</th>
+                      <th>Narration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedExpense.items?.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.account_name || "-"}</td>
+                        <td>{item.vendor_id ? getVendorName(item.vendor_id) : "-"}</td>
+                        <td>{item.amount}</td>
+                        <td>{item.narration}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Modal.Body>
+        </Modal>
+      )}
+
+      {/* Edit Modal */}
+      {expensePermissions.can_update && (
+        <Modal show={showEditModal} onHide={() => { setShowEditModal(false); setEditExpense(null); }}>
+          <Modal.Header closeButton><Modal.Title>Edit Voucher</Modal.Title></Modal.Header>
+          <Modal.Body>
+            {editExpense && (
+              <form onSubmit={handleEditSubmit}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Auto Receipt No</label>
+                  <input type="text" className="form-control" name="paymentNo" defaultValue={editExpense.auto_receipt_no} readOnly />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Manual Receipt No</label>
+                  <input type="text" className="form-control" name="manualReceiptNo" defaultValue={editExpense.manual_receipt_no || ''} />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Voucher Date</label>
+                  <input type="date" className="form-control" name="voucherDate" defaultValue={editExpense.voucher_date.split('T')[0]} required />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Paid From</label>
+                  <select className="form-select" name="paidFrom" defaultValue={editExpense.paid_from_account_id}>
+                    {accounts.map(account => (
+                      <option key={`edit-${account.id}`} value={account.id}>
+                        {account?.parent_account?.subgroup_name || 'N/A'} ({account?.sub_of_subgroup?.name || 'N/A'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Narration</label>
+                  <textarea className="form-control" rows="3" defaultValue={editExpense.narration} name="narration"></textarea>
+                </div>
+                <div className="d-flex justify-content-end gap-3 mt-4">
+                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                  <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
+                    {submitting ? 'Updating...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </Modal.Body>
+        </Modal>
+      )}
 
       {/* Delete Modal */}
-      <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false); setDeleteExpense(null); }} centered>
-        <Modal.Body className="text-center py-4">
-          <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <FaTrash size={32} color="#F04438" />
-          </div>
-          <h4 className="fw-bold mb-2">Delete Voucher</h4>
-          <p className="mb-4" style={{ color: "#555" }}>Are you sure you want to delete this voucher?</p>
-          <div className="d-flex justify-content-center gap-3">
-            <button className="btn btn-dark" onClick={() => setShowDeleteModal(false)}>No, Cancel</button>
-            <button className="btn" style={{ background: "#3daaaa", color: "#fff", fontWeight: 600 }} onClick={confirmDelete} disabled={submitting}>
-              {submitting ? 'Deleting...' : 'Yes, Delete'}
-            </button>
-          </div>
-        </Modal.Body>
-      </Modal>
+      {expensePermissions.can_delete && (
+        <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false); setDeleteExpense(null); }} centered>
+          <Modal.Body className="text-center py-4">
+            <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FaTrash size={32} color="#F04438" />
+            </div>
+            <h4 className="fw-bold mb-2">Delete Voucher</h4>
+            <p className="mb-4" style={{ color: "#555" }}>Are you sure you want to delete this voucher?</p>
+            <div className="d-flex justify-content-center gap-3">
+              <button className="btn btn-dark" onClick={() => setShowDeleteModal(false)}>No, Cancel</button>
+              <button className="btn" style={{ background: "#3daaaa", color: "#fff", fontWeight: 600 }} onClick={confirmDelete} disabled={submitting}>
+                {submitting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </Modal.Body>
+        </Modal>
+      )}
 
       {/* Page Info */}
       <Card className="mb-4 p-3 shadow rounded-4 mt-2">

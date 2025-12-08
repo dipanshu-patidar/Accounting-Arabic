@@ -1150,6 +1150,63 @@ const PurchaseReturn = () => {
   const [warehouses, setWarehouses] = useState([]);
   const [products, setProducts] = useState([]);
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [purchaseReturnPermissions, setPurchaseReturnPermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setPurchaseReturnPermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Purchase_Return module
+        const purchaseReturnPermission = permissions.find(p => p.module_name === "Purchase_Return");
+        if (purchaseReturnPermission) {
+          setPurchaseReturnPermissions({
+            can_create: purchaseReturnPermission.can_create,
+            can_view: purchaseReturnPermission.can_view,
+            can_update: purchaseReturnPermission.can_update,
+            can_delete: purchaseReturnPermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setPurchaseReturnPermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setPurchaseReturnPermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
+
   // Dropdown visibility (only one open at a time)
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
@@ -1171,10 +1228,6 @@ const PurchaseReturn = () => {
   const [itemDiscount, setItemDiscount] = useState(0);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
-
-
-
-
 
   const filteredReturns = (Array.isArray(returns) ? returns : []).filter((item) => {
     // Search term filter
@@ -1209,10 +1262,6 @@ const PurchaseReturn = () => {
     return matchesSearch && matchesStatus && matchesWarehouse && matchesDate;
   });
 
-
-
-
-
   const initialFormData = {
     vendor_id: '',
     vendor_name: '',
@@ -1242,7 +1291,7 @@ const PurchaseReturn = () => {
 
   // Fetch functions
   const fetchReturns = async () => {
-    if (!companyId) return [];
+    if (!companyId || !purchaseReturnPermissions.can_view) return [];
     try {
       const res = await axiosInstance.get(`/get-returns`);
       const data = res.data?.data;
@@ -1322,7 +1371,7 @@ const PurchaseReturn = () => {
 
   useEffect(() => {
     fetchData();
-  }, [companyId]);
+  }, [companyId, purchaseReturnPermissions.can_view]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1426,6 +1475,16 @@ const PurchaseReturn = () => {
   };
 
   const handleSubmit = async () => {
+    if (!purchaseReturnPermissions.can_create && !isEditMode) {
+      alert("You don't have permission to create purchase returns.");
+      return;
+    }
+    
+    if (!purchaseReturnPermissions.can_update && isEditMode) {
+      alert("You don't have permission to update purchase returns.");
+      return;
+    }
+    
     if (!formData.vendor_id || formData.vendor_id === '') {
       alert("Please select a vendor.");
       return;
@@ -1521,11 +1580,21 @@ const PurchaseReturn = () => {
   };
 
   const handleViewClick = (item) => {
+    if (!purchaseReturnPermissions.can_view) {
+      alert("You don't have permission to view purchase returns.");
+      return;
+    }
+    
     setSelectedReturn(item);
     setShowViewModal(true);
   };
 
   const handleEditClick = (item) => {
+    if (!purchaseReturnPermissions.can_update) {
+      alert("You don't have permission to edit purchase returns.");
+      return;
+    }
+    
     const normalizedItems = (item.purchase_return_items || []).map(i => ({
       id: i.id,
       purchase_return_id: i.purchase_return_id,
@@ -1569,6 +1638,11 @@ const PurchaseReturn = () => {
   };
 
   const handleDeleteClick = (id) => {
+    if (!purchaseReturnPermissions.can_delete) {
+      alert("You don't have permission to delete purchase returns.");
+      return;
+    }
+    
     setDeleteId(id);
     setShowDeleteModal(true);
   };
@@ -1611,10 +1685,21 @@ const PurchaseReturn = () => {
     );
   }
 
+  if (!purchaseReturnPermissions.can_view) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="text-center">
+          <h3 className="text-danger">Access Denied</h3>
+          <p>You don't have permission to view the Purchase Return module.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-3">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <h2 className="mb-0 fw-bold text-dark">Purchase Returns</h2>
+        <h2 className="mb-0 fw-bold">Purchase Returns</h2>
         <div className="d-flex gap-2 flex-wrap">
           <Button variant="success" size="sm" className="rounded-pill p-2 text-nowrap" disabled>
             <i className="fas fa-file-import me-1" /> Import
@@ -1625,22 +1710,24 @@ const PurchaseReturn = () => {
           <Button variant="info" size="sm" className="rounded-pill px-2 py-0 text-nowrap" disabled>
             <i className="fas fa-download me-1" /> Download
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            className="rounded-pill py-0 text-nowrap"
-            onClick={() => {
-              const now = new Date();
-              const year = now.getFullYear();
-              const uniqueSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-              const returnNo = `PR-${year}-${String(returns.length + 1).padStart(4, '0')}${uniqueSuffix}`;
-              setFormData({ ...initialFormData, return_no: returnNo });
-              setIsEditMode(false);
-              setShowModal(true);
-            }}
-          >
-            <i className="fas fa-plus me-1" /> New Return
-          </Button>
+          {purchaseReturnPermissions.can_create && (
+            <Button
+              variant="primary"
+              size="sm"
+              className="rounded-pill py-0 text-nowrap"
+              onClick={() => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const uniqueSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const returnNo = `PR-${year}-${String(returns.length + 1).padStart(4, '0')}${uniqueSuffix}`;
+                setFormData({ ...initialFormData, return_no: returnNo });
+                setIsEditMode(false);
+                setShowModal(true);
+              }}
+            >
+              <i className="fas fa-plus me-1" /> New Return
+            </Button>
+          )}
         </div>
       </div>
       <Row className="mb-4 g-3">
@@ -1701,7 +1788,7 @@ const PurchaseReturn = () => {
           />
         </Col>
       </Row>
-      <Card className="border-0 rounded-3 overflow-hidden">
+      <Card className="border rounded-3 overflow-hidden">
         <div className="table-responsive">
           <Table hover className="mb-0 text-center align-middle">
             <thead className="">
@@ -1739,15 +1826,21 @@ const PurchaseReturn = () => {
                     </td>
                     <td>
                       <div className="d-flex gap-2 justify-content-center">
-                        <Button size="sm" variant="outline-info" onClick={() => handleViewClick(item)}>
-                          <FaEye />
-                        </Button>
-                        <Button size="sm" variant="outline-warning" onClick={() => handleEditClick(item)}>
-                          <FaEdit />
-                        </Button>
-                        <Button size="sm" variant="outline-danger" onClick={() => handleDeleteClick(item.id)}>
-                          <FaTrash />
-                        </Button>
+                        {purchaseReturnPermissions.can_view && (
+                          <Button size="sm" variant="outline-info" onClick={() => handleViewClick(item)}>
+                            <FaEye />
+                          </Button>
+                        )}
+                        {purchaseReturnPermissions.can_update && (
+                          <Button size="sm" variant="outline-warning" onClick={() => handleEditClick(item)}>
+                            <FaEdit />
+                          </Button>
+                        )}
+                        {purchaseReturnPermissions.can_delete && (
+                          <Button size="sm" variant="outline-danger" onClick={() => handleDeleteClick(item.id)}>
+                            <FaTrash />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1756,8 +1849,8 @@ const PurchaseReturn = () => {
             </tbody>
           </Table>
         </div>
-        <div className="d-flex justify-content-between align-items-center p-3 bg-white">
-          <small className="text-muted">Showing {filteredReturns.length} of {returns.length} entries</small>
+        <div className="d-flex justify-content-between align-items-center p-3">
+          <small className="">Showing {filteredReturns.length} of {returns.length} entries</small>
           <div className="btn-group btn-group-sm">
             <button className="btn btn-outline-secondary disabled">&laquo;</button>
             <button className="btn btn-primary">1</button>
@@ -1782,76 +1875,7 @@ const PurchaseReturn = () => {
               </Col>
             </Row>
             <Row className="mb-3">
-
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Vendor *</Form.Label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      value={vendorSearch}
-                      placeholder="Select or type vendor..."
-                      onChange={(e) => {
-                        setVendorSearch(e.target.value);
-                        setFormData(prev => ({ ...prev, vendor_name: e.target.value, vendor_id: '' }));
-                      }}
-                      onFocus={() => {
-                        setVendorSearch(formData.vendor_name || '');
-                        setShowVendorDropdown(true);
-                      }}
-                      onBlur={() => setTimeout(() => setShowVendorDropdown(false), 150)}
-                      className="form-control"
-                    />
-                    {showVendorDropdown && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          right: 0,
-                          zIndex: 1000,
-                          backgroundColor: "white",
-                          border: "1px solid #ccc",
-                          borderRadius: "5px",
-                          maxHeight: "150px",
-                          overflowY: "auto",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        {filteredVendors.length === 0 ? (
-                          <div style={{ padding: "8px 10px", color: "#666" }}>No vendors found</div>
-                        ) : (
-                          filteredVendors.map((vendor) => (
-                            <div
-                              key={vendor.id}
-                              onMouseDown={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  vendor_id: vendor.id,
-                                  vendor_name: vendor.name_english,
-                                }));
-                                setVendorSearch(vendor.name_english);
-                                setShowVendorDropdown(false);
-                              }}
-                              style={{
-                                padding: "8px 10px",
-                                cursor: "pointer",
-                                borderBottom: "1px solid #f1f1f1",
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f8f9fa")}
-                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")}
-                            >
-                              {vendor.name_english}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Form.Group>
-              </Col>
-
-              {/* <Col md={6}>
                 <Form.Group>
                   <Form.Label>Vendor *</Form.Label>
                   <div style={{ position: "relative" }}>
@@ -1909,7 +1933,7 @@ const PurchaseReturn = () => {
                     )}
                   </div>
                 </Form.Group>
-              </Col> */}
+              </Col>
 
               <Col md={6}>
                 <Form.Group>
@@ -1979,15 +2003,7 @@ const PurchaseReturn = () => {
                           filteredWarehouses.map((warehouse) => (
                             <div
                               key={warehouse.id}
-                              onMouseDown={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  warehouse_id: warehouse.id,
-                                  warehouse_name: warehouse.warehouse_name,
-                                }));
-                                setWarehouseSearch(warehouse.warehouse_name);
-                                setShowWarehouseDropdown(false);
-                              }}
+                              onMouseDown={() => handleSelectWarehouse(warehouse)}
                               style={{
                                 padding: "8px 10px",
                                 cursor: "pointer",
@@ -2234,13 +2250,15 @@ const PurchaseReturn = () => {
           <Button variant="secondary" onClick={() => { setShowModal(false); closeAllDropdowns(); }}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            style={{ backgroundColor: '#3daaaa', borderColor: '#3daaaa' }}
-            onClick={handleSubmit}
-          >
-            {isEditMode ? 'Update Return' : 'Create Return'}
-          </Button>
+          {(purchaseReturnPermissions.can_create && !isEditMode) || (purchaseReturnPermissions.can_update && isEditMode) ? (
+            <Button
+              variant="primary"
+              style={{ backgroundColor: '#3daaaa', borderColor: '#3daaaa' }}
+              onClick={handleSubmit}
+            >
+              {isEditMode ? 'Update Return' : 'Create Return'}
+            </Button>
+          ) : null}
         </Modal.Footer>
       </Modal>
 
@@ -2353,8 +2371,8 @@ const PurchaseReturn = () => {
       {/* Info Card */}
       <Card className="mt-4 rounded-4 border">
         <Card.Body>
-          <h5 className="fw-semibold text-primary border-bottom pb-2 mb-3">Page Info</h5>
-          <ul className="text-muted" style={{ listStyle: 'disc', paddingLeft: '1.5rem' }}>
+          <h5 className="fw-semibold border-bottom pb-2 mb-3">Page Info</h5>
+          <ul className="d" style={{ listStyle: 'disc', paddingLeft: '1.5rem' }}>
             <li>Manage goods returned to vendors due to damage, overstock, or wrong items.</li>
             <li>Track return ID, invoice, vendor, warehouse, amount, and status.</li>
             <li>Auto-generated <strong>Reference ID</strong> and <strong>Voucher Numbers</strong> for accounting.</li>

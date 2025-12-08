@@ -15,6 +15,18 @@ import { CurrencyContext } from '../../../hooks/CurrencyContext';
 const VendorsCustomers = () => {
   const navigate = useNavigate();
   const CompanyId = GetCompanyId();
+  
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [canViewVendors, setCanViewVendors] = useState(false);
+  const [canCreateVendors, setCanCreateVendors] = useState(false);
+  const [canUpdateVendors, setCanUpdateVendors] = useState(false);
+  const [canDeleteVendors, setCanDeleteVendors] = useState(false);
+  const [canViewCustomers, setCanViewCustomers] = useState(false);
+  const [canCreateCustomers, setCanCreateCustomers] = useState(false);
+  const [canUpdateCustomers, setCanUpdateCustomers] = useState(false);
+  const [canDeleteCustomers, setCanDeleteCustomers] = useState(false);
+  
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,6 +39,73 @@ const VendorsCustomers = () => {
   const [deleting, setDeleting] = useState(false);
   const [vendorType, setVendorType] = useState("vender");
   const { symbol, convertPrice: convertrice } = useContext(CurrencyContext);
+
+  // Check permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+    
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setCanViewVendors(true);
+      setCanCreateVendors(true);
+      setCanUpdateVendors(true);
+      setCanDeleteVendors(true);
+      setCanViewCustomers(true);
+      setCanCreateCustomers(true);
+      setCanUpdateCustomers(true);
+      setCanDeleteCustomers(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+        
+        // Check if user has permissions for Vendors/Creditors
+        const vendorPermission = permissions.find(p => p.module_name === "Vendors/Creditors");
+        if (vendorPermission) {
+          setCanViewVendors(vendorPermission.can_view || false);
+          setCanCreateVendors(vendorPermission.can_create || false);
+          setCanUpdateVendors(vendorPermission.can_update || false);
+          setCanDeleteVendors(vendorPermission.can_delete || false);
+        }
+        
+        // Check if user has permissions for Customers/Debtors
+        const customerPermission = permissions.find(p => p.module_name === "Customers/Debtors");
+        if (customerPermission) {
+          setCanViewCustomers(customerPermission.can_view || false);
+          setCanCreateCustomers(customerPermission.can_create || false);
+          setCanUpdateCustomers(customerPermission.can_update || false);
+          setCanDeleteCustomers(customerPermission.can_delete || false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setCanViewVendors(false);
+        setCanCreateVendors(false);
+        setCanUpdateVendors(false);
+        setCanDeleteVendors(false);
+        setCanViewCustomers(false);
+        setCanCreateCustomers(false);
+        setCanUpdateCustomers(false);
+        setCanDeleteCustomers(false);
+      }
+    } else {
+      setCanViewVendors(false);
+      setCanCreateVendors(false);
+      setCanUpdateVendors(false);
+      setCanDeleteVendors(false);
+      setCanViewCustomers(false);
+      setCanCreateCustomers(false);
+      setCanUpdateCustomers(false);
+      setCanDeleteCustomers(false);
+    }
+  }, []);
+
+  // Check if user has permission for current vendor type
+  const canView = vendorType === 'vender' ? canViewVendors : canViewCustomers;
+  const canCreate = vendorType === 'vender' ? canCreateVendors : canCreateCustomers;
+  const canUpdate = vendorType === 'vender' ? canUpdateVendors : canUpdateCustomers;
+  const canDelete = vendorType === 'vender' ? canDeleteVendors : canDeleteCustomers;
 
   const getAccountType = (type) => type === "vender" ? "Sundry Creditors" : "Sundry Debtors";
 
@@ -92,6 +171,11 @@ const VendorsCustomers = () => {
       return;
     }
 
+    if (!canView) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -144,6 +228,11 @@ const VendorsCustomers = () => {
   };
 
   const handleAddClick = () => {
+    if (!canCreate) {
+      toast.error(`You don't have permission to add ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
     const accountType = getAccountType(vendorType);
     const balanceType = getBalanceType(accountType);
 
@@ -182,6 +271,11 @@ const VendorsCustomers = () => {
   };
 
   const handleEditClick = (vendor) => {
+    if (!canUpdate) {
+      toast.error(`You don't have permission to edit ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
     const accountType = vendor.accountType || getAccountType(vendorType);
     const balanceType = getBalanceType(accountType);
 
@@ -219,6 +313,16 @@ const VendorsCustomers = () => {
   };
 
   const handleSave = async () => {
+    if (!canCreate && !selectedVendor) {
+      toast.error(`You don't have permission to add ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
+    if (!canUpdate && selectedVendor) {
+      toast.error(`You don't have permission to update ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
     setSaving(true);
     setError(null);
     try {
@@ -337,6 +441,12 @@ const VendorsCustomers = () => {
   };
 
   const handleDeleteVendor = async () => {
+    if (!canDelete) {
+      toast.error(`You don't have permission to delete ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      setShowDelete(false);
+      return;
+    }
+    
     if (!selectedVendor?.id) {
       toast.error("Vendor ID not found.");
       setShowDelete(false);
@@ -374,6 +484,11 @@ const VendorsCustomers = () => {
   });
 
   const handleDownloadTemplate = () => {
+    if (!canView) {
+      toast.error(`You don't have permission to view ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
     const doc = new jsPDF('p', 'mm', 'a4');
     let yPos = 20;
     doc.setFontSize(20);
@@ -537,6 +652,11 @@ const VendorsCustomers = () => {
   };
 
   const handleExport = () => {
+    if (!canView) {
+      toast.error(`You don't have permission to view ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
     const ws = XLSX.utils.json_to_sheet(vendors);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `${vendorType === 'vender' ? 'Vendor' : 'Customer'}`);
@@ -545,6 +665,11 @@ const VendorsCustomers = () => {
   };
 
   const handleImportClick = () => {
+    if (!canCreate) {
+      toast.error(`You don't have permission to add ${vendorType === 'vender' ? 'vendors' : 'customers'}`);
+      return;
+    }
+    
     if (window.importFileRef) window.importFileRef.click();
   };
 
@@ -566,12 +691,43 @@ const VendorsCustomers = () => {
   };
 
   const handleViewLedger = (vendor) => {
+    if (!canView) {
+      toast.error(`You don't have permission to view ${vendorType === 'vender' ? 'vendor' : 'customer'} ledgers`);
+      return;
+    }
+    
     navigate(`/company/ledgervendor`, { state: { vendor } });
   };
 
   useEffect(() => {
     fetchVendors();
-  }, [CompanyId, vendorType]);
+  }, [CompanyId, vendorType, canView]);
+
+  // If user doesn't have view permission for both vendor and customer types, show access denied message
+  if (!canViewVendors && !canViewCustomers) {
+    return (
+      <div className="p-4 mt-2">
+        <Card className="text-center p-5">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view Vendors or Customers.</p>
+          <p>Please contact your administrator for access.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  // If user doesn't have view permission for the current vendor type, show access denied message
+  if (!canView) {
+    return (
+      <div className="p-4 mt-2">
+        <Card className="text-center p-5">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view {vendorType === 'vender' ? 'Vendors' : 'Customers'}.</p>
+          <p>Please contact your administrator for access.</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-2">
@@ -582,20 +738,28 @@ const VendorsCustomers = () => {
         </Col>
         <Col xs={12} md={8}>
           <div className="d-flex flex-wrap gap-2 justify-content-md-end">
-            <Button variant="success" className="rounded-pill d-flex align-items-center" onClick={handleImportClick}>Import</Button>
+            {canCreate && (
+              <Button variant="success" className="rounded-pill d-flex align-items-center" onClick={handleImportClick}>Import</Button>
+            )}
             <input type="file" accept=".xlsx, .xls" ref={(ref) => (window.importFileRef = ref)} onChange={handleImport} style={{ display: "none" }} />
-            <Button variant="primary" className="rounded-pill d-flex align-items-center" onClick={handleExport}>Export</Button>
-            <Button
-              variant="warning"
-              className="rounded-pill d-flex align-items-center"
-              onClick={handleDownloadTemplate}
-              title={`Download ${vendorType === 'vender' ? 'Vendor' : 'Customer'} PDF Report`}
-            >
-              Download PDF
-            </Button>
-            <Button variant="success" className="rounded-pill d-flex align-items-center" style={{ backgroundColor: "#53b2a5", border: "none" }} onClick={handleAddClick}>
-              <FaPlus /> Add {vendorType === 'vender' ? 'Vendor' : 'Customer'}
-            </Button>
+            {canView && (
+              <Button variant="primary" className="rounded-pill d-flex align-items-center" onClick={handleExport}>Export</Button>
+            )}
+            {canView && (
+              <Button
+                variant="warning"
+                className="rounded-pill d-flex align-items-center"
+                onClick={handleDownloadTemplate}
+                title={`Download ${vendorType === 'vender' ? 'Vendor' : 'Customer'} PDF Report`}
+              >
+                Download PDF
+              </Button>
+            )}
+            {canCreate && (
+              <Button variant="success" className="rounded-pill d-flex align-items-center" style={{ backgroundColor: "#53b2a5", border: "none" }} onClick={handleAddClick}>
+                <FaPlus /> Add {vendorType === 'vender' ? 'Vendor' : 'Customer'}
+              </Button>
+            )}
           </div>
         </Col>
       </Row>
@@ -605,8 +769,8 @@ const VendorsCustomers = () => {
         </Col>
         <Col xs={12} md={6} lg={4} className="ms-auto">
           <Form.Select value={vendorType} onChange={(e) => setVendorType(e.target.value)}>
-            <option value="vender">Vendor</option>
-            <option value="customer">Customer</option>
+            {canViewVendors && <option value="vender">Vendor</option>}
+            {canViewCustomers && <option value="customer">Customer</option>}
           </Form.Select>
         </Col>
       </Row>
@@ -624,7 +788,7 @@ const VendorsCustomers = () => {
         </Alert>
       )}
       {!loading && !error && (
-        <div className="card bg-white rounded-3 p-4">
+        <div className="card border rounded-3 p-4">
           <div className="table-responsive">
             <table className="table table-hover table-bordered align-middle mb-0">
               <thead className=" border">
@@ -677,49 +841,57 @@ const VendorsCustomers = () => {
                           className="d-flex align-items-center gap-2"
                           style={{ minWidth: "220px", whiteSpace: "nowrap" }}
                         >
-                          <Button
-                            variant="link"
-                            className="text-info p-1"
-                            size="sm"
-                            onClick={() => { setSelectedVendor(vendor); setShowView(true); }}
-                            title="View Details"
-                          >
-                            <FaEye size={16} />
-                          </Button>
-                          <Button
-                            variant="link"
-                            className="text-warning p-1"
-                            size="sm"
-                            onClick={() => handleEditClick(vendor)}
-                            title="Edit Vendor"
-                          >
-                            <FaEdit size={16} />
-                          </Button>
-                          <Button
-                            variant="link"
-                            className="text-danger p-1"
-                            size="sm"
-                            onClick={() => { setSelectedVendor(vendor); setShowDelete(true); }}
-                            title="Delete Vendor"
-                          >
-                            <FaTrash size={16} />
-                          </Button>
-                          <Button
-                            variant="none"
-                            className="p-0 text-primary text-decoration-none"
-                            onClick={() => handleViewLedger(vendor)}
-                            title="View Ledger"
-                            style={{
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                              padding: "6px 10px",
-                              borderRadius: "4px",
-                              fontSize: "0.875rem",
-                              fontWeight: 500,
-                            }}
-                          >
-                            View Ledger
-                          </Button>
+                          {canView && (
+                            <Button
+                              variant="link"
+                              className="text-info p-1"
+                              size="sm"
+                              onClick={() => { setSelectedVendor(vendor); setShowView(true); }}
+                              title="View Details"
+                            >
+                              <FaEye size={16} />
+                            </Button>
+                          )}
+                          {canUpdate && (
+                            <Button
+                              variant="link"
+                              className="text-warning p-1"
+                              size="sm"
+                              onClick={() => handleEditClick(vendor)}
+                              title="Edit Vendor"
+                            >
+                              <FaEdit size={16} />
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="link"
+                              className="text-danger p-1"
+                              size="sm"
+                              onClick={() => { setSelectedVendor(vendor); setShowDelete(true); }}
+                              title="Delete Vendor"
+                            >
+                              <FaTrash size={16} />
+                            </Button>
+                          )}
+                          {canView && (
+                            <Button
+                              variant="none"
+                              className="p-0 text-primary text-decoration-none"
+                              onClick={() => handleViewLedger(vendor)}
+                              title="View Ledger"
+                              style={{
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                                padding: "6px 10px",
+                                borderRadius: "4px",
+                                fontSize: "0.875rem",
+                                fontWeight: 500,
+                              }}
+                            >
+                              View Ledger
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -735,7 +907,7 @@ const VendorsCustomers = () => {
             </table>
           </div>
           <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-            <small className="text-muted ms-2">
+            <small className=" ms-2">
               Showing 1 to {filteredVendors.length} of {filteredVendors.length} results
             </small>
             <nav>
@@ -1331,8 +1503,8 @@ const VendorsCustomers = () => {
 
       <Card className="mb-4 p-3 shadow rounded-4 mt-2">
         <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
-          <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
+          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">Page Info</h5>
+          <ul className="tfs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
             <li>Manage {vendorType === 'vender' ? 'Vendor' : 'Customer'} details including contact and billing information.</li>
             <li>Track payable balances and credit periods.</li>
             <li>Perform CRUD operations: add, view, edit, and delete {vendorType === 'vender' ? 'Vendors' : 'Customers'}.</li>

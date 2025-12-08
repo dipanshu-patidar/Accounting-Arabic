@@ -8,6 +8,13 @@ import 'react-toastify/dist/ReactToastify.css';
 function InventoryAdjustment() {
   const companyId = GetCompanyId();
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [hasViewPermission, setHasViewPermission] = useState(false);
+  const [hasCreatePermission, setHasCreatePermission] = useState(false);
+  const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
+  const [hasDeletePermission, setHasDeletePermission] = useState(false);
+
   // States
   const [allItems, setAllItems] = useState([]); 
   const [allWarehouses, setAllWarehouses] = useState([]);
@@ -49,6 +56,53 @@ function InventoryAdjustment() {
   const allItemsRef = useRef(allItems);
   const allWarehousesRef = useRef(allWarehouses);
 
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setHasViewPermission(true);
+      setHasCreatePermission(true);
+      setHasUpdatePermission(true);
+      setHasDeletePermission(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Inventory_Adjustment module
+        const inventoryPermission = permissions.find(p => p.module_name === "Inventory_Adjustment");
+        
+        if (inventoryPermission) {
+          setHasViewPermission(inventoryPermission.can_view);
+          setHasCreatePermission(inventoryPermission.can_create);
+          setHasUpdatePermission(inventoryPermission.can_update);
+          setHasDeletePermission(inventoryPermission.can_delete);
+        } else {
+          // Default to no permissions if module not found
+          setHasViewPermission(false);
+          setHasCreatePermission(false);
+          setHasUpdatePermission(false);
+          setHasDeletePermission(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setHasViewPermission(false);
+        setHasCreatePermission(false);
+        setHasUpdatePermission(false);
+        setHasDeletePermission(false);
+      }
+    } else {
+      setHasViewPermission(false);
+      setHasCreatePermission(false);
+      setHasUpdatePermission(false);
+      setHasDeletePermission(false);
+    }
+  }, []);
+
   useEffect(() => {
     allItemsRef.current = allItems;
   }, [allItems]);
@@ -59,7 +113,7 @@ function InventoryAdjustment() {
 
   // 🔥 FETCH ITEMS - FIXED to properly handle warehouse data
   const fetchItems = async () => {
-    if (!companyId) return;
+    if (!companyId || !hasViewPermission) return;
     try {
       const response = await axiosInstance.get(`products/company/${companyId}`);
       if (Array.isArray(response.data.data)) {
@@ -92,7 +146,7 @@ function InventoryAdjustment() {
 
   // 🔥 FETCH WAREHOUSES - FIXED to properly fetch warehouses for the company
   const fetchWarehouses = async () => {
-    if (!companyId) return;
+    if (!companyId || !hasViewPermission) return;
     try {
       const response = await axiosInstance.get(`warehouses/company/${companyId}`);
       if (response.data.success && Array.isArray(response.data.data)) {
@@ -111,7 +165,7 @@ function InventoryAdjustment() {
 
   // 🔥 FETCH ADJUSTMENTS — FIXED DATE KEY
   const fetchAdjustments = async () => {
-    if (!companyId) return;
+    if (!companyId || !hasViewPermission) return;
     try {
       const response = await axiosInstance.get(`inventoryadjustment/company/${companyId}`);
       if (response.data.success && Array.isArray(response.data.data)) {
@@ -165,18 +219,18 @@ function InventoryAdjustment() {
 
   // Initial data load
   useEffect(() => {
-    if (companyId) {
+    if (companyId && hasViewPermission) {
       fetchItems();
       fetchWarehouses();
     }
-  }, [companyId]);
+  }, [companyId, hasViewPermission]);
 
   // Re-fetch adjustments when items/warehouses change
   useEffect(() => {
-    if (companyId && allItems.length > 0 && allWarehouses.length > 0) {
+    if (companyId && allItems.length > 0 && allWarehouses.length > 0 && hasViewPermission) {
       fetchAdjustments();
     }
-  }, [companyId, allItems, allWarehouses]);
+  }, [companyId, allItems, allWarehouses, hasViewPermission]);
 
   // Auto-generate voucher
   useEffect(() => {
@@ -310,6 +364,16 @@ function InventoryAdjustment() {
       return;
     }
 
+    // Check permissions
+    if (editingAdjustment && !hasUpdatePermission) {
+      toast.error('You do not have permission to update inventory adjustments.');
+      return;
+    }
+    if (!editingAdjustment && !hasCreatePermission) {
+      toast.error('You do not have permission to create inventory adjustments.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     const apiAdjustmentType = adjustmentType === 'Add Stock' ? 'add'
@@ -387,11 +451,19 @@ function InventoryAdjustment() {
   };
 
   const handleEditAdjustment = (adjustment) => {
+    if (!hasUpdatePermission) {
+      toast.error('You do not have permission to edit inventory adjustments.');
+      return;
+    }
     setEditingAdjustment(adjustment);
     setShowModal(true);
   };
 
   const handleDeleteClick = (adjustment) => {
+    if (!hasDeletePermission) {
+      toast.error('You do not have permission to delete inventory adjustments.');
+      return;
+    }
     setAdjustmentToDelete(adjustment);
     setShowDeleteWarning(true);
   };
@@ -419,6 +491,21 @@ function InventoryAdjustment() {
   const handlePrintAdjustment = () => window.print();
   const handlePrintModal = () => window.print();
 
+  // If user doesn't have view permission, show access denied message
+  if (!hasViewPermission) {
+    return (
+      <div className="container py-4">
+        <div className="alert alert-danger text-center">
+          <h4>Access Denied</h4>
+          <p>You don't have permission to view the Inventory Adjustment module.</p>
+          <button className="btn btn-primary" onClick={() => window.history.back()}>
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-4">
       {/* Toast Container */}
@@ -427,16 +514,18 @@ function InventoryAdjustment() {
       {/* Page Title */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3 className="text-dark">Inventory Adjustment Records</h3>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setEditingAdjustment(null);
-            setShowModal(true);
-          }}
-          style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
-        >
-          + Add Inventory Adjustment
-        </button>
+        {hasCreatePermission && (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setEditingAdjustment(null);
+              setShowModal(true);
+            }}
+            style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
+          >
+            + Add Inventory Adjustment
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -522,8 +611,12 @@ function InventoryAdjustment() {
                         <td>
                           <div className="d-flex gap-1">
                             <button className="btn btn-sm p-2" style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => setViewAdjustment(adjustment)} title="View Details"><i className="fas fa-eye"></i></button>
-                            <button className="btn btn-sm p-2" style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => handleEditAdjustment(adjustment)} title="Edit Adjustment"><i className="fas fa-edit"></i></button>
-                            <button className="btn btn-sm p-2" style={{ backgroundColor: "#dc3545", borderColor: "#dc3545", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => handleDeleteClick(adjustment)} title="Delete Adjustment"><i className="fas fa-trash"></i></button>
+                            {hasUpdatePermission && (
+                              <button className="btn btn-sm p-2" style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => handleEditAdjustment(adjustment)} title="Edit Adjustment"><i className="fas fa-edit"></i></button>
+                            )}
+                            {hasDeletePermission && (
+                              <button className="btn btn-sm p-2" style={{ backgroundColor: "#dc3545", borderColor: "#dc3545", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => handleDeleteClick(adjustment)} title="Delete Adjustment"><i className="fas fa-trash"></i></button>
+                            )}
                           </div>
                         </td>
                       </tr>

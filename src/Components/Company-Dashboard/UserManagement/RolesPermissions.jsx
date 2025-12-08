@@ -21,12 +21,14 @@ import GetCompanyId from "../../../Api/GetCompanyId";
 import axios from "axios";
 import BaseUrl from "../../../Api/BaseUrl";
 
-// Updated tallyModules with categories
+// Updated tallyModules with categories (Dashboard removed)
 const tallyModules = [
-  {
+
+   {
     category: "Dashboard",
     modules: [
       { name: "Dashboard", permissions: ["Create", "View", "Update", "Delete"] },
+     
     ]
   },
   {
@@ -94,8 +96,6 @@ const tallyModules = [
       { name: "Journal_Entries", permissions: ["Create", "View", "Update", "Delete"] },
       { name: "Ledger", permissions: ["Create", "View", "Update", "Delete"] },
       { name: "Trial_Balance", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Income_Statement_Report", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Account_Statement_Report", permissions: ["Create", "View", "Update", "Delete"] },
     ]
   },
   {
@@ -110,44 +110,6 @@ const tallyModules = [
     modules: [
       { name: "Company_Info", permissions: ["Create", "View", "Update", "Delete"] },
       { name: "Password_Requests", permissions: ["Create", "View", "Update", "Delete"] }
-    ]
-  },
-  {
-    category: "HR & Payroll",
-    modules: [
-      { name: "Employee_Management", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Attendance", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Leave_Requests", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Payroll", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Documents", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "End_of_Service", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Salary_Structure", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Generate_Payroll", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Payslip_Report", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Payroll_Report", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Payroll_Setting", permissions: ["Create", "View", "Update", "Delete"] },
-    ]
-  },
-  {
-    category: "Task Management",
-    modules: [
-      { name: "Task_Management", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Department_Summary", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Task_Progress", permissions: ["Create", "View", "Update", "Delete"] },
-    ]
-  },
-  {
-    category: "Compliance & Integration",
-    modules: [
-      { name: "ZATCA_e-Invoicing", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Compliance_Integration", permissions: ["Create", "View", "Update", "Delete"] },
-    ]
-  },
-  {
-    category: "Audit & Support",
-    modules: [
-      { name: "Audit_Logs", permissions: ["Create", "View", "Update", "Delete"] },
-      { name: "Support_Tickets", permissions: ["Create", "View", "Update", "Delete"] },
     ]
   }
 ];
@@ -179,28 +141,39 @@ const RolesPermissions = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
+  // Custom Role Types
+  const [customRoleTypes, setCustomRoleTypes] = useState([]);
+  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+  const [newRoleType, setNewRoleType] = useState("");
+  const [isAddingType, setIsAddingType] = useState(false);
+  const [typeError, setTypeError] = useState("");
+
   // TOAST NOTIFICATION STATE
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("success");
 
+  // Load custom role types from localStorage
   useEffect(() => {
+    const saved = localStorage.getItem("customRoleTypes");
+    if (saved) {
+      setCustomRoleTypes(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (customRoleTypes.length > 0) {
+      localStorage.setItem("customRoleTypes", JSON.stringify(customRoleTypes));
+    }
+  }, [customRoleTypes]);
+
+  // FETCH ROLES FUNCTION - Updated to match API response
+  const fetchRoles = async () => {
     if (!companyId) {
       setError("Company ID not found.");
       setLoading(false);
       return;
     }
-    
-    // Initialize form with empty permissions for all modules
-    const initialModulePermissions = {};
-    flattenModules().forEach(module => {
-      initialModulePermissions[module.name] = [];
-    });
-    setForm({ name: "", permissions: [], type: "user", modulePermissions: initialModulePermissions });
-  }, [companyId]);
-
-  // FETCH ROLES FUNCTION - Updated to match API response
-  const fetchRoles = async () => {
     try {
       const response = await axios.get(`${BaseUrl}user-roles?company_id=${companyId}`);
       if (response.data?.success && Array.isArray(response.data.data)) {
@@ -471,6 +444,44 @@ const RolesPermissions = () => {
         }
       };
     });
+  };
+
+  const handleAddRoleType = async () => {
+    if (!newRoleType.trim()) {
+      setTypeError("Role type name is required");
+      return;
+    }
+    if (customRoleTypes.includes(newRoleType)) {
+      setTypeError("This role type already exists");
+      return;
+    }
+    if (!companyId) {
+      setTypeError("Company ID not found. Please try again.");
+      return;
+    }
+    setIsAddingType(true);
+    setTypeError("");
+    try {
+      const response = await axios.post(`${BaseUrl}roletype`, {
+        type_name: newRoleType,
+        company_id: companyId
+      });
+      if (response.data?.success) {
+        setCustomRoleTypes([...customRoleTypes, newRoleType]);
+        setNewRoleType("");
+        setShowAddTypeModal(false);
+        setToastMessage("Role type added successfully!");
+        setToastVariant("success");
+        setShowToast(true);
+      } else {
+        setTypeError(response.data?.message || "Failed to add role type");
+      }
+    } catch (error) {
+      console.error("Error adding role type:", error);
+      setTypeError("An error occurred while adding the role type. Please try again.");
+    } finally {
+      setIsAddingType(false);
+    }
   };
 
   // Render module permissions with categories
@@ -892,7 +903,7 @@ const RolesPermissions = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Edit Role Modal */}
+      {/* Edit Role Modal - Removed Role Type section */}
       <Modal show={showEdit} onHide={() => setShowEdit(false)} centered size="xl">
         <Modal.Header closeButton style={{ borderBottom: "1px solid #e9ecef" }}>
           <Modal.Title style={{ fontWeight: 600, fontSize: 18 }}>Edit Role: {selected?.name}</Modal.Title>
@@ -946,7 +957,7 @@ const RolesPermissions = () => {
       </Modal>
 
       <p className="text-muted text-center mt-3">
-        This page allows you to define and manage user roles with specific permissions such as create, read, update, and delete. Control access across application.
+        This page allows you to define and manage user roles with specific permissions such as create, read, update, and delete. Control access across the application.
       </p>
 
       {/* TOAST CONTAINER */}

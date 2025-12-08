@@ -104,6 +104,13 @@ const CustomersDebtors = () => {
   // Get company ID
   const companyId = GetCompanyId();
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [hasViewPermission, setHasViewPermission] = useState(false);
+  const [hasCreatePermission, setHasCreatePermission] = useState(false);
+  const [hasUpdatePermission, setHasUpdatePermission] = useState(false);
+  const [hasDeletePermission, setHasDeletePermission] = useState(false);
+
   // Modal states
   const [showAddEditModal, setShowAddEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -155,8 +162,58 @@ const CustomersDebtors = () => {
   // Excel import ref
   const fileInputRef = useRef();
 
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setHasViewPermission(true);
+      setHasCreatePermission(true);
+      setHasUpdatePermission(true);
+      setHasDeletePermission(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Customers/Debtors module
+        const customerPermission = permissions.find(p => p.module_name === "Customers/Debtors");
+        
+        if (customerPermission) {
+          setHasViewPermission(customerPermission.can_view);
+          setHasCreatePermission(customerPermission.can_create);
+          setHasUpdatePermission(customerPermission.can_update);
+          setHasDeletePermission(customerPermission.can_delete);
+        } else {
+          // Default to no permissions if module not found
+          setHasViewPermission(false);
+          setHasCreatePermission(false);
+          setHasUpdatePermission(false);
+          setHasDeletePermission(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setHasViewPermission(false);
+        setHasCreatePermission(false);
+        setHasUpdatePermission(false);
+        setHasDeletePermission(false);
+      }
+    } else {
+      setHasViewPermission(false);
+      setHasCreatePermission(false);
+      setHasUpdatePermission(false);
+      setHasDeletePermission(false);
+    }
+  }, []);
+
   // Fetch customers by company ID from API
   const fetchCustomersByCompany = async () => {
+    // Only fetch if user has view permission
+    if (!hasViewPermission) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -238,13 +295,23 @@ const CustomersDebtors = () => {
   };
 
   useEffect(() => {
-    if (companyId) {
+    if (companyId && hasViewPermission) {
       fetchCustomersByCompany();
     }
-  }, [companyId]);
+  }, [companyId, hasViewPermission]);
 
   // Handlers
   const handleOpenAddEditModal = (mode, customer = null, index = null) => {
+    // Check permissions
+    if (mode === "add" && !hasCreatePermission) {
+      toast.error("You don't have permission to create customers");
+      return;
+    }
+    if (mode === "edit" && !hasUpdatePermission) {
+      toast.error("You don't have permission to update customers");
+      return;
+    }
+
     setEditMode(mode === "edit");
     if (mode === "add") {
       const empty = JSON.parse(JSON.stringify(emptyCustomer));
@@ -302,6 +369,10 @@ const CustomersDebtors = () => {
   };
 
   const handleOpenViewModal = (customer) => {
+    if (!hasViewPermission) {
+      toast.error("You don't have permission to view customers");
+      return;
+    }
     setCurrentCustomer(customer);
     setShowViewModal(true);
     toast.info(`Viewing details for: ${customer.name}`);
@@ -415,6 +486,11 @@ const CustomersDebtors = () => {
 
   // Excel Import
   const handleImport = (e) => {
+    if (!hasCreatePermission) {
+      toast.error("You don't have permission to import customers");
+      return;
+    }
+    
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -447,6 +523,11 @@ const CustomersDebtors = () => {
 
   // Excel Export
   const handleExport = () => {
+    if (!hasViewPermission) {
+      toast.error("You don't have permission to export customers");
+      return;
+    }
+    
     const columns = [
       "name",
       "contact",
@@ -506,6 +587,11 @@ const CustomersDebtors = () => {
 
   // Download Blank Template
   const handleDownloadBlank = () => {
+    if (!hasCreatePermission) {
+      toast.error("You don't have permission to download customer template");
+      return;
+    }
+    
     const columns = [
       "name",
       "contact",
@@ -538,6 +624,21 @@ const CustomersDebtors = () => {
     toast.success("Customer template downloaded successfully");
   };
 
+  // If user doesn't have view permission, show access denied message
+  if (!hasViewPermission) {
+    return (
+      <div className="p-4 mt-2">
+        <Alert variant="danger" className="text-center">
+          <h4>Access Denied</h4>
+          <p>You don't have permission to view the Customers/Debtors module.</p>
+          <Button variant="primary" onClick={() => navigate(-1)}>
+            Go Back
+          </Button>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 mt-2">
       <ToastContainer
@@ -568,47 +669,55 @@ const CustomersDebtors = () => {
                 style={{ display: "none" }}
                 onChange={handleImport}
               />
-              <Button
-                variant="success"
-                className="rounded-pill d-flex align-items-center"
-                style={{ fontWeight: 600 }}
-                onClick={() => fileInputRef.current?.click()}
-                title="Import Excel"
-              >
-                <FaFileImport className="me-2" /> Import
-              </Button>
-              <Button
-                variant="primary"
-                className="rounded-pill d-flex align-items-center"
-                style={{ fontWeight: 600 }}
-                onClick={handleExport}
-                title="Export Excel"
-              >
-                <FaFileExport className="me-2" /> Export
-              </Button>
-              <Button
-                variant="warning"
-                className="rounded-pill d-flex align-items-center"
-                style={{ fontWeight: 600, color: "#fff" }}
-                onClick={handleDownloadBlank}
-                title="Download Blank Template"
-              >
-                <FaDownload className="me-2" /> Download
-              </Button>
-              <Button
-                onClick={() => handleOpenAddEditModal("add")}
-                size="sm"
-                style={{
-                  backgroundColor: "#53b2a5",
-                  border: "none",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                className="rounded-pill"
-              >
-                <FaPlus className="me-1" />
-                <span>Add Customer</span>
-              </Button>
+              {hasCreatePermission && (
+                <Button
+                  variant="success"
+                  className="rounded-pill d-flex align-items-center"
+                  style={{ fontWeight: 600 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Import Excel"
+                >
+                  <FaFileImport className="me-2" /> Import
+                </Button>
+              )}
+              {hasViewPermission && (
+                <Button
+                  variant="primary"
+                  className="rounded-pill d-flex align-items-center"
+                  style={{ fontWeight: 600 }}
+                  onClick={handleExport}
+                  title="Export Excel"
+                >
+                  <FaFileExport className="me-2" /> Export
+                </Button>
+              )}
+              {hasCreatePermission && (
+                <Button
+                  variant="warning"
+                  className="rounded-pill d-flex align-items-center"
+                  style={{ fontWeight: 600, color: "#fff" }}
+                  onClick={handleDownloadBlank}
+                  title="Download Blank Template"
+                >
+                  <FaDownload className="me-2" /> Download
+                </Button>
+              )}
+              {hasCreatePermission && (
+                <Button
+                  onClick={() => handleOpenAddEditModal("add")}
+                  size="sm"
+                  style={{
+                    backgroundColor: "#53b2a5",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  className="rounded-pill"
+                >
+                  <FaPlus className="me-1" />
+                  <span>Add Customer</span>
+                </Button>
+              )}
             </div>
           </Col>
         </Row>
@@ -697,35 +806,41 @@ const CustomersDebtors = () => {
                       <td>${parseFloat(cust.balance || 0).toFixed(2)}</td>
                       <td>
                         <div className="d-flex gap-2 justify-content-center">
-                          <Button
-                            variant="link"
-                            className="p-0 text-info"
-                            onClick={() => handleOpenViewModal(cust)}
-                            title="View Details"
-                          >
-                            <FaEye size={16} />
-                          </Button>
-                          <Button
-                            variant="link"
-                            className="p-0 text-warning"
-                            onClick={() =>
-                              handleOpenAddEditModal("edit", cust, idx)
-                            }
-                            title="Edit Customer"
-                          >
-                            <FaEdit />
-                          </Button>
-                          <Button
-                            variant="link"
-                            className="p-0 text-danger"
-                            onClick={() => {
-                              setCustomerIdToDelete(cust.id);
-                              setShowConfirmDelete(true);
-                            }}
-                            title="Delete Customer"
-                          >
-                            <FaTrash />
-                          </Button>
+                          {hasViewPermission && (
+                            <Button
+                              variant="link"
+                              className="p-0 text-info"
+                              onClick={() => handleOpenViewModal(cust)}
+                              title="View Details"
+                            >
+                              <FaEye size={16} />
+                            </Button>
+                          )}
+                          {hasUpdatePermission && (
+                            <Button
+                              variant="link"
+                              className="p-0 text-warning"
+                              onClick={() =>
+                                handleOpenAddEditModal("edit", cust, idx)
+                              }
+                              title="Edit Customer"
+                            >
+                              <FaEdit />
+                            </Button>
+                          )}
+                          {hasDeletePermission && (
+                            <Button
+                              variant="link"
+                              className="p-0 text-danger"
+                              onClick={() => {
+                                setCustomerIdToDelete(cust.id);
+                                setShowConfirmDelete(true);
+                              }}
+                              title="Delete Customer"
+                            >
+                              <FaTrash />
+                            </Button>
+                          )}
                           <Button
                             variant="none"
                             className="p-0 text-primary text-decoration-none"
@@ -793,7 +908,7 @@ const CustomersDebtors = () => {
             </Table>
 
             <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-              <small className="text-muted ms-2">
+              <small className=" ms-2">
                 1 to {filteredCustomers.length} of {customersList.length}{" "}
                 results
               </small>
@@ -821,11 +936,11 @@ const CustomersDebtors = () => {
       {/* Page Description */}
       <Card className="mb-4 p-3 shadow rounded-4 mt-2">
         <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">
+          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">
             Page Info
           </h5>
           <ul
-            className="text-muted fs-6 mb-0"
+            className=" fs-6 mb-0"
             style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
           >
             <li>Manage customer records including contact and address details.</li>

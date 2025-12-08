@@ -15,6 +15,63 @@ const SalesReturn = () => {
   const companyId = GetCompanyId();
   const [addItemError, setAddItemError] = useState('');
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [salesReturnPermissions, setSalesReturnPermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setSalesReturnPermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Sales_Return module
+        const salesReturnPermission = permissions.find(p => p.module_name === "Sales_Return");
+        if (salesReturnPermission) {
+          setSalesReturnPermissions({
+            can_create: salesReturnPermission.can_create,
+            can_view: salesReturnPermission.can_view,
+            can_update: salesReturnPermission.can_update,
+            can_delete: salesReturnPermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setSalesReturnPermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setSalesReturnPermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
+
   // Dropdown data
   const [customers, setCustomers] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -95,15 +152,17 @@ const SalesReturn = () => {
   };
 
   const fetchReturns = async () => {
+    if (!salesReturnPermissions.can_view) return;
+    
     try {
       const response = await axiosInstance.get(`/sales-return/get-returns`, {
         params: { company_id: companyId }
       });
       const data = response.data;
 
-      // Updated mapping based on the new API response structure
+      // Updated mapping based on new API response structure
       const mapped = (data.data || []).map(r => ({
-        id: r.sr_no, // Using sr_no as id since it's unique in the response
+        id: r.sr_no, // Using sr_no as id since it's unique in response
         returnNo: r.return_no,
         invoiceNo: r.invoice_no,
         customer_id: r.customer_id,
@@ -141,6 +200,12 @@ const SalesReturn = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      if (!salesReturnPermissions.can_view) {
+        setLoading(false);
+        setDataLoaded(true);
+        return;
+      }
+      
       try {
         await Promise.all([
           fetchCustomers(),
@@ -156,7 +221,7 @@ const SalesReturn = () => {
       }
     };
     loadData();
-  }, []);
+  }, [salesReturnPermissions.can_view, companyId]);
 
   // ========= Helper Functions =========
   const getCustomerName = (customerId) => {
@@ -237,6 +302,11 @@ const SalesReturn = () => {
 
   // ========= Handlers =========
   const handleDelete = async (id) => {
+    if (!salesReturnPermissions.can_delete) {
+      alert("You don't have permission to delete sales returns.");
+      return;
+    }
+    
     if (!window.confirm("Are you sure you want to delete this sales return?")) return;
     try {
       await axiosInstance.delete(`/sales-return/delete-sale/${id}`);
@@ -249,6 +319,11 @@ const SalesReturn = () => {
   };
 
   const handleExportAll = () => {
+    if (!salesReturnPermissions.can_view) {
+      alert("You don't have permission to export sales returns.");
+      return;
+    }
+    
     let csvContent = "text/csv;charset=utf-8,\uFEFF";
     csvContent += "Reference ID,Return No,Invoice No,Customer,Date,Items,Amount,Status,Return Type,Reason,Warehouse,Narration,Auto Voucher No,Manual Voucher No\n";
     returns.forEach(r => {
@@ -277,6 +352,11 @@ const SalesReturn = () => {
   };
 
   const handleAddClick = () => {
+    if (!salesReturnPermissions.can_create) {
+      alert("You don't have permission to create sales returns.");
+      return;
+    }
+    
     setAddItemError('');
     setNewReturn({
       returnNo: '',
@@ -352,6 +432,11 @@ const SalesReturn = () => {
   };
 
   const handleAddReturn = async () => {
+    if (!salesReturnPermissions.can_create) {
+      setAddItemError("You don't have permission to create sales returns.");
+      return;
+    }
+    
     const { returnNo, invoiceNo, customerId, date, itemsList, warehouseId } = newReturn;
     if (!returnNo || !invoiceNo || !customerId || !date || itemsList.length === 0 || !warehouseId) {
       setAddItemError("Please fill all required fields (*) and add at least one item.");
@@ -413,6 +498,11 @@ const SalesReturn = () => {
   };
 
   const handleEditClick = async (returnItem) => {
+    if (!salesReturnPermissions.can_update) {
+      alert("You don't have permission to edit sales returns.");
+      return;
+    }
+    
     try {
       setAddItemError('');
       setOpenDropdown(null);
@@ -444,6 +534,11 @@ const SalesReturn = () => {
   };
 
   const handleEditSave = async () => {
+    if (!salesReturnPermissions.can_update) {
+      setAddItemError("You don't have permission to update sales returns.");
+      return;
+    }
+    
     if (!editReturn) return;
 
     const { returnNo, invoiceNo, customerId, date, itemsList, warehouseId } = editReturn;
@@ -568,6 +663,18 @@ const SalesReturn = () => {
       </div>
     );
   }
+  
+  if (!salesReturnPermissions.can_view) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <Alert variant="danger" className="m-4">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view the Sales Return module.</p>
+        </Alert>
+      </div>
+    );
+  }
+  
   if (error) {
     return (
       <Alert variant="danger" className="m-4">
@@ -594,33 +701,39 @@ const SalesReturn = () => {
           <p className="text-muted small mb-0">Customer Sends Back</p>
         </div>
         <div className="d-flex flex-wrap gap-2">
-          <Button
-            className="rounded-pill px-4 d-flex align-items-center"
-            variant="success"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <FaUpload className="me-2 text-white" /> Import
-          </Button>
+          {salesReturnPermissions.can_create && (
+            <Button
+              className="rounded-pill px-4 d-flex align-items-center"
+              variant="success"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FaUpload className="me-2 text-white" /> Import
+            </Button>
+          )}
           <input
             type="file"
             ref={fileInputRef}
             accept=".csv"
             style={{ display: 'none' }}
           />
-          <Button
-            className="rounded-pill px-4 d-flex align-items-center"
-            style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
-            onClick={handleExportAll}
-          >
-            <FaFile className="me-2" /> Export
-          </Button>
-          <Button
-            className="rounded-pill px-4 d-flex align-items-center"
-            style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
-            onClick={handleAddClick}
-          >
-            New Return
-          </Button>
+          {salesReturnPermissions.can_view && (
+            <Button
+              className="rounded-pill px-4 d-flex align-items-center"
+              style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
+              onClick={handleExportAll}
+            >
+              <FaFile className="me-2" /> Export
+            </Button>
+          )}
+          {salesReturnPermissions.can_create && (
+            <Button
+              className="rounded-pill px-4 d-flex align-items-center"
+              style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
+              onClick={handleAddClick}
+            >
+              New Return
+            </Button>
+          )}
         </div>
       </div>
 
@@ -730,7 +843,7 @@ const SalesReturn = () => {
         <div className="col-md-3 mb-3">
           <div className="card border-primary">
             <div className="card-body">
-              <h6 className="card-title text-muted">Total Returns</h6>
+              <h6 className="card-title">Total Returns</h6>
               <h4 className="text-primary">{returns.length}</h4>
             </div>
           </div>
@@ -738,7 +851,7 @@ const SalesReturn = () => {
         <div className="col-md-3 mb-3">
           <div className="card border-success">
             <div className="card-body">
-              <h6 className="card-title text-muted">Processed</h6>
+              <h6 className="card-title">Processed</h6>
               <h4 className="text-success">{returns.filter(r => r.status === 'Processed').length}</h4>
             </div>
           </div>
@@ -746,7 +859,7 @@ const SalesReturn = () => {
         <div className="col-md-3 mb-3">
           <div className="card border-warning">
             <div className="card-body">
-              <h6 className="card-title text-muted">Pending</h6>
+              <h6 className="card-title">Pending</h6>
               <h4 className="text-warning">{returns.filter(r => r.status === 'Pending').length}</h4>
             </div>
           </div>
@@ -754,7 +867,7 @@ const SalesReturn = () => {
         <div className="col-md-3 mb-3">
           <div className="card border-danger">
             <div className="card-body">
-              <h6 className="card-title text-muted">Total Value</h6>
+              <h6 className="card-title">Total Value</h6>
               <h4 className="text-danger">₹ {returns.reduce((sum, r) => sum + r.amount, 0).toLocaleString('en-IN')}</h4>
             </div>
           </div>
@@ -805,18 +918,24 @@ const SalesReturn = () => {
                   <td>{getStatusBadge(item.status)}</td>
                   <td className="text-center">
                     <div className="d-flex justify-content-center gap-2">
-                      <Button variant="outline-info" size="sm" onClick={() => {
-                        setSelectedReturn(item);
-                        setShowViewModal(true);
-                      }}>
-                        <FaEye size={14} />
-                      </Button>
-                      <Button variant="outline-warning" size="sm" onClick={() => handleEditClick(item)}>
-                        <FaEdit size={14} />
-                      </Button>
-                      <Button variant="outline-danger" size="sm" onClick={() => handleDelete(item.id)}>
-                        <FaTrash size={14} />
-                      </Button>
+                      {salesReturnPermissions.can_view && (
+                        <Button variant="outline-info" size="sm" onClick={() => {
+                          setSelectedReturn(item);
+                          setShowViewModal(true);
+                        }}>
+                          <FaEye size={14} />
+                        </Button>
+                      )}
+                      {salesReturnPermissions.can_update && (
+                        <Button variant="outline-warning" size="sm" onClick={() => handleEditClick(item)}>
+                          <FaEdit size={14} />
+                        </Button>
+                      )}
+                      {salesReturnPermissions.can_delete && (
+                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(item.id)}>
+                          <FaTrash size={14} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1148,10 +1267,11 @@ const SalesReturn = () => {
             setAddItemError('');
             setOpenDropdown(null);
           }}>Cancel</Button>
-          <Button variant="primary" onClick={handleEditSave} style={{ backgroundColor: '#3daaaa' }}>Save Changes</Button>
+          {salesReturnPermissions.can_update && (
+            <Button variant="primary" onClick={handleEditSave} style={{ backgroundColor: '#3daaaa' }}>Save Changes</Button>
+          )}
         </Modal.Footer>
       </Modal>
-
 
       {/* Add Modal */}
       <Modal show={showAddModal} onHide={() => {
@@ -1382,22 +1502,24 @@ const SalesReturn = () => {
             setAddItemError('');
             setOpenDropdown(null);
           }}>Cancel</Button>
-          <Button variant="primary" onClick={handleAddReturn} style={{ backgroundColor: '#3daaaa' }}>
-            Add Return
-          </Button>
+          {salesReturnPermissions.can_create && (
+            <Button variant="primary" onClick={handleAddReturn} style={{ backgroundColor: '#3daaaa' }}>
+              Add Return
+            </Button>
+          )}
         </Modal.Footer>
       </Modal>
 
       {/* Page Info Card */}
       <Card className="mb-4 p-3 shadow rounded-4 mt-2">
         <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
-          <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-            <li>✅ **Products filtered by selected warehouse** in both Add & Edit modals.</li>
-            <li>✅ **Stock validation uses warehouse-specific `stock_qty` from `warehouses` field**.</li>
-            <li>✅ **Item narration is correctly updated and saved** in both modals.</li>
-            <li>✅ **Only one dropdown opens at a time** — clean UI behavior.</li>
-            <li>✅ **Warehouse info is always visible and used consistently**.</li>
+          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">Page Info</h5>
+          <ul className=" fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
+            <li> Products filtered by selected warehouse in both Add & Edit modals.</li>
+            <li> Stock validation uses warehouse-specific `stock_qty` from `warehouses` field.</li>
+            <li>Item narration is correctly updated and saved in both modals.</li>
+            <li> Only one dropdown opens at a time — clean UI behavior.</li>
+            <li> Warehouse info is always visible and used consistently.</li>
           </ul>
         </Card.Body>
       </Card>

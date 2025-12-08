@@ -8,10 +8,17 @@ import { BiTransfer } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../Api/axiosInstance";
 import GetCompanyId from "../../../Api/GetCompanyId";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
 const InventoryItems = () => {
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [canViewInventory, setCanViewInventory] = useState(false);
+  const [canCreateInventory, setCanCreateInventory] = useState(false);
+  const [canUpdateInventory, setCanUpdateInventory] = useState(false);
+  const [canDeleteInventory, setCanDeleteInventory] = useState(false);
+
   const navigate = useNavigate();
   const [quantityRange, setQuantityRange] = useState("All");
   const [items, setItems] = useState([]);
@@ -34,18 +41,69 @@ const InventoryItems = () => {
 
   const companyId = GetCompanyId();
 
+  // Check permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+    
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setCanViewInventory(true);
+      setCanCreateInventory(true);
+      setCanUpdateInventory(true);
+      setCanDeleteInventory(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+        
+        // Check if user has permissions for Product_Inventory
+        const inventoryPermission = permissions.find(p => p.module_name === "Product_Inventory");
+        
+        if (inventoryPermission) {
+          setCanViewInventory(inventoryPermission.can_view || false);
+          setCanCreateInventory(inventoryPermission.can_create || false);
+          setCanUpdateInventory(inventoryPermission.can_update || false);
+          setCanDeleteInventory(inventoryPermission.can_delete || false);
+        } else {
+          setCanViewInventory(false);
+          setCanCreateInventory(false);
+          setCanUpdateInventory(false);
+          setCanDeleteInventory(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setCanViewInventory(false);
+        setCanCreateInventory(false);
+        setCanUpdateInventory(false);
+        setCanDeleteInventory(false);
+      }
+    } else {
+      setCanViewInventory(false);
+      setCanCreateInventory(false);
+      setCanUpdateInventory(false);
+      setCanDeleteInventory(false);
+    }
+  }, []);
+
   const safeTrim = (value) => {
     return value && typeof value === "string" ? value.trim() : "";
   };
 
   const fetchProductsByCompanyId = async (companyId) => {
+    if (!canViewInventory) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await axiosInstance.get(`products/company/${companyId}`);
 
       if (response.data?.success && Array.isArray(response.data.data)) {
         const transformedItems = response.data.data.map((product) => {
-          // Get the primary warehouse (first one in the array)
+          // Get primary warehouse (first one in array)
           const primaryWarehouse =
             product.warehouses && product.warehouses.length > 0
               ? product.warehouses[0]
@@ -54,8 +112,8 @@ const InventoryItems = () => {
           return {
             id: product.id || 0,
             itemName: safeTrim(product.item_name) || "Unnamed Product", // FIXED: Using item_name instead of sku
-            hsn: "N/A", // Not available in the response
-            barcode: "", // Not available in the response
+            hsn: "N/A", // Not available in response
+            barcode: "", // Not available in response
             sku: product.sku || "",
             unit: product.unit_detail?.uom_id?.toString() || "Numbers",
             description:
@@ -64,22 +122,22 @@ const InventoryItems = () => {
             date:
               new Date(product.created_at).toISOString().split("T")[0] ||
               "2020-01-01",
-            cost: 0, // Not available in the response
-            value: 0, // Not available in the response
-            minQty: 0, // Not available in the response
-            taxAccount: "N/A", // Not available in the response
+            cost: 0, // Not available in response
+            value: 0, // Not available in response
+            minQty: 0, // Not available in response
+            taxAccount: "N/A", // Not available in response
             cess: 0,
-            purchasePriceExclusive: 0, // Not available in the response
-            purchasePriceInclusive: 0, // Not available in the response
-            salePriceExclusive: 0, // Not available in the response
-            salePriceInclusive: 0, // Not available in the response
-            discount: 0, // Not available in the response
+            purchasePriceExclusive: 0, // Not available in response
+            purchasePriceInclusive: 0, // Not available in response
+            salePriceExclusive: 0, // Not available in response
+            salePriceInclusive: 0, // Not available in response
+            discount: 0, // Not available in response
             category: "default",
             itemCategory:
               product.item_category?.item_category_name || "Unknown",
             itemType: "Good",
             subcategory: "default",
-            remarks: "", // Not available in the response
+            remarks: "", // Not available in response
             image: product.image || null, // FIXED: Using actual image
             status:
               (product.total_stock || 0) > 0 ? "In Stock" : "Out of Stock",
@@ -120,7 +178,7 @@ const InventoryItems = () => {
     if (companyId) {
       fetchProductsByCompanyId(companyId);
     }
-  }, [companyId]);
+  }, [companyId, canViewInventory]);
 
   // Extract unique warehouses from all items
   const getAllWarehouses = () => {
@@ -196,17 +254,21 @@ const InventoryItems = () => {
     );
   };
 
-
   const handleDeleteItem = async () => {
+    if (!canDeleteInventory) {
+      toast.error("You don't have permission to delete inventory items");
+      return;
+    }
+    
     if (!selectedItem?.id) {
       toast.error("No item selected for deletion", {
         toastId: "no-item-selected-error",
-        autoClose: 3000,
+        autoClose: 3000
       });
       setShowDelete(false);
       return;
     }
-
+    
     setIsDeleting(true);
     try {
       const response = await axiosInstance.delete(
@@ -223,39 +285,24 @@ const InventoryItems = () => {
         setShowDelete(false);
         toast.success("Product deleted successfully!", {
           toastId: "product-delete-success",
-          autoClose: 3000,
+          autoClose: 3000
         });
       } else {
         const errorMessage =
           response.data?.message ||
-          "The server reported a failure to delete the product.";
+          "The server reported a failure to delete product.";
         console.error("Server reported deletion failure:", errorMessage);
         toast.error(`Failed to delete product. ${errorMessage}`, {
           toastId: "product-delete-server-error",
-          autoClose: 3000,
+          autoClose: 3000
         });
       }
-    } catch (error) {
-      console.error("Delete API Error:", error);
-
-      let errorMessage = "An unknown error occurred.";
-      if (error.response) {
-        console.error("Error Data:", error.response.data);
-        console.error("Error Status:", error.response.status);
-        errorMessage =
-          error.response.data?.message ||
-          `Server error with status ${error.response.status}.`;
-      } else if (error.request) {
-        console.error("Error Request:", error.request);
-        errorMessage =
-          "No response received from server. Check your network connection.";
-      } else {
-        errorMessage = error.message;
-      }
-
-      toast.error(`Error deleting product: ${errorMessage}`, {
+    } catch (err) {
+      console.error("Delete API Error:", err);
+      const errorMessage = err.response?.data?.message || "Failed to delete product";
+      toast.error(errorMessage, {
         toastId: "product-delete-api-error",
-        autoClose: 3000,
+        autoClose: 3000
       });
     } finally {
       setIsDeleting(false);
@@ -263,6 +310,11 @@ const InventoryItems = () => {
   };
 
   const handleDownloadTemplate = () => {
+    if (!canCreateInventory) {
+      toast.error("You don't have permission to download inventory templates");
+      return;
+    }
+    
     const headers = [
       [
         "itemName",
@@ -298,18 +350,17 @@ const InventoryItems = () => {
   };
 
   const handleExport = () => {
-    const exportData = items.map((item) => ({
-      itemName: item.itemName,
-      hsn: item.hsn,
-      barcode: item.barcode,
-      description: item.description,
-      quantity: item.quantity,
-      cost: item.cost,
-      value: item.value,
-      minQty: item.minQty,
-      taxAccount: item.taxAccount,
-      discount: item.discount,
-      remarks: item.remarks,
+    if (!canViewInventory) {
+      toast.error("You don't have permission to export inventory items");
+      return;
+    }
+    
+    const exportData = items.map(({ itemName, quantity, sku, itemCategory, status }) => ({
+      "Item Name": itemName,
+      "SKU": sku,
+      "Category": itemCategory,
+      "Quantity": quantity,
+      "Status": status
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -321,59 +372,103 @@ const InventoryItems = () => {
     );
     toast.success("Inventory exported successfully!", {
       toastId: "inventory-export-success",
-      autoClose: 3000,
+      autoClose: 3000
     });
   };
 
   const handleImportClick = () => {
+    if (!canCreateInventory) {
+      toast.error("You don't have permission to import inventory items");
+      return;
+    }
+    
     fileInputRef.current?.click();
   };
 
   const handleImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const workbook = XLSX.read(bstr, { type: "binary" });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(firstSheet);
-      const newId =
-        items.length > 0 ? Math.max(...items.map((item) => item.id)) + 1 : 1;
-      const itemsWithIds = data.map((item, index) => ({
-        ...item,
-        id: newId + index,
-      }));
-      setItems((prev) => [...prev, ...itemsWithIds]);
-      toast.success("Inventory imported successfully!", {
-        toastId: "inventory-import-success",
-        autoClose: 3000,
-      });
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const workbook = XLSX.read(bstr, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        setLoading(true);
+        const promises = data.map(async (item) => {
+          const newProduct = {
+            company_id: companyId,
+            item_name: item.itemName,
+            sku: item.sku || "",
+            description: item.description || "",
+            unit_id: item.unit || "Numbers",
+            total_stock: item.quantity || 0,
+            item_category_id: item.category || 1,
+          };
+          return axiosInstance.post("products", newProduct);
+        });
+
+        await Promise.all(promises);
+        refreshProducts(); // Refresh the list after import
+        toast.success("Inventory imported successfully!", {
+          toastId: "inventory-import-success",
+          autoClose: 3000
+        });
+      } catch (error) {
+        console.error("Import Error:", error);
+        setError("Failed to import inventory. Please try again.");
+        toast.error("Failed to import inventory. Please try again.", {
+          toastId: "inventory-import-error",
+          autoClose: 3000
+        });
+      } finally {
+        setLoading(false);
+      }
     };
     reader.readAsBinaryString(file);
+  };
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleProductClick = (item, e) => {
     if (e && (e.target.closest("button") || e.target.closest(".btn"))) {
       return;
     }
-    // Navigate with the product ID in the URL, not passing the item in state
+    // Navigate with product ID in URL, not passing item in state
     navigate(`/company/inventorydetails/${item.id}`);
   };
 
   const handleSendAll = () => {
     toast.success("All items sent successfully!", {
       toastId: "send-all-success",
-      autoClose: 3000,
+      autoClose: 3000
     });
   };
 
   const handleSendItem = (item) => {
     toast.success(`Item "${item.itemName}" sent successfully!`, {
       toastId: "send-item-success",
-      autoClose: 3000,
+      autoClose: 3000
     });
   };
+
+  // If user doesn't have view permission, show access denied message
+  if (!canViewInventory) {
+    return (
+      <div className="p-4 mt-2">
+        <div className="text-center p-5">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view Inventory Items.</p>
+          <p>Please contact your administrator for access.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -410,17 +505,19 @@ const InventoryItems = () => {
             md={8}
             className="text-md-end d-flex flex-wrap gap-2 justify-content-md-end"
           >
-            <Button
-              style={{
-                backgroundColor: "#00c78c",
-                border: "none",
-                color: "#fff",
-                padding: "6px 16px",
-              }}
-              onClick={handleImportClick}
-            >
-              Import
-            </Button>
+            {canCreateInventory && (
+              <Button
+                style={{
+                  backgroundColor: "#00c78c",
+                  border: "none",
+                  color: "#fff",
+                  padding: "6px 16px",
+                }}
+                onClick={handleImportClick}
+              >
+                <i className="fas fa-file-import me-2" /> Import
+              </Button>
+            )}
             <input
               type="file"
               accept=".xlsx, .xls"
@@ -428,39 +525,44 @@ const InventoryItems = () => {
               onChange={handleImport}
               style={{ display: "none" }}
             />
-            <Button
-              style={{
-                backgroundColor: "#ff7e00",
-                border: "none",
-                color: "#fff",
-                padding: "6px 16px",
-              }}
-              onClick={handleExport}
-            >
-              Export
-            </Button>
-            <Button
-              style={{
-                backgroundColor: "#f6c100",
-                border: "none",
-                color: "#000",
-                padding: "6px 16px",
-              }}
-              onClick={handleDownloadTemplate}
-            >
-              Download Template
-            </Button>
-            <Button
-              onClick={() => setShowAdd(true)}
-              style={{
-                backgroundColor: "#27b2b6",
-                border: "none",
-                color: "#fff",
-                padding: "6px 16px",
-              }}
-            >
-              Add Product
-            </Button>
+            {canViewInventory && (
+              <Button
+                style={{
+                  backgroundColor: "#ff7e00",
+                  border: "none",
+                  color: "#fff",
+                  padding: "6px 16px",
+                }}
+                onClick={handleExport}
+              >
+                <i className="fas fa-file-export me-2" /> Export
+              </Button>
+            )}
+            {canCreateInventory && (
+              <Button
+                style={{
+                  backgroundColor: "#f6c100",
+                  border: "none",
+                  padding: "6px 16px",
+                }}
+                onClick={handleDownloadTemplate}
+              >
+                <i className="fas fa-download me-2" /> Download Template
+              </Button>
+            )}
+            {canCreateInventory && (
+              <Button
+                onClick={() => setShowAdd(true)}
+                style={{
+                  backgroundColor: "#27b2b6",
+                  border: "none",
+                  color: "#fff",
+                  padding: "6px 16px",
+                }}
+              >
+                <i className="fa fa-plus me-2"></i> Add Product
+              </Button>
+            )}
             <Button
               style={{
                 backgroundColor: "#17a2b8",
@@ -488,7 +590,7 @@ const InventoryItems = () => {
                     `${selectedData.length} item(s) sent successfully!`,
                     {
                       toastId: "send-selected-success",
-                      autoClose: 3000,
+                      autoClose: 3000
                     }
                   );
                 }}
@@ -506,20 +608,6 @@ const InventoryItems = () => {
                 Clear
               </Button>
             )}
-
-            <AddProductModal
-              showAdd={showAdd}
-              showEdit={showEdit}
-              setShowAdd={setShowAdd} 
-              setShowEdit={setShowEdit}
-              selectedItem={selectedItem}
-              companyId={companyId}
-              showAddCategoryModal={showAddCategoryModal}
-              setShowAddCategoryModal={setShowAddCategoryModal}
-              newCategory={newCategory}
-              setNewCategory={setNewCategory}
-              onSuccess={refreshProducts}
-            />
           </Col>
         </Row>
 
@@ -533,9 +621,6 @@ const InventoryItems = () => {
               className="rounded-pill"
             />
           </Col>
-        </Row>
-
-        <Row className="mb-3 px-3 py-2 align-items-center g-2">
           <Col xs={12} sm={3}>
             <Form.Select
               className="rounded-pill"
@@ -579,7 +664,7 @@ const InventoryItems = () => {
           </Col>
         </Row>
 
-        <div className="card bg-white rounded-3 p-4">
+        <div className="card border rounded-3 p-4">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead className="">
@@ -645,10 +730,11 @@ const InventoryItems = () => {
                       </td>
                       <td>
                         <span
-                          className={`badge px-3 py-1 rounded-pill fw-semibold ${item.status === "In Stock"
+                          className={`badge px-3 py-1 rounded-pill fw-semibold ${
+                            item.status === "In Stock"
                               ? "bg-success text-white"
                               : "bg-danger text-white"
-                            }`}
+                          }`}
                         >
                           {item.status}
                         </span>
@@ -667,50 +753,70 @@ const InventoryItems = () => {
                           >
                             <FaEye />
                           </Button>
+                          {canUpdateInventory && (
+                            <Button
+                              variant="link"
+                              className="text-warning p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedItem(item);
+                                setShowEdit(true);
+                              }}
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </Button>
+                          )}
+                          {canDeleteInventory && (
+                            <Button
+                              variant="link"
+                              className="text-danger p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedItem(item);
+                                setShowDelete(true);
+                              }}
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </Button>
+                          )}
                           <Button
-                            variant="link"
-                            className="text-warning p-0"
+                            variant="none"
+                            className="p-0 text-primary text-decoration-none"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedItem(item);
-                              setShowEdit(true);
-                            }}
-                            title="Edit"
-                          >
-                            <FaEdit />
-                          </Button>
-                          <Button
-                            variant="link"
-                            className="text-danger p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedItem(item);
-                              setShowDelete(true);
-                            }}
-                            title="Delete"
-                          >
-                            <FaTrash />
-                          </Button>
-                          <Button
-                            variant="link"
-                            className="text-primary p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Navigate with the product ID in the URL, not passing the item in state
+                              // Navigate with product ID in URL, not passing item in state
                               navigate(`/company/inventorydetails/${item.id}`);
                             }}
                             title="View Details"
+                            style={{
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontSize: "0.875rem",
+                              fontWeight: 500,
+                            }}
                           >
                             view details
                           </Button>
                           <Button
-                            variant="link"
-                            className="text-success p-0"
+                            variant="none"
+                            className="p-0 text-success text-decoration-none"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSendItem(item);
                             }}
                             title="Send Item"
+                            style={{
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontSize: "0.875rem",
+                              fontWeight: 500,
+                            }}
                           >
                             Send
                           </Button>
@@ -734,9 +840,9 @@ const InventoryItems = () => {
               results
             </small>
             <nav>
-              <ul className="pagination mb-0">
+              <ul className="pagination pagination-sm mb-0 flex-wrap">
                 <li className="page-item disabled">
-                  <button className="page-link">&laquo;</button>
+                  <button className="page-link rounded-start">&laquo;</button>
                 </li>
                 <li className="page-item active">
                   <button className="page-link">1</button>
@@ -745,7 +851,7 @@ const InventoryItems = () => {
                   <button className="page-link">2</button>
                 </li>
                 <li className="page-item">
-                  <button className="page-link">&raquo;</button>
+                  <button className="page-link rounded-end">&raquo;</button>
                 </li>
               </ul>
             </nav>
@@ -887,18 +993,7 @@ const InventoryItems = () => {
               onClick={handleDeleteItem}
               disabled={isDeleting}
             >
-              {isDeleting ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </Modal.Footer>
         </Modal>
@@ -906,11 +1001,11 @@ const InventoryItems = () => {
         {/* Page Description */}
         <Card className="mb-4 p-3 shadow rounded-4 mt-2">
           <Card.Body>
-            <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">
+            <h5 className="fw-semibold border-bottom pb-2 mb-3">
               Page Info
             </h5>
             <ul
-              className="text-muted fs-6 mb-0"
+              className="fs-6 mb-0"
               style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
             >
               <li>
@@ -923,6 +1018,21 @@ const InventoryItems = () => {
           </Card.Body>
         </Card>
       </div>
+
+      {/* AddProductModal */}
+      <AddProductModal
+        showAdd={showAdd}
+        showEdit={showEdit}
+        setShowAdd={setShowAdd}
+        setShowEdit={setShowEdit}
+        selectedItem={selectedItem}
+        companyId={companyId}
+        showAddCategoryModal={showAddCategoryModal}
+        setShowAddCategoryModal={setShowAddCategoryModal}
+        newCategory={newCategory}
+        setNewCategory={setNewCategory}
+        onSuccess={refreshProducts}
+      />
 
       {/* Toast Container */}
       <ToastContainer

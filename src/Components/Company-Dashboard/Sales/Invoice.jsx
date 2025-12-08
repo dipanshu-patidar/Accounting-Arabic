@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Table, Button, Badge, Modal, Form, Row, Col, Card } from 'react-bootstrap';
+import { Table, Button, Badge, Modal, Form, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { FaArrowLeft, FaTrash, FaEye } from "react-icons/fa";
 import MultiStepSalesForm from './MultiStepSalesForm';
 import GetCompanyId from '../../../Api/GetCompanyId';
@@ -24,6 +24,63 @@ const statusBadge = (status) => {
 
 const Invoice = () => {
   const companyId = GetCompanyId();
+
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [invoicePermissions, setInvoicePermissions] = useState({
+    can_create: false,
+    can_view: false,
+    can_update: false,
+    can_delete: false
+  });
+
+  // Check user permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setInvoicePermissions({
+        can_create: true,
+        can_view: true,
+        can_update: true,
+        can_delete: true
+      });
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+
+        // Check if user has permissions for Invoice module
+        const invoicePermission = permissions.find(p => p.module_name === "Invoice");
+        if (invoicePermission) {
+          setInvoicePermissions({
+            can_create: invoicePermission.can_create,
+            can_view: invoicePermission.can_view,
+            can_update: invoicePermission.can_update,
+            can_delete: invoicePermission.can_delete
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setInvoicePermissions({
+          can_create: false,
+          can_view: false,
+          can_update: false,
+          can_delete: false
+        });
+      }
+    } else {
+      setInvoicePermissions({
+        can_create: false,
+        can_view: false,
+        can_update: false,
+        can_delete: false
+      });
+    }
+  }, []);
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +118,7 @@ const Invoice = () => {
 
   // 🔥 Fetch data from API function
   const fetchOrders = async () => {
-    if (!companyId) {
-      console.error("Company ID not found");
+    if (!companyId || !invoicePermissions.can_view) {
       setLoading(false);
       return;
     }
@@ -93,7 +149,7 @@ const Invoice = () => {
   // 🔥 Fetch data from API when component mounts or companyId changes
   useEffect(() => {
     fetchOrders();
-  }, [companyId]);
+  }, [companyId, invoicePermissions.can_view]);
 
   // 🔥 Open modal when stepNameFilter changes
   useEffect(() => {
@@ -106,11 +162,21 @@ const Invoice = () => {
   }, [stepNameFilter]);
 
   const handleCreateNewInvoice = (order = null) => {
+    if (!invoicePermissions.can_create) {
+      alert("You don't have permission to create invoices.");
+      return;
+    }
+    
     setSelectedOrder(order);
     setStepModal(true);
   };
 
   const handleViewOrder = (order) => {
+    if (!invoicePermissions.can_view) {
+      alert("You don't have permission to view invoices.");
+      return;
+    }
+    
     setViewOrder(order);
     setViewModal(true);
   };
@@ -131,6 +197,16 @@ const Invoice = () => {
     const isEdit = selectedOrder?.id;
 
     try {
+      if (isEdit && !invoicePermissions.can_update) {
+        alert("You don't have permission to update invoices.");
+        return;
+      }
+      
+      if (!isEdit && !invoicePermissions.can_create) {
+        alert("You don't have permission to create invoices.");
+        return;
+      }
+
       if (isEdit) {
         // Update existing order
         console.log(`Updating order with ID: ${selectedOrder.id}`, formData);
@@ -148,7 +224,7 @@ const Invoice = () => {
         });
       }
 
-      // Refetch data after successful operation to get the updated list
+      // Refetch data after successful operation
       console.log("Refetching orders after save...");
       await fetchOrders();
       handleCloseModal();
@@ -159,6 +235,11 @@ const Invoice = () => {
   };
 
   const handleDeleteOrder = async (orderId) => {
+    if (!invoicePermissions.can_delete) {
+      alert("You don't have permission to delete invoices.");
+      return;
+    }
+    
     try {
       await axiosInstance.delete(`sales-order/${orderId}`);
 
@@ -185,7 +266,7 @@ const Invoice = () => {
       const salesOrderData = getStepData(order.steps, 'sales_order');
       const invoiceData = getStepData(order.steps, 'invoice');
 
-      // Use the quotation date as the primary date for filtering
+      // Use quotation date as the primary date for filtering
       let orderDate = new Date();
       if (quotationData.quotation_date) {
         orderDate = new Date(quotationData.quotation_date);
@@ -238,6 +319,18 @@ const Invoice = () => {
     paymentStatusFilter,
   ]);
 
+  // If user doesn't have view permission, show access denied message
+  if (!invoicePermissions.can_view) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-50">
+        <div className="text-center">
+          <h3 className="text-danger">Access Denied</h3>
+          <p>You don't have permission to view the Invoice module.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -245,18 +338,19 @@ const Invoice = () => {
           <FaArrowLeft size={20} color="blue" />
           <h5 className="mb-0">Sales Workflow</h5>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => handleCreateNewInvoice()}
-          style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}>
-          + Create sales order
-        </Button>
+        {invoicePermissions.can_create && (
+          <Button
+            variant="primary"
+            onClick={() => handleCreateNewInvoice()}
+            style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
+          >
+            + Create sales order
+          </Button>
+        )}
       </div>
 
       {/* 🔥 Sales Steps Dropdown + Show Filters Button */}
       <div className="d-flex justify-content-between align-items-end mb-3">
-
-
         <Button
           variant="outline-secondary"
           size="sm"
@@ -304,7 +398,8 @@ const Invoice = () => {
           {/* Quotation Status */}
           <div>
             <label className="form-label text-secondary">Quotation</label>
-            <Form.Select
+            <select
+              className="form-select"
               value={quotationStatusFilter}
               onChange={(e) => setQuotationStatusFilter(e.target.value)}
               style={{ minWidth: "130px" }}
@@ -313,12 +408,14 @@ const Invoice = () => {
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
-            </Form.Select>
+            </select>
           </div>
 
+          {/* Sales Order Status */}
           <div>
             <label className="form-label text-secondary">Sales Order</label>
-            <Form.Select
+            <select
+              className="form-select"
               value={salesOrderStatusFilter}
               onChange={(e) => setSalesOrderStatusFilter(e.target.value)}
               style={{ minWidth: "130px" }}
@@ -327,12 +424,14 @@ const Invoice = () => {
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
-            </Form.Select>
+            </select>
           </div>
 
+          {/* Delivery Challan Status */}
           <div>
             <label className="form-label text-secondary">Delivery Challan</label>
-            <Form.Select
+            <select
+              className="form-select"
               value={deliveryChallanStatusFilter}
               onChange={(e) => setDeliveryChallanStatusFilter(e.target.value)}
               style={{ minWidth: "130px" }}
@@ -341,12 +440,14 @@ const Invoice = () => {
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
-            </Form.Select>
+            </select>
           </div>
 
+          {/* Invoice Status */}
           <div>
             <label className="form-label text-secondary">Invoice</label>
-            <Form.Select
+            <select
+              className="form-select"
               value={invoiceStatusFilter}
               onChange={(e) => setInvoiceStatusFilter(e.target.value)}
               style={{ minWidth: "130px" }}
@@ -355,12 +456,14 @@ const Invoice = () => {
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
-            </Form.Select>
+            </select>
           </div>
 
+          {/* Payment Status */}
           <div>
             <label className="form-label text-secondary">Payment</label>
-            <Form.Select
+            <select
+              className="form-select"
               value={paymentStatusFilter}
               onChange={(e) => setPaymentStatusFilter(e.target.value)}
               style={{ minWidth: "130px" }}
@@ -369,7 +472,7 @@ const Invoice = () => {
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
-            </Form.Select>
+            </select>
           </div>
 
           <div className="d-flex gap-2">
@@ -481,33 +584,39 @@ const Invoice = () => {
                     <td>{statusBadge(getStepStatus(order.steps, 'invoice'))}</td>
                     <td>{statusBadge(getStepStatus(order.steps, 'payment'))}</td>
                     <td className='d-flex'>
-                      <Button
-                        size="sm"
-                        className="me-1 mb-1"
-                        variant="outline-info"
-                        onClick={() => handleViewOrder(order)}
-                        title="View Details"
-                      >
-                        <FaEye />
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="me-1 mb-1"
-                        variant="outline-primary"
-                        onClick={() => handleCreateNewInvoice(order)}
-                        title="Continue Workflow"
-                      >
-                        Continue
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="mb-1"
-                        variant="outline-danger"
-                        onClick={() => setDeleteConfirm({ show: true, id: order.company_info.id })}
-                        title="Delete Order"
-                      >
-                        <FaTrash />
-                      </Button>
+                      {invoicePermissions.can_view && (
+                        <Button
+                          size="sm"
+                          className="me-1 mb-1"
+                          variant="outline-info"
+                          onClick={() => handleViewOrder(order)}
+                          title="View Details"
+                        >
+                          <FaEye />
+                        </Button>
+                      )}
+                      {invoicePermissions.can_update && (
+                        <Button
+                          size="sm"
+                          className="me-1 mb-1"
+                          variant="outline-primary"
+                          onClick={() => handleCreateNewInvoice(order)}
+                          title="Continue Workflow"
+                        >
+                          Continue
+                        </Button>
+                      )}
+                      {invoicePermissions.can_delete && (
+                        <Button
+                          size="sm"
+                          className="mb-1"
+                          variant="outline-danger"
+                          onClick={() => setDeleteConfirm({ show: true, id: order.company_info.id })}
+                          title="Delete Order"
+                        >
+                          <FaTrash />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -525,7 +634,8 @@ const Invoice = () => {
               ? 'Continue Sales Workflow'
               : stepNameFilter
                 ? `Create New - ${stepNameFilter}`
-                : 'Create Sales Order'}
+                : 'Create Sales Order'
+            }
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -701,8 +811,6 @@ const Invoice = () => {
                     <Col md={6}>
                       <p><strong>Signature URL:</strong> {viewOrder.additional_info?.signature_url ? <a href={viewOrder.additional_info.signature_url} target="_blank" rel="noopener noreferrer">View Signature</a> : 'N/A'}</p>
                       <p><strong>Photo URL:</strong> {viewOrder.additional_info?.photo_url ? <a href={viewOrder.additional_info.photo_url} target="_blank" rel="noopener noreferrer">View Photo</a> : 'N/A'}</p>
-                    </Col>
-                    <Col md={6}>
                       <p><strong>Attachment URL:</strong> {viewOrder.additional_info?.attachment_url ? <a href={viewOrder.additional_info.attachment_url} target="_blank" rel="noopener noreferrer">View Attachment</a> : 'N/A'}</p>
                       <p><strong>Files:</strong> {viewOrder.additional_info?.files && viewOrder.additional_info.files.length > 0 ? `${viewOrder.additional_info.files.length} file(s)` : 'N/A'}</p>
                     </Col>
@@ -716,15 +824,17 @@ const Invoice = () => {
           <Button variant="secondary" onClick={handleCloseViewModal}>
             Close
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              handleCloseViewModal();
-              handleCreateNewInvoice(viewOrder);
-            }}
-          >
-            Continue Workflow
-          </Button>
+          {invoicePermissions.can_update && (
+            <Button
+              variant="primary"
+              onClick={() => {
+                handleCloseViewModal();
+                handleCreateNewInvoice(viewOrder);
+              }}
+            >
+              Continue Workflow
+            </Button>
+          )}
         </Modal.Footer>
       </Modal>
 

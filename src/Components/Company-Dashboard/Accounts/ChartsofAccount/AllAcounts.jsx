@@ -30,6 +30,13 @@ const AllAccounts = () => {
   const navigate = useNavigate();
   const companyId = GetCompanyId();
 
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [canView, setCanView] = useState(false);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canUpdate, setCanUpdate] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+
   // State declarations
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -52,6 +59,52 @@ const AllAccounts = () => {
   const isSavingRef = useRef(false);
   const apiCallLock = useRef(false);
   const lastSaveTime = useRef(0);
+
+  // Check permissions
+  useEffect(() => {
+    // Get user role and permissions
+    const role = localStorage.getItem("role");
+    
+    // Superadmin and Company roles have access to all modules
+    if (role === "SUPERADMIN" || role === "COMPANY") {
+      setCanView(true);
+      setCanCreate(true);
+      setCanUpdate(true);
+      setCanDelete(true);
+    } else if (role === "USER") {
+      // For USER role, check specific permissions
+      try {
+        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        setUserPermissions(permissions);
+        
+        // Check if user has permissions for Charts_of_Accounts
+        const chartsPermission = permissions.find(p => p.module_name === "Charts_of_Accounts");
+        
+        if (chartsPermission) {
+          setCanView(chartsPermission.can_view || false);
+          setCanCreate(chartsPermission.can_create || false);
+          setCanUpdate(chartsPermission.can_update || false);
+          setCanDelete(chartsPermission.can_delete || false);
+        } else {
+          setCanView(false);
+          setCanCreate(false);
+          setCanUpdate(false);
+          setCanDelete(false);
+        }
+      } catch (error) {
+        console.error("Error parsing user permissions:", error);
+        setCanView(false);
+        setCanCreate(false);
+        setCanUpdate(false);
+        setCanDelete(false);
+      }
+    } else {
+      setCanView(false);
+      setCanCreate(false);
+      setCanUpdate(false);
+      setCanDelete(false);
+    }
+  }, []);
 
   const options = accountData.flatMap((group) =>
     group.rows.map((row) => ({ value: row.name, label: row.name }))
@@ -139,7 +192,6 @@ const AllAccounts = () => {
     isDefault: false,
   });
 
-  // *** KEY FIX IS HERE ***
   // Memoize transformAccountData to ensure it uses the correct balance field from the API
   const transformAccountData = useCallback((apiData) => {
     if (!Array.isArray(apiData)) {
@@ -195,6 +247,8 @@ const AllAccounts = () => {
   }, []); // Empty dependency array means this function is created only once
 
   const fetchAccountData = useCallback(async () => {
+    if (!canView) return; // Don't fetch data if user doesn't have view permission
+    
     setLoading(true);
     try {
       const response = await axiosInstance.get(
@@ -215,7 +269,7 @@ const AllAccounts = () => {
     } finally {
       setLoading(false);
     }
-  }, [companyId, transformAccountData]);
+  }, [companyId, transformAccountData, canView]);
 
   useEffect(() => {
     fetchAccountData();
@@ -233,6 +287,8 @@ const AllAccounts = () => {
   };
 
   const handleSaveNewAccount = async (e) => {
+    if (!canCreate) return; // Check create permission
+    
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -273,6 +329,8 @@ const AllAccounts = () => {
   };
 
   const handleAddNewParent = () => {
+    if (!canCreate) return; // Check create permission
+    
     if (!selectedMainCategory) {
       alert("Please select a main category");
       return;
@@ -282,6 +340,8 @@ const AllAccounts = () => {
   };
 
   const handleViewAccount = (type, name) => {
+    if (!canView) return; // Check view permission
+    
     const accountGroup = accountData.find((acc) => acc.type === type);
     const row = accountGroup?.rows.find(
       (r) => r.name === name || r.originalName === name
@@ -305,6 +365,8 @@ const AllAccounts = () => {
   };
 
   const handleEditAccount = (type, name) => {
+    if (!canUpdate) return; // Check update permission
+    
     const accountGroup = accountData.find((acc) => acc.type === type);
     const row = accountGroup?.rows.find(
       (r) => r.name === name || r.originalName === name
@@ -328,6 +390,8 @@ const AllAccounts = () => {
   };
 
   const handleDeleteAccount = async (type, name) => {
+    if (!canDelete) return; // Check delete permission
+    
     try {
       setIsDeleting(true);
       isDeletingRef.current = true;
@@ -354,6 +418,8 @@ const AllAccounts = () => {
   };
 
   const handleViewLedger = (type, name) => {
+    if (!canView) return; // Check view permission
+    
     const accountGroup = accountData.find((acc) => acc.type === type);
     const row = accountGroup?.rows.find(
       (r) => r.name === name || r.originalName === name
@@ -363,7 +429,7 @@ const AllAccounts = () => {
       console.error("Account ID not found for ledger navigation");
       alert("Unable to open ledger: Account ID missing");
       return;
-    }     
+    }
 
     const accountName = row.sub_of_subgroup_name || row.name || name;
 
@@ -375,7 +441,10 @@ const AllAccounts = () => {
       },
     });
   };
+  
   const handleSaveEditedAccount = async (updatedAccount) => {
+    if (!canUpdate) return; // Check update permission
+    
     if (apiCallLock.current) return;
 
     const now = Date.now();
@@ -422,6 +491,8 @@ const AllAccounts = () => {
   };
 
   const handleDeleteConfirmed = async () => {
+    if (!canDelete) return; // Check delete permission
+    
     if (isDeletingRef.current) return;
     isDeletingRef.current = true;
     setIsDeleting(true);
@@ -460,7 +531,6 @@ const AllAccounts = () => {
     return typeMatches || nameMatches;
   });
 
-  // *** KEY FIX IS HERE ***
   // This function now correctly sums up the `bal` property, which we've ensured holds the correct value
   const calculateTotalBalance = (accountGroup) => {
     return accountGroup.rows
@@ -473,6 +543,19 @@ const AllAccounts = () => {
   };
 
   const accountTypes = [...new Set(accountData.map((acc) => acc.type))];
+
+  // If user doesn't have view permission, show access denied message
+  if (!canView) {
+    return (
+      <Container fluid className="p-3">
+        <Card className="text-center p-5">
+          <h3>Access Denied</h3>
+          <p>You don't have permission to view the Charts of Accounts.</p>
+          <p>Please contact your administrator for access.</p>
+        </Card>
+      </Container>
+    );
+  }
 
   return (
     <Container fluid className="p-3">
@@ -491,39 +574,46 @@ const AllAccounts = () => {
           md="auto"
           className="d-flex flex-wrap gap-2 justify-content-end"
         >
-          <Button
-            style={{
-              backgroundColor: "#53b2a5",
-              border: "none",
-              padding: "8px 16px",
-            }}
-            className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
-            onClick={() => setShowNewAccountModal(true)}
-          >
-            + Add New Account
-          </Button>
-          {/* <Button
-            style={{
-              backgroundColor: "#53b2a5",
-              border: "none",
-              padding: "8px 16px",
-            }}
-            className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
-            onClick={() => setShowVendorModal(true)}
-          >
-            <FaUserPlus size={18} /> Add Vendor
-          </Button>
-          <Button
-            style={{
-              backgroundColor: "#53b2a5",
-              border: "none",
-              padding: "8px 16px",
-            }}
-            className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
-            onClick={() => setShowCustomerModal(true)}
-          >
-            <FaUserFriends /> Add Customer
-          </Button> */}
+          {canCreate && (
+            <Button
+              style={{
+                backgroundColor: "#53b2a5",
+                border: "none",
+                padding: "8px 16px",
+              }}
+              className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
+              onClick={() => setShowNewAccountModal(true)}
+            >
+              + Add New Account
+            </Button>
+          )}
+          {/* Commented out buttons - can be uncommented if needed with permission checks */}
+          {/* {canCreate && (
+            <Button
+              style={{
+                backgroundColor: "#53b2a5",
+                border: "none",
+                padding: "8px 16px",
+              }}
+              className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
+              onClick={() => setShowVendorModal(true)}
+            >
+              <FaUserPlus size={18} /> Add Vendor
+            </Button>
+          )}
+          {canCreate && (
+            <Button
+              style={{
+                backgroundColor: "#53b2a5",
+                border: "none",
+                padding: "8px 16px",
+              }}
+              className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
+              onClick={() => setShowCustomerModal(true)}
+            >
+              <FaUserFriends /> Add Customer
+            </Button>
+          )} */}
         </Col>
       </Row>
 
@@ -567,7 +657,7 @@ const AllAccounts = () => {
 
       {/* Table */}
       {!loading && !error && (
-        <div className="table-responsive border-1 rounded-3" style={{ minWidth: "100%" }}>
+        <div className="table-responsive border rounded-3" style={{ minWidth: "100%" }}>
           <Table className="align-middle text-center mb-0">
             <thead
               className=""
@@ -603,60 +693,68 @@ const AllAccounts = () => {
                             </td>
                             <td>
                               <div className="d-flex justify-content-center gap-2">
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  title="View"
-                                  onClick={() =>
-                                    handleViewAccount(
-                                      accountGroup.type,
-                                      row.name
-                                    )
-                                  }
-                                >
-                                  <FaEye />
-                                </Button>
-                                <Button
-                                  variant="outline-warning"
-                                  size="sm"
-                                  title="Edit"
-                                  onClick={() =>
-                                    handleEditAccount(
-                                      accountGroup.type,
-                                      row.name
-                                    )
-                                  }
-                                  disabled={isEditing}
-                                >
-                                  <FaEdit />
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  title="Delete"
-                                  onClick={() =>
-                                    handleDeleteAccount(
-                                      accountGroup.type,
-                                      row.name
-                                    )
-                                  }
-                                  disabled={isDeleting}
-                                >
-                                  <FaTrash />
-                                </Button>
-                                <Button
-                                  variant="outline-info"
-                                  size="sm"
-                                  title="View Ledger"
-                                  onClick={() =>
-                                    handleViewLedger(
-                                      accountGroup.type,
-                                      row.name
-                                    )
-                                  }
-                                >
-                                  View Ledger
-                                </Button>
+                                {canView && (
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    title="View"
+                                    onClick={() =>
+                                      handleViewAccount(
+                                        accountGroup.type,
+                                        row.name
+                                      )
+                                    }
+                                  >
+                                    <FaEye />
+                                  </Button>
+                                )}
+                                {canUpdate && (
+                                  <Button
+                                    variant="outline-warning"
+                                    size="sm"
+                                    title="Edit"
+                                    onClick={() =>
+                                      handleEditAccount(
+                                        accountGroup.type,
+                                        row.name
+                                      )
+                                    }
+                                    disabled={isEditing}
+                                  >
+                                    <FaEdit />
+                                  </Button>
+                                )}
+                                {canDelete && (
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    title="Delete"
+                                    onClick={() =>
+                                      handleDeleteAccount(
+                                        accountGroup.type,
+                                        row.name
+                                      )
+                                    }
+                                    disabled={isDeleting}
+                                  >
+                                    <FaTrash />
+                                  </Button>
+                                )}
+                                {canView && (
+                                  <Button
+                                    variant="outline-info"
+                                    size="sm"
+                                    title="View Ledger"
+                                    onClick={() =>
+                                      handleViewLedger(
+                                        accountGroup.type,
+                                        row.name
+                                      )
+                                    }
+                                  >
+                                    View Ledger
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -734,16 +832,18 @@ const AllAccounts = () => {
         accountTypes={accountTypes}
         isEditing={isEditing}
         isDeleting={isDeleting}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
       />
 
       {/* Page Description */}
       <Card className="mb-4 p-3 shadow rounded-4 mt-2">
         <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">
+          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">
             Page Info
           </h5>
           <ul
-            className="text-muted fs-6 mb-0"
+            className=" fs-6 mb-0"
             style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
           >
             <li>Displays all financial accounts.</li>
