@@ -12,7 +12,6 @@ import axiosInstance from '../../../Api/axiosInstance';
 const DepartmentalAnalyticsDashboard = () => {
   const companyIdRaw = GetCompanyId();
   const companyId = Number(companyIdRaw);
-
   // State
   const [loading, setLoading] = useState(true);
   const [totalEmployees, setTotalEmployees] = useState(0);
