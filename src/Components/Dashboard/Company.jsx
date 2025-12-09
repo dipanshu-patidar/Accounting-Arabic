@@ -656,7 +656,7 @@ const Company = () => {
         <div className="row g-4">
           {filteredCompanies.length > 0 ? (
             filteredCompanies.map((company, index) => (
-              <div className="col-lg-3 col-md-6" key={company.id}>
+              <div className="col-lg-4 col-md-6" key={company.id}>
                 <div
                   className="card shadow-sm rounded-4 p-3 border-0 card-hover position-relative"
                   style={{ minHeight: "260px" }}
