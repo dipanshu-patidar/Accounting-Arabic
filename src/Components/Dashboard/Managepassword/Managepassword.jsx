@@ -22,10 +22,10 @@ const SuperAdminPasswordRequests = () => {
       setLoading(true);
       const res = await axiosInstance.get("password/requests");
       if (res.data.success && Array.isArray(res.data.data)) {
-        const formatted = res.data.data.map(req => ({
+        const formatted = res.data.data.map((req) => ({
           id: req.id,
-          company: req.user?.name || "Unknown Company",
-          email: req.user?.email || "N/A",
+          company: req.users?.name || "Unknown Company", // ✅ Fixed: 'users', not 'user'
+          email: req.users?.email || "N/A",               // ✅ Fixed
           date: new Date(req.created_at).toISOString().split("T")[0],
           status: req.status === "Changed" ? "Approved" : req.status,
           reason: req.reason,
@@ -54,10 +54,9 @@ const SuperAdminPasswordRequests = () => {
           return;
         }
         res = await axiosInstance.put(`password/requests/${selectedRequest.id}/approve`, {
-          new_password: newPassword.trim()
+          new_password: newPassword.trim(),
         });
         toast.success(`Password updated and email sent to ${selectedRequest.email}`);
-        // Show in-app alert
         setShowEmailSentAlert(true);
         setTimeout(() => setShowEmailSentAlert(false), 3000);
       } else if (action === "reject") {
@@ -66,9 +65,8 @@ const SuperAdminPasswordRequests = () => {
       }
 
       if (res?.data?.success) {
-        // Update local state
-        setRequests(prev =>
-          prev.map(req =>
+        setRequests((prev) =>
+          prev.map((req) =>
             req.id === selectedRequest.id
               ? { ...req, status: action === "approve" ? "Approved" : "Rejected", emailSent: action === "approve" }
               : req
@@ -94,8 +92,7 @@ const SuperAdminPasswordRequests = () => {
   };
 
   const renderEmailStatus = (emailSent) => {
-    if (emailSent) return <Badge bg="info">Email Sent</Badge>;
-    return null;
+    return emailSent ? <Badge bg="info">Email Sent</Badge> : null;
   };
 
   return (
