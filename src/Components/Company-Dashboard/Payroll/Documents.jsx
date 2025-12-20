@@ -56,6 +56,10 @@ const Documents = () => {
   const [docToDelete, setDocToDelete] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, delete: 0 });
+
   // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -164,7 +168,53 @@ const Documents = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setForm(emptyDocument);
+    setModalType("add");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleDeleteModalClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowDeleteModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.delete += 1;
+  };
+  
+  // Handle delete modal exit - cleanup after animation
+  const handleDeleteModalExited = () => {
+    // Reset delete document after modal fully closed
+    setDocToDelete(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleAdd = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setForm(emptyDocument);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setModalType("add");
@@ -172,6 +222,12 @@ const Documents = () => {
   };
 
   const handleEdit = async (doc) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     try {
       const res = await axiosInstance.get(`documentsRequest/${doc.id}`);
       if (res?.data?.success) {
@@ -250,8 +306,9 @@ const Documents = () => {
         }
       }
       await fetchDocuments();
-      setShowModal(false);
-      setForm(emptyDocument);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (err) {
       console.error("Save error:", err);
       alert("Failed to save document. " + (err.message || ""));
@@ -259,6 +316,12 @@ const Documents = () => {
   };
 
   const confirmDelete = (doc) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.delete += 1;
+    
     setDocToDelete(doc);
     setShowDeleteModal(true);
   };
@@ -272,8 +335,10 @@ const Documents = () => {
       console.error("Delete error:", err);
       alert("Failed to delete document.");
     } finally {
-      setShowDeleteModal(false);
-      setDocToDelete(null);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleDeleteModalClose();
+      // Document will be reset in handleDeleteModalExited
     }
   };
 
@@ -418,7 +483,13 @@ const Documents = () => {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "white" }}>
           <Modal.Title>{modalType === "edit" ? "Edit Document" : "Add New Document"}</Modal.Title>
         </Modal.Header>
@@ -526,7 +597,7 @@ const Documents = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
@@ -536,7 +607,13 @@ const Documents = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={showDeleteModal} 
+        onHide={handleDeleteModalClose}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton style={{ backgroundColor: "#dc3545", color: "white" }}>
           <Modal.Title>Delete Document</Modal.Title>
         </Modal.Header>
@@ -545,7 +622,7 @@ const Documents = () => {
           <strong>{getEmployeeName(docToDelete?.employeeId)}</strong>?
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+          <Button variant="secondary" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
           <Button variant="danger" onClick={handleDelete} style={{ backgroundColor: "#dc3545" }}>

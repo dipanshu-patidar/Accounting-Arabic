@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Row,
@@ -63,6 +63,10 @@ const LeaveRequests = () => {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [leaveToDelete, setLeaveToDelete] = useState(null);
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, delete: 0 });
 
   // 🔹 Fetch Leaves — ✅ FIXED MAPPING
   const fetchLeaves = async () => {
@@ -202,13 +206,64 @@ const LeaveRequests = () => {
     setForm(updatedForm);
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setForm(emptyLeave);
+    setModalType("add");
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleDeleteModalClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowDeleteModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.delete += 1;
+  };
+  
+  // Handle delete modal exit - cleanup after animation
+  const handleDeleteModalExited = () => {
+    // Reset delete leave after modal fully closed
+    setLeaveToDelete(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleAdd = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setForm(emptyLeave);
     setModalType("add");
     setShowModal(true);
   };
 
   const handleEdit = (leave) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setForm({
       ...leave,
       leaveTypeId: leave.leaveTypeId,
@@ -261,8 +316,9 @@ const LeaveRequests = () => {
       if (response.data.success) {
         alert(modalType === "add" ? "Leave request created!" : "Leave request updated!");
         fetchLeaves();
-        setShowModal(false);
-        setForm(emptyLeave);
+        // Reset cleanup flag before closing
+        isCleaningUpRef.current = false;
+        handleCloseModal();
       } else {
         throw new Error(response.data.message || "Operation failed");
       }
@@ -275,6 +331,12 @@ const LeaveRequests = () => {
   };
 
   const confirmDelete = (leave) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.delete += 1;
+    
     setLeaveToDelete(leave);
     setShowDeleteModal(true);
   };
@@ -289,9 +351,12 @@ const LeaveRequests = () => {
     } catch (err) {
       console.error("Delete error:", err);
       alert("Failed to delete leave request.");
+    } finally {
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleDeleteModalClose();
+      // Leave will be reset in handleDeleteModalExited
     }
-    setShowDeleteModal(false);
-    setLeaveToDelete(null);
   };
 
   const handlePDF = () => {
@@ -430,7 +495,13 @@ const LeaveRequests = () => {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {modalType === "edit" ? "Edit Leave Request" : "Apply for Leave"}
@@ -559,7 +630,7 @@ const LeaveRequests = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button
@@ -574,7 +645,13 @@ const LeaveRequests = () => {
       </Modal>
 
       {/* Delete Confirmation */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={showDeleteModal} 
+        onHide={handleDeleteModalClose}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Delete Leave Request</Modal.Title>
         </Modal.Header>
@@ -583,7 +660,7 @@ const LeaveRequests = () => {
           <strong>{getEmployeeName(leaveToDelete?.employeeId)}</strong>?
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+          <Button variant="secondary" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
           <Button

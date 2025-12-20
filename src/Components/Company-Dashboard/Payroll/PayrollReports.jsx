@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Tabs,
     Tab,
@@ -97,6 +97,10 @@ const PayrollReports = () => {
     const [selectedMonthlyData, setSelectedMonthlyData] = useState(null);
     const [selectedDepartmentData, setSelectedDepartmentData] = useState(null);
 
+    // Modal cleanup refs (same pattern as Users.jsx)
+    const isCleaningUpRef = useRef(false);
+    const modalKeyRef = useRef({ monthly: 0, department: 0 });
+
     const [monthlyData, setMonthlyData] = useState([]);
     const [departmentData, setDepartmentData] = useState([]);
     const [employeeHistoryData, setEmployeeHistoryData] = useState([]);
@@ -170,8 +174,52 @@ const PayrollReports = () => {
         fetchReport();
     }, [companyId]);
 
+    const handleCloseMonthlyModal = () => {
+        // Prevent multiple calls
+        if (isCleaningUpRef.current) return;
+        isCleaningUpRef.current = true;
+        
+        // Close modal immediately
+        setShowMonthlyModal(false);
+        
+        // Force modal remount on next open
+        modalKeyRef.current.monthly += 1;
+    };
+    
+    // Handle monthly modal exit - cleanup after animation
+    const handleMonthlyModalExited = () => {
+        // Reset monthly data after modal fully closed
+        setSelectedMonthlyData(null);
+        isCleaningUpRef.current = false;
+    };
+    
+    const handleCloseDepartmentModal = () => {
+        // Prevent multiple calls
+        if (isCleaningUpRef.current) return;
+        isCleaningUpRef.current = true;
+        
+        // Close modal immediately
+        setShowDepartmentModal(false);
+        
+        // Force modal remount on next open
+        modalKeyRef.current.department += 1;
+    };
+    
+    // Handle department modal exit - cleanup after animation
+    const handleDepartmentModalExited = () => {
+        // Reset department data after modal fully closed
+        setSelectedDepartmentData(null);
+        isCleaningUpRef.current = false;
+    };
+
     // Handle Monthly View (API call)
     const handleMonthlyView = async (data) => {
+        // Reset cleanup flag
+        isCleaningUpRef.current = false;
+        
+        // Force modal remount
+        modalKeyRef.current.monthly += 1;
+        
         const { month, year } = uiMonthToApiParams(data.month); // e.g., month="December", year=2025
 
         console.log('Invalid year in:', data.month);
@@ -208,6 +256,12 @@ const PayrollReports = () => {
 
     // Handle Department View
     const handleDepartmentView = async (data) => {
+        // Reset cleanup flag
+        isCleaningUpRef.current = false;
+        
+        // Force modal remount
+        modalKeyRef.current.department += 1;
+        
         const deptName = data.department;
         try {
             const res = await axiosInstance.get(
@@ -607,8 +661,10 @@ const PayrollReports = () => {
 
             {/* Monthly Modal */}
             <Modal
+                key={modalKeyRef.current.monthly}
                 show={showMonthlyModal}
-                onHide={() => setShowMonthlyModal(false)}
+                onHide={handleCloseMonthlyModal}
+                onExited={handleMonthlyModalExited}
                 size="lg"
             >
                 <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -677,7 +733,7 @@ const PayrollReports = () => {
                     )}
                 </Modal.Body>
                 <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8' }}>
-                    <Button variant="secondary" onClick={() => setShowMonthlyModal(false)} className="w-100 w-md-auto mb-2 mb-md-0">
+                    <Button variant="secondary" onClick={handleCloseMonthlyModal} className="w-100 w-md-auto mb-2 mb-md-0">
                         Close
                     </Button>
                     <Button style={{ backgroundColor: '#023347', border: 'none' }} className="w-100 w-md-auto">
@@ -688,8 +744,10 @@ const PayrollReports = () => {
 
             {/* Department Modal */}
             <Modal
+                key={modalKeyRef.current.department}
                 show={showDepartmentModal}
-                onHide={() => setShowDepartmentModal(false)}
+                onHide={handleCloseDepartmentModal}
+                onExited={handleDepartmentModalExited}
                 size="lg"
             >
                 <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
@@ -760,7 +818,7 @@ const PayrollReports = () => {
                     )}
                 </Modal.Body>
                 <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8' }}>
-                    <Button variant="secondary" onClick={() => setShowDepartmentModal(false)} className="w-100 w-md-auto mb-2 mb-md-0">
+                    <Button variant="secondary" onClick={handleCloseDepartmentModal} className="w-100 w-md-auto mb-2 mb-md-0">
                         Close
                     </Button>
                     <Button style={{ backgroundColor: '#023347', border: 'none' }} className="w-100 w-md-auto">

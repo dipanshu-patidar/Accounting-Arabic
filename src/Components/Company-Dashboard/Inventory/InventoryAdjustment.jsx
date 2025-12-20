@@ -632,8 +632,8 @@ function InventoryAdjustment() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content ">
               <div className="modal-header">
                 <h5 className="modal-title">{editingAdjustment ? 'Edit Inventory Adjustment' : 'New Inventory Adjustment'}</h5>
                 <div>
