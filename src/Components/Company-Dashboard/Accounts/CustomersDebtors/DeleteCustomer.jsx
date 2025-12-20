@@ -4,7 +4,7 @@ import { Button, Modal, Spinner, Alert } from "react-bootstrap";
 import axiosInstance from "../../../../Api/axiosInstance";
 import { toast } from "react-toastify";
 
-const DeleteCustomer = ({ show, onHide, onSuccess, customerId }) => {
+const DeleteCustomer = ({ show, onHide, onExited, onSuccess, customerId }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -52,7 +52,7 @@ const DeleteCustomer = ({ show, onHide, onSuccess, customerId }) => {
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered backdrop="static">
+    <Modal show={show} onHide={onHide} onExited={onExited} centered backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>⚠️ Confirm Deletion</Modal.Title>
       </Modal.Header>

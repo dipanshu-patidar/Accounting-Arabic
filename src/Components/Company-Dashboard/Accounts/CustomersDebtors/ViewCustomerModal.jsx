@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, Card, Col, Modal, Row, Button, Image } from 'react-bootstrap';
 
-const ViewCustomerModal = ({ show, onHide, customer }) => {
+const ViewCustomerModal = ({ show, onHide, onExited, customer }) => {
   const getImageSrc = (image) => {
     if (!image) return null;
     if (typeof image === 'string') return image;
@@ -12,7 +12,7 @@ const ViewCustomerModal = ({ show, onHide, customer }) => {
   const imageSrc = getImageSrc(customer?.idCardImage);
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered>
+    <Modal show={show} onHide={onHide} onExited={onExited} size="lg" centered>
       <Modal.Header closeButton className="bg-info text-white">
         <Modal.Title>Customer Details</Modal.Title>
       </Modal.Header>

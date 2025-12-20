@@ -10,6 +10,7 @@ import Signup from "./Components/Auth/Signup";
 import ForgotPassword from "./Components/Auth/ForgotPassword";
 import ResetPassword from "./Components/Auth/ResetPassword";
 import SettingModal from "./Components/SettingModal";
+import ProtectedRoute from "./Components/Auth/ProtectedRoute";
 
 // Super Admin Dashboard
 import Dashboardd from "./Components/Dashboard/Dashboardd";
@@ -268,128 +269,128 @@ useEffect(() => {
       <Routes>
         {/* Super Admin Routes */}
         <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboardd />} />
-          <Route path="/superadmin/company" element={<Company />} />
-          <Route path="/superadmin/planpricing" element={<PlansPricing />} />
-          <Route path="/superadmin/requestplan" element={<RequestPlan />} />
-          <Route path="/superadmin/payments" element={<Payments />} />
-          <Route path="/superadmin/manage-passwords" element={<Managepassword />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboardd /></ProtectedRoute>} />
+          <Route path="/superadmin/company" element={<ProtectedRoute><Company /></ProtectedRoute>} />
+          <Route path="/superadmin/planpricing" element={<ProtectedRoute><PlansPricing /></ProtectedRoute>} />
+          <Route path="/superadmin/requestplan" element={<ProtectedRoute><RequestPlan /></ProtectedRoute>} />
+          <Route path="/superadmin/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+          <Route path="/superadmin/manage-passwords" element={<ProtectedRoute><Managepassword /></ProtectedRoute>} />
         </Route>
 
         {/* Company Dashboard Routes */}
         <Route element={<MainLayout />}>
-          <Route path="/company/dashboard" element={<CompanyDashboard />} />
-          <Route path="/company/allacounts" element={<AllAcounts />} />
-          <Route path="/company/ledgerpageaccount" element={<LedgerPageAccount />} />
-          <Route path="/company/ledgercustomer" element={<Ledgercustomer />} />
-          <Route path="/company/customer-item-details" element={<CustomerItemDetailsView />} />
-          <Route path="/company/customer-transaction-details" element={<CustomerTransactionDetails />} />
-          <Route path="/company/customersdebtors" element={<CustomersDebtors />} />
-          <Route path="/company/ledgervendor" element={<Ledgervendor />} />
-          <Route path="/company/vendor-transaction-details" element={<VendorTransactionDetails />} />
-          <Route path="/company/vendor-item-details" element={<VendorItemDetailsView />} />
-          <Route path="/company/addcustomersmodal" element={<AddCustomerModal />} />
-          <Route path="/company/vendorscreditors" element={<VendorsCreditors />} />
-          <Route path="/company/addvendorsmodal" element={<AddVendorModal />} />
-          <Route path="/company/receiptentry" element={<ReceiptEntry />} />
-          <Route path="/company/paymententry" element={<PaymentEntry />} />
-          <Route path="/company/transaction" element={<Transaction />} />
-          <Route path="/company/warehouse" element={<WareHouse />} />
-          <Route path="/company/warehouse/:id" element={<WareHouseDetail />} />
-          <Route path="/company/unitofmeasure" element={<UnitofMeasure />} />
-          <Route path="/company/service" element={<Service />} />
-          <Route path="/company/inventorys" element={<Inventorys />} />
-          <Route path="/company/inventorydetails/:id" element={<InventoryDetails />} />
-          <Route path="/company/addproduct" element={<AddProductModal />} />
-          <Route path="/company/createvoucher" element={<CreateVoucher />} />
-          <Route path="/company/stocktranfer" element={<StockTransfer />} />
-          <Route path="/company/inventory-adjustment" element={<InventoryAdjustment />} />
-          <Route path="/company/salesvoucher" element={<SalesVoucher />} />
-          <Route path="/company/purchasevoucher" element={<PurchaseVoucher />} />
-          <Route path="/company/purchasevoucherview" element={<PurchaseVoucherView />} />
-          <Route path="/company/salesvoucherview" element={<SalesVoucherView />} />
-          <Route path="/company/categories" element={<Categories />} />
-          <Route path="/company/brands" element={<BrandPage />} />
-          <Route path="/company/product" element={<Productt />} />
-          <Route path="/company/createproduct" element={<AddProduct />} />
-          <Route path="/company/update-product/:id" element={<AddProduct />} />
-          <Route path="/company/device" element={<DevicePage />} />
-          <Route path="/company/ponitofsale" element={<PointOfSale />} />
-          <Route path="/company/invoice-summary" element={<InvoiceSummary />} />
-          <Route path="/company/manageinvoice" element={<ManageInvoices />} />
-          <Route path="/company/editinvoice" element={<EditInvoice />} />
-          <Route path="/company/viewinvoice" element={<ViewInvoice />} />
-          <Route path="/company/deliverychallans" element={<DeliveryChallans />} />
-          <Route path="/company/invoice" element={<Invoice />} />
-          <Route path="/company/multistepsalesform" element={<MultiStepSalesForm />} />
-          <Route path="/company/viewinvoicee" element={<ViewInvoicee />} />
-          <Route path="/company/salesdelivery" element={<SalesDelivery />} />
-          <Route path="/company/salesreturn" element={<SalesReturn />} />
-          <Route path="/company/gstreturns" element={<GSTReturns />} />
-          <Route path="/company/tdstcs" element={<TdsTcs />} />
-          <Route path="/company/itcreport" element={<ITCReport />} />
-          <Route path="/company/ewaybill" element={<EWayBill />} />
-          <Route path="/company/purchasorderr" element={<PurchaseOrderr />} />
-          <Route path="/company/multiforms" element={<MultiStepPurchaseForms />} />
-          <Route path="/company/purchasequotationpage" element={<PurchaseQuotationPage />} />
-          <Route path="/company/purchaseorderpage" element={<PurchaseOrderPage />} />
-          <Route path="/company/paymentpage" element={<PaymentPage />} />
-          <Route path="/company/goodreceiptpage" element={<GoodsReceiptPage />} />
-          <Route path="/company/billpage" element={<BillPage />} />
-          <Route path="/company/purchasereturn" element={<PurchaseReturn />} />
-          <Route path="/company/purchaseview" element={<PurchaseOrderView />} />
-          <Route path="/company/daybook" element={<DayBook />} />
-          <Route path="/company/expense" element={<Expense />} />
-          <Route path="/company/income" element={<Income />} />
-          <Route path="/company/contravoucher" element={<ContraVoucher />} />
-          <Route path="/company/paymnetsupplier" element={<PaymnetSupplier />} />
-          <Route path="/company/receivedcustomer" element={<ReceivedCustomer />} />
-          <Route path="/company/journalentries" element={<JournalEntries />} />
-          <Route path="/company/ledger" element={<Ledger />} />
-          <Route path="/company/trialbalance" element={<TrialBalance />} />
-          <Route path="/company/salesreport" element={<Salesreport />} />
-          <Route path="/company/purchasereport" element={<Purchasereport />} />
-          <Route path="/company/posreport" element={<Posreport />} />
-          <Route path="/company/taxreport" element={<Taxreport />} />
-          <Route path="/company/inventorysummary" element={<InventorySummary />} />
-          <Route path="/company/balancesheet" element={<BalanceSheet />} />
-          <Route path="/company/balancesheet/asstedetails" element={<AssetDetails />} />
-          <Route path="/company/balancesheet/liabilitydetails" element={<Liabilitydetails />} />
-          <Route path="/company/cashflow" element={<CashFlow />} />
-          <Route path="/company/profitloss" element={<ProfitLoss />} />
-          <Route path="/company/vatreport" element={<VatReport />} />
-          <Route path="/company/users" element={<Users />} />
-          <Route path="/company/rolespermissions" element={<RolesPermissions />} />
-          <Route path="/company/deleteaccountrequests" element={<DeleteAccountRequest />} />
-          <Route path="/company/companyinfo" element={<CompanyInfo />} />
-          <Route path="/superadmin/manage-passwords" element={<SuperAdminPasswordRequests />} />
-          <Route path="/company/password-request" element={<PasswordRequests />} />
-          <Route path="/Company/CustomersDebtors" element={<AddEditCustomerModal />} />
+          <Route path="/company/dashboard" element={<ProtectedRoute><CompanyDashboard /></ProtectedRoute>} />
+          <Route path="/company/allacounts" element={<ProtectedRoute><AllAcounts /></ProtectedRoute>} />
+          <Route path="/company/ledgerpageaccount" element={<ProtectedRoute><LedgerPageAccount /></ProtectedRoute>} />
+          <Route path="/company/ledgercustomer" element={<ProtectedRoute><Ledgercustomer /></ProtectedRoute>} />
+          <Route path="/company/customer-item-details" element={<ProtectedRoute><CustomerItemDetailsView /></ProtectedRoute>} />
+          <Route path="/company/customer-transaction-details" element={<ProtectedRoute><CustomerTransactionDetails /></ProtectedRoute>} />
+          <Route path="/company/customersdebtors" element={<ProtectedRoute><CustomersDebtors /></ProtectedRoute>} />
+          <Route path="/company/ledgervendor" element={<ProtectedRoute><Ledgervendor /></ProtectedRoute>} />
+          <Route path="/company/vendor-transaction-details" element={<ProtectedRoute><VendorTransactionDetails /></ProtectedRoute>} />
+          <Route path="/company/vendor-item-details" element={<ProtectedRoute><VendorItemDetailsView /></ProtectedRoute>} />
+          <Route path="/company/addcustomersmodal" element={<ProtectedRoute><AddCustomerModal /></ProtectedRoute>} />
+          <Route path="/company/vendorscreditors" element={<ProtectedRoute><VendorsCreditors /></ProtectedRoute>} />
+          <Route path="/company/addvendorsmodal" element={<ProtectedRoute><AddVendorModal /></ProtectedRoute>} />
+          <Route path="/company/receiptentry" element={<ProtectedRoute><ReceiptEntry /></ProtectedRoute>} />
+          <Route path="/company/paymententry" element={<ProtectedRoute><PaymentEntry /></ProtectedRoute>} />
+          <Route path="/company/transaction" element={<ProtectedRoute><Transaction /></ProtectedRoute>} />
+          <Route path="/company/warehouse" element={<ProtectedRoute><WareHouse /></ProtectedRoute>} />
+          <Route path="/company/warehouse/:id" element={<ProtectedRoute><WareHouseDetail /></ProtectedRoute>} />
+          <Route path="/company/unitofmeasure" element={<ProtectedRoute><UnitofMeasure /></ProtectedRoute>} />
+          <Route path="/company/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
+          <Route path="/company/inventorys" element={<ProtectedRoute><Inventorys /></ProtectedRoute>} />
+          <Route path="/company/inventorydetails/:id" element={<ProtectedRoute><InventoryDetails /></ProtectedRoute>} />
+          <Route path="/company/addproduct" element={<ProtectedRoute><AddProductModal /></ProtectedRoute>} />
+          <Route path="/company/createvoucher" element={<ProtectedRoute><CreateVoucher /></ProtectedRoute>} />
+          <Route path="/company/stocktranfer" element={<ProtectedRoute><StockTransfer /></ProtectedRoute>} />
+          <Route path="/company/inventory-adjustment" element={<ProtectedRoute><InventoryAdjustment /></ProtectedRoute>} />
+          <Route path="/company/salesvoucher" element={<ProtectedRoute><SalesVoucher /></ProtectedRoute>} />
+          <Route path="/company/purchasevoucher" element={<ProtectedRoute><PurchaseVoucher /></ProtectedRoute>} />
+          <Route path="/company/purchasevoucherview" element={<ProtectedRoute><PurchaseVoucherView /></ProtectedRoute>} />
+          <Route path="/company/salesvoucherview" element={<ProtectedRoute><SalesVoucherView /></ProtectedRoute>} />
+          <Route path="/company/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+          <Route path="/company/brands" element={<ProtectedRoute><BrandPage /></ProtectedRoute>} />
+          <Route path="/company/product" element={<ProtectedRoute><Productt /></ProtectedRoute>} />
+          <Route path="/company/createproduct" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+          <Route path="/company/update-product/:id" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+          <Route path="/company/device" element={<ProtectedRoute><DevicePage /></ProtectedRoute>} />
+          <Route path="/company/ponitofsale" element={<ProtectedRoute><PointOfSale /></ProtectedRoute>} />
+          <Route path="/company/invoice-summary" element={<ProtectedRoute><InvoiceSummary /></ProtectedRoute>} />
+          <Route path="/company/manageinvoice" element={<ProtectedRoute><ManageInvoices /></ProtectedRoute>} />
+          <Route path="/company/editinvoice" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
+          <Route path="/company/viewinvoice" element={<ProtectedRoute><ViewInvoice /></ProtectedRoute>} />
+          <Route path="/company/deliverychallans" element={<ProtectedRoute><DeliveryChallans /></ProtectedRoute>} />
+          <Route path="/company/invoice" element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
+          <Route path="/company/multistepsalesform" element={<ProtectedRoute><MultiStepSalesForm /></ProtectedRoute>} />
+          <Route path="/company/viewinvoicee" element={<ProtectedRoute><ViewInvoicee /></ProtectedRoute>} />
+          <Route path="/company/salesdelivery" element={<ProtectedRoute><SalesDelivery /></ProtectedRoute>} />
+          <Route path="/company/salesreturn" element={<ProtectedRoute><SalesReturn /></ProtectedRoute>} />
+          <Route path="/company/gstreturns" element={<ProtectedRoute><GSTReturns /></ProtectedRoute>} />
+          <Route path="/company/tdstcs" element={<ProtectedRoute><TdsTcs /></ProtectedRoute>} />
+          <Route path="/company/itcreport" element={<ProtectedRoute><ITCReport /></ProtectedRoute>} />
+          <Route path="/company/ewaybill" element={<ProtectedRoute><EWayBill /></ProtectedRoute>} />
+          <Route path="/company/purchasorderr" element={<ProtectedRoute><PurchaseOrderr /></ProtectedRoute>} />
+          <Route path="/company/multiforms" element={<ProtectedRoute><MultiStepPurchaseForms /></ProtectedRoute>} />
+          <Route path="/company/purchasequotationpage" element={<ProtectedRoute><PurchaseQuotationPage /></ProtectedRoute>} />
+          <Route path="/company/purchaseorderpage" element={<ProtectedRoute><PurchaseOrderPage /></ProtectedRoute>} />
+          <Route path="/company/paymentpage" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+          <Route path="/company/goodreceiptpage" element={<ProtectedRoute><GoodsReceiptPage /></ProtectedRoute>} />
+          <Route path="/company/billpage" element={<ProtectedRoute><BillPage /></ProtectedRoute>} />
+          <Route path="/company/purchasereturn" element={<ProtectedRoute><PurchaseReturn /></ProtectedRoute>} />
+          <Route path="/company/purchaseview" element={<ProtectedRoute><PurchaseOrderView /></ProtectedRoute>} />
+          <Route path="/company/daybook" element={<ProtectedRoute><DayBook /></ProtectedRoute>} />
+          <Route path="/company/expense" element={<ProtectedRoute><Expense /></ProtectedRoute>} />
+          <Route path="/company/income" element={<ProtectedRoute><Income /></ProtectedRoute>} />
+          <Route path="/company/contravoucher" element={<ProtectedRoute><ContraVoucher /></ProtectedRoute>} />
+          <Route path="/company/paymnetsupplier" element={<ProtectedRoute><PaymnetSupplier /></ProtectedRoute>} />
+          <Route path="/company/receivedcustomer" element={<ProtectedRoute><ReceivedCustomer /></ProtectedRoute>} />
+          <Route path="/company/journalentries" element={<ProtectedRoute><JournalEntries /></ProtectedRoute>} />
+          <Route path="/company/ledger" element={<ProtectedRoute><Ledger /></ProtectedRoute>} />
+          <Route path="/company/trialbalance" element={<ProtectedRoute><TrialBalance /></ProtectedRoute>} />
+          <Route path="/company/salesreport" element={<ProtectedRoute><Salesreport /></ProtectedRoute>} />
+          <Route path="/company/purchasereport" element={<ProtectedRoute><Purchasereport /></ProtectedRoute>} />
+          <Route path="/company/posreport" element={<ProtectedRoute><Posreport /></ProtectedRoute>} />
+          <Route path="/company/taxreport" element={<ProtectedRoute><Taxreport /></ProtectedRoute>} />
+          <Route path="/company/inventorysummary" element={<ProtectedRoute><InventorySummary /></ProtectedRoute>} />
+          <Route path="/company/balancesheet" element={<ProtectedRoute><BalanceSheet /></ProtectedRoute>} />
+          <Route path="/company/balancesheet/asstedetails" element={<ProtectedRoute><AssetDetails /></ProtectedRoute>} />
+          <Route path="/company/balancesheet/liabilitydetails" element={<ProtectedRoute><Liabilitydetails /></ProtectedRoute>} />
+          <Route path="/company/cashflow" element={<ProtectedRoute><CashFlow /></ProtectedRoute>} />
+          <Route path="/company/profitloss" element={<ProtectedRoute><ProfitLoss /></ProtectedRoute>} />
+          <Route path="/company/vatreport" element={<ProtectedRoute><VatReport /></ProtectedRoute>} />
+          <Route path="/company/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+          <Route path="/company/rolespermissions" element={<ProtectedRoute><RolesPermissions /></ProtectedRoute>} />
+          <Route path="/company/deleteaccountrequests" element={<ProtectedRoute><DeleteAccountRequest /></ProtectedRoute>} />
+          <Route path="/company/companyinfo" element={<ProtectedRoute><CompanyInfo /></ProtectedRoute>} />
+          <Route path="/superadmin/manage-passwords" element={<ProtectedRoute><SuperAdminPasswordRequests /></ProtectedRoute>} />
+          <Route path="/company/password-request" element={<ProtectedRoute><PasswordRequests /></ProtectedRoute>} />
+          <Route path="/Company/CustomersDebtors" element={<ProtectedRoute><AddEditCustomerModal /></ProtectedRoute>} />
 {/* new menu     */}
 
-          <Route path ="/company/employeemanagement" element={<EmployeeManagement/>} />
-          <Route path="/company/salarystructure" element={<SalaryStructure />} />
-          <Route path="/company/generatepayroll" element={<GeneratePayroll />} />
-          <Route path="/company/payslipreports" element={<PaySlipReports />} />
-          <Route path="/company/payrollreports" element={<PayrollReports />} />
-          <Route path="/company/payrollsettings" element={<PayrollSettings />} />
+          <Route path ="/company/employeemanagement" element={<ProtectedRoute><EmployeeManagement/></ProtectedRoute>} />
+          <Route path="/company/salarystructure" element={<ProtectedRoute><SalaryStructure /></ProtectedRoute>} />
+          <Route path="/company/generatepayroll" element={<ProtectedRoute><GeneratePayroll /></ProtectedRoute>} />
+          <Route path="/company/payslipreports" element={<ProtectedRoute><PaySlipReports /></ProtectedRoute>} />
+          <Route path="/company/payrollreports" element={<ProtectedRoute><PayrollReports /></ProtectedRoute>} />
+          <Route path="/company/payrollsettings" element={<ProtectedRoute><PayrollSettings /></ProtectedRoute>} />
 
-          <Route path="/company/end-of-service" element={<Settlement/>} />
-          <Route path="/company/attendance" element={<Attendance/>} />
-          <Route path="/company/documents" element={<Documents/>} />
-          <Route path="/company/payroll" element={<Payroll/>} />
-          <Route path="/company/leave-requests" element={<LeaveRequests/>} />
+          <Route path="/company/end-of-service" element={<ProtectedRoute><Settlement/></ProtectedRoute>} />
+          <Route path="/company/attendance" element={<ProtectedRoute><Attendance/></ProtectedRoute>} />
+          <Route path="/company/documents" element={<ProtectedRoute><Documents/></ProtectedRoute>} />
+          <Route path="/company/payroll" element={<ProtectedRoute><Payroll/></ProtectedRoute>} />
+          <Route path="/company/leave-requests" element={<ProtectedRoute><LeaveRequests/></ProtectedRoute>} />
 
-          <Route path="/company/task-management" element={<TaskManagement/>} />
-          <Route path="/company/department-summary" element={<DepartmentPerformanceSummary/>} />
-          <Route path="/company/task-progress" element={<TaskProgressTracking/>} />
-          <Route path="/company/department-analytics-dashboard" element={<DepartmentalAnalyticsDashboard/>} />
-          <Route path="/company/zatca-e-invoicing" element={<ZatcaInvoicing />} />
-          <Route path="/company/saudicomplianceintegration" element={<SaudiComplianceIntegration/>} />
-          <Route path="/company/support-tickets" element={<SupportTickets />} />
-          <Route path="/company/audit-logs" element={<AuditLogs />} />
-          <Route path="/company/income-statement-report" element={<IncomeStatementReport />} />
-          <Route path="/company/account-statement-report" element={<AccountStatementReport/>}/>
+          <Route path="/company/task-management" element={<ProtectedRoute><TaskManagement/></ProtectedRoute>} />
+          <Route path="/company/department-summary" element={<ProtectedRoute><DepartmentPerformanceSummary/></ProtectedRoute>} />
+          <Route path="/company/task-progress" element={<ProtectedRoute><TaskProgressTracking/></ProtectedRoute>} />
+          <Route path="/company/department-analytics-dashboard" element={<ProtectedRoute><DepartmentalAnalyticsDashboard/></ProtectedRoute>} />
+          <Route path="/company/zatca-e-invoicing" element={<ProtectedRoute><ZatcaInvoicing /></ProtectedRoute>} />
+          <Route path="/company/saudicomplianceintegration" element={<ProtectedRoute><SaudiComplianceIntegration/></ProtectedRoute>} />
+          <Route path="/company/support-tickets" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
+          <Route path="/company/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
+          <Route path="/company/income-statement-report" element={<ProtectedRoute><IncomeStatementReport /></ProtectedRoute>} />
+          <Route path="/company/account-statement-report" element={<ProtectedRoute><AccountStatementReport/></ProtectedRoute>}/>
         </Route>
       </Routes>
     );

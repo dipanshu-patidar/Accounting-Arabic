@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   Table,
@@ -153,6 +153,10 @@ const RolesPermissions = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [toastVariant, setToastVariant] = useState("success");
 
+  // Modal cleanup refs
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ add: 0, edit: 0, view: 0, delete: 0, addType: 0 });
+
   // Load custom role types from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("customRoleTypes");
@@ -272,12 +276,32 @@ const RolesPermissions = () => {
   });
 
   const handleAdd = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    // Force modal remount
+    modalKeyRef.current.add += 1;
     const initialModulePermissions = {};
     flattenModules().forEach(module => {
       initialModulePermissions[module.name] = [];
     });
     setForm({ name: "", permissions: [], type: "user", modulePermissions: initialModulePermissions });
     setShowAdd(true);
+  };
+
+  const handleCloseAdd = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowAdd(false);
+    modalKeyRef.current.add += 1;
+  };
+
+  const handleAddExited = () => {
+    const initialModulePermissions = {};
+    flattenModules().forEach(module => {
+      initialModulePermissions[module.name] = [];
+    });
+    setForm({ name: "", permissions: [], type: "user", modulePermissions: initialModulePermissions });
+    isCleaningUpRef.current = false;
   };
 
   // Updated to match API format
@@ -309,7 +333,6 @@ const RolesPermissions = () => {
 
       if (response.data?.success) {
         setShowAdd(false);
-        setForm({ name: "", permissions: [], type: "user", modulePermissions: {} });
         await fetchRoles();
         setToastMessage("Role created successfully!");
         setToastVariant("success");
@@ -326,6 +349,10 @@ const RolesPermissions = () => {
   };
 
   const handleEdit = (role) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    // Force modal remount
+    modalKeyRef.current.edit += 1;
     setSelected(role);
     setForm({
       name: role.name,
@@ -334,6 +361,19 @@ const RolesPermissions = () => {
       modulePermissions: { ...role.modulePermissions }
     });
     setShowEdit(true);
+  };
+
+  const handleCloseEdit = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowEdit(false);
+    modalKeyRef.current.edit += 1;
+  };
+
+  const handleEditExited = () => {
+    setSelected(null);
+    setForm({ name: "", permissions: [], type: "user", modulePermissions: {} });
+    isCleaningUpRef.current = false;
   };
 
   // Updated to match API format
@@ -380,8 +420,24 @@ const RolesPermissions = () => {
   };
 
   const handleDelete = (role) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    // Force modal remount
+    modalKeyRef.current.delete += 1;
     setSelected(role);
     setShowDelete(true);
+  };
+
+  const handleCloseDelete = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowDelete(false);
+    modalKeyRef.current.delete += 1;
+  };
+
+  const handleDeleteExited = () => {
+    setSelected(null);
+    isCleaningUpRef.current = false;
   };
 
   const handleDeleteConfirm = async () => {
@@ -407,8 +463,24 @@ const RolesPermissions = () => {
   };
 
   const handleView = (role) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    // Force modal remount
+    modalKeyRef.current.view += 1;
     setSelected(role);
     setShowView(true);
+  };
+
+  const handleCloseView = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowView(false);
+    modalKeyRef.current.view += 1;
+  };
+
+  const handleViewExited = () => {
+    setSelected(null);
+    isCleaningUpRef.current = false;
   };
 
   // Updated toggleModulePerm to handle individual permissions
@@ -772,7 +844,13 @@ const RolesPermissions = () => {
 
       {/* Modals */}
       {/* Delete Confirmation Modal */}
-      <Modal show={showDelete} onHide={() => setShowDelete(false)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={showDelete} 
+        onHide={handleCloseDelete}
+        onExited={handleDeleteExited}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Delete Role</Modal.Title>
         </Modal.Header>
@@ -780,7 +858,7 @@ const RolesPermissions = () => {
           Are you sure you want to delete role <b>{selected?.name}</b>? This action cannot be undone.
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDelete(false)}>
+          <Button variant="secondary" onClick={handleCloseDelete}>
             Cancel
           </Button>
           <Button variant="danger" onClick={handleDeleteConfirm}>
@@ -790,7 +868,14 @@ const RolesPermissions = () => {
       </Modal>
 
       {/* View Role Details Modal */}
-      <Modal show={showView} onHide={() => setShowView(false)} centered size="lg">
+      <Modal 
+        key={modalKeyRef.current.view}
+        show={showView} 
+        onHide={handleCloseView}
+        onExited={handleViewExited}
+        centered 
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Role Details: {selected?.name}</Modal.Title>
         </Modal.Header>
@@ -849,14 +934,21 @@ const RolesPermissions = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowView(false)}>
+          <Button variant="secondary" onClick={handleCloseView}>
             Close
           </Button>
         </Modal.Footer>
       </Modal>
 
       {/* Add Role Modal */}
-      <Modal show={showAdd} onHide={() => setShowAdd(false)} centered size="xl">
+      <Modal 
+        key={modalKeyRef.current.add}
+        show={showAdd} 
+        onHide={handleCloseAdd}
+        onExited={handleAddExited}
+        centered 
+        size="xl"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Add Role</Modal.Title>
         </Modal.Header>
@@ -876,7 +968,7 @@ const RolesPermissions = () => {
         <Modal.Footer style={{ borderTop: "1px solid #e9ecef", padding: "15px 20px" }}>
           <Button
             variant="secondary"
-            onClick={() => setShowAdd(false)}
+            onClick={handleCloseAdd}
             style={{
               background: "#6c757d",
               border: "none",
@@ -904,7 +996,14 @@ const RolesPermissions = () => {
       </Modal>
 
       {/* Edit Role Modal - Removed Role Type section */}
-      <Modal show={showEdit} onHide={() => setShowEdit(false)} centered size="xl">
+      <Modal 
+        key={modalKeyRef.current.edit}
+        show={showEdit} 
+        onHide={handleCloseEdit}
+        onExited={handleEditExited}
+        centered 
+        size="xl"
+      >
         <Modal.Header closeButton style={{ borderBottom: "1px solid #e9ecef" }}>
           <Modal.Title style={{ fontWeight: 600, fontSize: 18 }}>Edit Role: {selected?.name}</Modal.Title>
         </Modal.Header>
@@ -929,7 +1028,7 @@ const RolesPermissions = () => {
         <Modal.Footer style={{ borderTop: "1px solid #e9ecef", padding: "15px 20px" }}>
           <Button
             variant="secondary"
-            onClick={() => setShowEdit(false)}
+            onClick={handleCloseEdit}
             style={{
               background: "#6c757d",
               border: "none",

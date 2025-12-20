@@ -161,6 +161,10 @@ const CustomersDebtors = () => {
 
   // Excel import ref
   const fileInputRef = useRef();
+  
+  // Modal cleanup refs
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ addEdit: 0, view: 0, delete: 0 });
 
   // Check user permissions
   useEffect(() => {
@@ -312,6 +316,10 @@ const CustomersDebtors = () => {
       return;
     }
 
+    // Reset cleanup flag before opening
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.addEdit += 1;
+
     setEditMode(mode === "edit");
     if (mode === "add") {
       const empty = JSON.parse(JSON.stringify(emptyCustomer));
@@ -373,9 +381,49 @@ const CustomersDebtors = () => {
       toast.error("You don't have permission to view customers");
       return;
     }
+    // Reset cleanup flag before opening
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.view += 1;
     setCurrentCustomer(customer);
     setShowViewModal(true);
     toast.info(`Viewing details for: ${customer.name}`);
+  };
+  
+  // Close handlers for modals
+  const handleCloseAddEditModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowAddEditModal(false);
+    modalKeyRef.current.addEdit += 1;
+  };
+  
+  const handleAddEditModalExited = () => {
+    resetModal();
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseViewModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowViewModal(false);
+    modalKeyRef.current.view += 1;
+  };
+  
+  const handleViewModalExited = () => {
+    setCurrentCustomer(JSON.parse(JSON.stringify(emptyCustomer)));
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseDeleteModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowConfirmDelete(false);
+    setCustomerIdToDelete(null);
+    modalKeyRef.current.delete += 1;
+  };
+  
+  const handleDeleteModalExited = () => {
+    isCleaningUpRef.current = false;
   };
 
   const handleSave = (savedCustomer, mode) => {
@@ -956,11 +1004,10 @@ const CustomersDebtors = () => {
 
       {/* Modals */}
       <DeleteCustomer
+        key={modalKeyRef.current.delete}
         show={showConfirmDelete}
-        onHide={() => {
-          setShowConfirmDelete(false);
-          setCustomerIdToDelete(null);
-        }}
+        onHide={handleCloseDeleteModal}
+        onExited={handleDeleteModalExited}
         customerId={customerIdToDelete}
         onSuccess={() => {
           // ✅ OPTION 1: Refetch entire list (recommended)
@@ -971,14 +1018,18 @@ const CustomersDebtors = () => {
       />
 
       <ViewCustomerModal
+        key={modalKeyRef.current.view}
         show={showViewModal}
-        onHide={() => setShowViewModal(false)}
+        onHide={handleCloseViewModal}
+        onExited={handleViewModalExited}
         customer={currentCustomer}
       />
 
       <AddEditCustomerModal
+        key={modalKeyRef.current.addEdit}
         show={showAddEditModal}
-        onHide={() => setShowAddEditModal(false)}
+        onHide={handleCloseAddEditModal}
+        onExited={handleAddEditModalExited}
         editMode={editMode}
         customerFormData={customerFormData}
         setCustomerFormData={setCustomerFormData}

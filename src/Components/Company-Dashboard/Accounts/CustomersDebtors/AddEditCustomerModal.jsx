@@ -8,6 +8,7 @@ import axiosInstance from "../../../../Api/axiosInstance";
 const AddEditCustomerModal = ({
   show,
   onHide,
+  onExited,
   editMode,
   customerFormData,
   setCustomerFormData,
@@ -281,7 +282,7 @@ const AddEditCustomerModal = ({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" centered backdrop="static">
+    <Modal show={show} onHide={onHide} onExited={onExited} size="xl" centered backdrop="static">
       <Modal.Header closeButton className="bg-light">
         <Modal.Title>{editMode ? "Edit Customer" : "Add Customer"}</Modal.Title>
       </Modal.Header>
