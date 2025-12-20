@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Table, Button, Modal, Form } from "react-bootstrap";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import GetCompanyId from "../../../../Api/GetCompanyId";
@@ -22,26 +22,98 @@ function Service() {
   const [services, setServices] = useState(initialServices);
   const [unitOptions, setUnitOptions] = useState(initialUnitOptions); 
   
+  // Modal states with explicit initialization
   const [show, setShow] = useState(false);
+  const [showView, setShowView] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
   const [form, setForm] = useState({ 
     id: null, 
     name: "", 
     sku: "", 
     serviceDescription: "", 
-    unit: "piece",
+    unit: "",
     price: "", 
     tax: "", 
     remarks: "", 
     isInvoiceable: true 
   });
   const [editMode, setEditMode] = useState(false);
-  const [showView, setShowView] = useState(false);
   const [viewData, setViewData] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [unitsLoading, setUnitsLoading] = useState(false);
+  const [isRTL, setIsRTL] = useState(false);
+  
+  // Refs to track component mount status and prevent memory leaks
+  const isMountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+  const timeoutRefs = useRef([]);
+  
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, view: 0, delete: 0 });
+
+  // Add a timeout to a tracking array for cleanup
+  const addTimeout = (callback, delay) => {
+    const timeoutId = setTimeout(() => {
+      // Remove from tracking array
+      timeoutRefs.current = timeoutRefs.current.filter(id => id !== timeoutId);
+      // Execute callback if component is still mounted
+      if (isMountedRef.current) {
+        callback();
+      }
+    }, delay);
+    
+    // Add to tracking array
+    timeoutRefs.current.push(timeoutId);
+    return timeoutId;
+  };
+
+  // Clear all tracked timeouts
+  const clearAllTimeouts = () => {
+    timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId));
+    timeoutRefs.current = [];
+  };
+
+  // Safe state update function that checks if component is mounted
+  const safeSetState = (setter, value) => {
+    if (isMountedRef.current) {
+      setter(value);
+    }
+  };
+
+  // Check if RTL mode is active
+  useEffect(() => {
+    const checkRTL = () => {
+      if (!isMountedRef.current) return;
+      
+      const htmlElement = document.documentElement;
+      const isRTLMode = htmlElement.getAttribute('dir') === 'rtl' || 
+                       htmlElement.style.direction === 'rtl' ||
+                       getComputedStyle(htmlElement).direction === 'rtl';
+      setIsRTL(isRTLMode);
+    };
+    
+    // Check RTL mode on mount
+    checkRTL();
+    
+    // Set up a mutation observer to detect changes in document's direction
+    const observer = new MutationObserver(checkRTL);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['dir', 'style']
+    });
+    
+    // Also check periodically as a fallback
+    const intervalId = setInterval(checkRTL, 1000);
+    
+    return () => {
+      observer.disconnect();
+      clearInterval(intervalId);
+    };
+  }, []);
 
   // Check permissions
   useEffect(() => {
@@ -50,42 +122,42 @@ function Service() {
     
     // Superadmin and Company roles have access to all modules
     if (role === "SUPERADMIN" || role === "COMPANY") {
-      setCanViewServices(true);
-      setCanCreateServices(true);
-      setCanUpdateServices(true);
-      setCanDeleteServices(true);
+      safeSetState(setCanViewServices, true);
+      safeSetState(setCanCreateServices, true);
+      safeSetState(setCanUpdateServices, true);
+      safeSetState(setCanDeleteServices, true);
     } else if (role === "USER") {
       // For USER role, check specific permissions
       try {
         const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
-        setUserPermissions(permissions);
+        safeSetState(setUserPermissions, permissions);
         
         // Check if user has permissions for Service
         const servicePermission = permissions.find(p => p.module_name === "Service");
         
         if (servicePermission) {
-          setCanViewServices(servicePermission.can_view || false);
-          setCanCreateServices(servicePermission.can_create || false);
-          setCanUpdateServices(servicePermission.can_update || false);
-          setCanDeleteServices(servicePermission.can_delete || false);
+          safeSetState(setCanViewServices, servicePermission.can_view || false);
+          safeSetState(setCanCreateServices, servicePermission.can_create || false);
+          safeSetState(setCanUpdateServices, servicePermission.can_update || false);
+          safeSetState(setCanDeleteServices, servicePermission.can_delete || false);
         } else {
-          setCanViewServices(false);
-          setCanCreateServices(false);
-          setCanUpdateServices(false);
-          setCanDeleteServices(false);
+          safeSetState(setCanViewServices, false);
+          safeSetState(setCanCreateServices, false);
+          safeSetState(setCanUpdateServices, false);
+          safeSetState(setCanDeleteServices, false);
         }
       } catch (error) {
         console.error("Error parsing user permissions:", error);
-        setCanViewServices(false);
-        setCanCreateServices(false);
-        setCanUpdateServices(false);
-        setCanDeleteServices(false);
+        safeSetState(setCanViewServices, false);
+        safeSetState(setCanCreateServices, false);
+        safeSetState(setCanUpdateServices, false);
+        safeSetState(setCanDeleteServices, false);
       }
     } else {
-      setCanViewServices(false);
-      setCanCreateServices(false);
-      setCanUpdateServices(false);
-      setCanDeleteServices(false);
+      safeSetState(setCanViewServices, false);
+      safeSetState(setCanCreateServices, false);
+      safeSetState(setCanUpdateServices, false);
+      safeSetState(setCanDeleteServices, false);
     }
   }, []);
 
@@ -94,62 +166,107 @@ function Service() {
       fetchServices();
       fetchUnitOptions();
     }
-  }, [canViewServices]);
+  }, [canViewServices, isRTL]);
+
+  // Cleanup function for component unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      clearAllTimeouts();
+      
+      // Cancel any ongoing requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const fetchServices = async () => {
     try {
-      setServicesLoading(true);
-      // ✅ Updated endpoint to include company_id
-      const response = await axiosInstance.get(`${BaseUrl}services/company/${companyId}`);
+      safeSetState(setServicesLoading, true);
       
-      console.log("Services API Response:", response.data); // Debug log
+      // Cancel any previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       
-      if (response.data.success && response.data.data) {
-        const transformedServices = response.data.data.map(service => ({
-          id: service.id,
-          name: service.service_name,
-          sku: service.sku,
-          serviceDescription: service.description,
-          unit: service.uom_name, // ✅ Changed from 'uom' to 'uom_name' to match API response
-          price: service.price,
-          tax: service.tax_percent,
-          remarks: service.remarks,
-          isInvoiceable: service.allow_in_invoice === "1"
-        }));
-        setServices(transformedServices);
-      } else {
-        setServices([]);
+      // Create a new abort controller for this request
+      abortControllerRef.current = new AbortController();
+      
+      const response = await axiosInstance.get(`${BaseUrl}services/company/${companyId}`, {
+        signal: abortControllerRef.current.signal
+      });
+      
+      if (isMountedRef.current) {
+        if (response.data.success && response.data.data) {
+          const transformedServices = response.data.data.map(service => ({
+            id: service.id,
+            name: service.service_name,
+            sku: service.sku,
+            serviceDescription: service.description,
+            unit: service.uom_name,
+            price: service.price,
+            tax: service.tax_percent,
+            remarks: service.remarks,
+            isInvoiceable: service.allow_in_invoice === "1"
+          }));
+          safeSetState(setServices, transformedServices);
+        } else {
+          safeSetState(setServices, []);
+        }
       }
     } catch (error) {
-      console.error("Error fetching services:", error.response?.data || error.message);
-      toast.error("Failed to fetch services. Please try again.", {
-        toastId: 'fetch-services-error',
-        autoClose: 3000
-      });
-      setServices([]);
+      if (error.name !== 'AbortError' && isMountedRef.current) {
+        console.error("Error fetching services:", error.response?.data || error.message);
+        toast.error("Failed to fetch services. Please try again.", {
+          toastId: 'fetch-services-error',
+          autoClose: 3000
+        });
+        safeSetState(setServices, []);
+      }
     } finally {
-      setServicesLoading(false);
+      if (isMountedRef.current) {
+        safeSetState(setServicesLoading, false);
+      }
     }
   };
 
-  // ✅ UPDATED: Fetch unit options using new API endpoint
+  // Fetch unit options using new API endpoint
   const fetchUnitOptions = async () => {
     try {
       setUnitsLoading(true);
-      // ✅ Updated endpoint to fetch unit details by company ID
+      
       const response = await axiosInstance.get(`${BaseUrl}unit-details/getUnitDetailsByCompanyId/${companyId}`);
       
       console.log("Unit Details API Response:", response.data); // Debug log
       
-      if (response.data.success && response.data.data) {
+      if (response.data.success && response.data.data && response.data.data.length > 0) {
         // Extract uom_name from each unit object
         const unitNames = response.data.data.map(unit => unit.uom_name);
+        console.log("Extracted unit names:", unitNames); // Debug log
+        
+        // Update unit options state
         setUnitOptions(unitNames);
+        
+        // Set default unit to first unit from API
+        if (unitNames.length > 0) {
+          setForm(prev => ({
+            ...prev,
+            unit: unitNames[0]
+          }));
+        }
+      } else {
+        // Set empty array if no data from API
+        setUnitOptions([]);
       }
     } catch (error) {
       console.error("Error fetching unit options:", error.response?.data || error.message);
-      // Fallback to default options
-      setUnitOptions(["piece", "kg", "meter", "liter", "box", "day", "yard", "sq.ft", "cubic meter", "Project"]);
+      // Set empty array on error
+      setUnitOptions([]);
+      toast.error("Failed to fetch unit options. Please try again.", {
+        toastId: 'fetch-units-error',
+        autoClose: 3000
+      });
     } finally {
       setUnitsLoading(false);
     }
@@ -161,7 +278,15 @@ function Service() {
       return;
     }
     
-    const defaultUnit = unitOptions.length > 0 ? unitOptions[0] : "piece";
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
+    // Use the first unit option from API or empty string
+    const defaultUnit = unitOptions.length > 0 ? unitOptions[0] : "";
+    
     setForm({ 
       id: null, 
       name: "", 
@@ -177,9 +302,73 @@ function Service() {
     setShow(true);
   };
 
-  const handleClose = () => setShow(false);
-  const handleViewClose = () => setShowView(false);
-  const handleDeleteConfirmClose = () => setShowDeleteConfirm(false);
+  const handleClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShow(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleMainModalExited = () => {
+    // Reset form state after modal fully closed
+    setForm({ 
+      id: null, 
+      name: "", 
+      sku: "", 
+      serviceDescription: "", 
+      unit: "",
+      price: "", 
+      tax: "", 
+      remarks: "", 
+      isInvoiceable: true 
+    });
+    setEditMode(false);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleViewClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowView(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.view += 1;
+  };
+  
+  // Handle view modal exit - cleanup after animation
+  const handleViewModalExited = () => {
+    // Reset view data after modal fully closed
+    setViewData(null);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleDeleteConfirmClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowDeleteConfirm(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.delete += 1;
+  };
+  
+  // Handle delete modal exit - cleanup after animation
+  const handleDeleteModalExited = () => {
+    // Reset delete id after modal fully closed
+    setDeleteId(null);
+    isCleaningUpRef.current = false;
+  };
 
   const handleInput = (e) => {
     const { name, value, type, checked } = e.target;
@@ -211,11 +400,11 @@ function Service() {
     setLoading(true);
     try {
       const payload = {
-        company_id: parseInt(companyId), // ✅ Convert to integer
+        company_id: parseInt(companyId),
         service_name: form.name,
         sku: form.sku,
         description: form.serviceDescription,
-        uom: form.unit, // Send string, not ID
+        uom: form.unit,
         price: parseFloat(form.price) || 0,
         tax_percent: parseFloat(form.tax) || 0,
         allow_in_invoice: form.isInvoiceable ? "1" : "0",
@@ -237,6 +426,8 @@ function Service() {
       }
 
       await fetchServices();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
       handleClose();
     } catch (error) {
       console.error("Error saving service:", error.response?.data || error.message);
@@ -251,12 +442,18 @@ function Service() {
     }
   };
 
-  // ✅ FIXED: Edit handler — ensure unit is in unitOptions
+  // Edit handler — ensure unit is in unitOptions
   const handleEdit = (service) => {
     if (!canUpdateServices) {
       toast.error("You don't have permission to edit services");
       return;
     }
+    
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
     
     // Ensure unit from service exists in unitOptions (case-insensitive fallback)
     let unitToUse = service.unit;
@@ -283,12 +480,17 @@ function Service() {
       return;
     }
     
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.delete += 1;
+    
     setDeleteId(id);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
-    setShowDeleteConfirm(false);
     setLoading(true);
     try {
       await axiosInstance.delete(`${BaseUrl}services/${deleteId}`);
@@ -297,6 +499,9 @@ function Service() {
         autoClose: 3000
       });
       await fetchServices();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleDeleteConfirmClose();
     } catch (error) {
       console.error("Error deleting service:", error.response?.data || error.message);
       const errorMessage = error.response?.data?.message || "Failed to delete service. Please try again.";
@@ -306,7 +511,7 @@ function Service() {
       });
     } finally {
       setLoading(false);
-      setDeleteId(null);
+      // Delete ID will be reset in handleDeleteModalExited
     }
   };
 
@@ -315,6 +520,12 @@ function Service() {
       toast.error("You don't have permission to view services");
       return;
     }
+    
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.view += 1;
     
     setViewData(data);
     setShowView(true);
@@ -353,17 +564,36 @@ function Service() {
           <p>You don't have permission to view Services.</p>
           <p>Please contact your administrator for access.</p>
         </div>
+        {/* Toast container outside the main component to prevent unmounting issues */}
+        <ToastContainer
+          position={isRTL ? "top-left" : "top-right"}
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={isRTL}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          limit={3}
+          enableMultiContainer
+          containerId={"access-denied"}
+        />
       </div>
     );
   }
 
   return (
     <>
-      <div className="container mt-5">
+      <div className="container mt-5" dir={isRTL ? "rtl" : "ltr"}>
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="mb-0">Service Management</h2>
           {canCreateServices && (
-            <Button style={customButtonStyle} onClick={handleShow} disabled={loading}>
+            <Button 
+              style={customButtonStyle} 
+              onClick={handleShow} 
+              disabled={loading}
+            >
               {loading ? 'Loading...' : 'Add Service'}
             </Button>
           )}
@@ -402,7 +632,7 @@ function Service() {
                           style={viewButtonStyle} 
                           onClick={() => handleView(s)} 
                           title="View"
-                          className="me-1"
+                          className={isRTL ? "ms-1" : "me-1"}
                         >
                           <FaEye />
                         </Button>
@@ -413,7 +643,7 @@ function Service() {
                           style={editButtonStyle} 
                           onClick={() => handleEdit(s)} 
                           title="Edit"
-                          className="me-1"
+                          className={isRTL ? "ms-1" : "me-1"}
                         >
                           <FaEdit />
                         </Button>
@@ -443,7 +673,15 @@ function Service() {
         </div>
                 
         {/* Add/Edit Modal */}
-        <Modal show={show} onHide={handleClose} centered>
+        <Modal 
+          key={modalKeyRef.current.main}
+          show={show} 
+          onHide={handleClose}
+          onExited={handleMainModalExited}
+          centered 
+          enforceFocus={false}
+          dir={isRTL ? "rtl" : "ltr"}
+        >
           <Modal.Header closeButton>
             <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
           </Modal.Header>
@@ -452,19 +690,22 @@ function Service() {
               <Form.Group className="mb-3">
                 <Form.Label>Service Name</Form.Label>
                 <Form.Control 
+                  type="text"
                   name="name" 
-                  value={form.name} 
+                  value={form.name || ''} 
                   onChange={handleInput} 
                   placeholder="Enter service name"
                   required 
+                  autoFocus
                 />
               </Form.Group>
               
               <Form.Group className="mb-3">
                 <Form.Label>SKU</Form.Label>
                 <Form.Control 
+                  type="text"
                   name="sku" 
-                  value={form.sku} 
+                  value={form.sku || ''} 
                   onChange={handleInput} 
                   placeholder="Enter SKU (optional)"
                 />
@@ -475,10 +716,10 @@ function Service() {
                 <Form.Control 
                   as="textarea" 
                   name="serviceDescription" 
-                  value={form.serviceDescription} 
+                  value={form.serviceDescription || ''} 
                   onChange={handleInput} 
                   rows={3}
-                  placeholder="Describe the service"
+                  placeholder="Describe service"
                 />
               </Form.Group>
               
@@ -486,20 +727,25 @@ function Service() {
                 <Form.Label>Unit of Measure</Form.Label>
                 <Form.Select 
                   name="unit" 
-                  value={form.unit} 
+                  value={form.unit || ''} 
                   onChange={handleInput}
                   disabled={unitsLoading}
                 >
-                  {unitsLoading ? (
-                    <option value="">Loading units...</option>
-                  ) : (
+                  {unitOptions.length > 0 ? (
                     unitOptions.map((unitName, index) => (
                       <option key={index} value={unitName}>
                         {unitName}
                       </option>
                     ))
+                  ) : (
+                    <option value="">No units available</option>
                   )}
                 </Form.Select>
+                {unitsLoading && (
+                  <Form.Text className="text-muted">
+                    Loading unit options...
+                  </Form.Text>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -508,7 +754,7 @@ function Service() {
                   type="number" 
                   step="0.01"
                   name="price" 
-                  value={form.price} 
+                  value={form.price || ''} 
                   onChange={handleInput} 
                   placeholder="Enter price"
                   required 
@@ -521,7 +767,7 @@ function Service() {
                   type="number" 
                   step="0.01"
                   name="tax" 
-                  value={form.tax} 
+                  value={form.tax || ''} 
                   onChange={handleInput} 
                   placeholder="e.g. 18"
                 />
@@ -531,7 +777,7 @@ function Service() {
                 <Form.Check
                   type="checkbox"
                   name="isInvoiceable"
-                  checked={form.isInvoiceable}
+                  checked={form.isInvoiceable || false}
                   onChange={handleInput}
                   label="Allow this service to be added in invoices"
                 />
@@ -542,7 +788,7 @@ function Service() {
                 <Form.Control 
                   as="textarea" 
                   name="remarks" 
-                  value={form.remarks} 
+                  value={form.remarks || ''} 
                   onChange={handleInput} 
                   rows={2}
                   placeholder="Internal notes (not visible to customers)"
@@ -564,7 +810,15 @@ function Service() {
         </Modal>
 
         {/* View Modal */}
-        <Modal show={showView} onHide={handleViewClose} centered>
+        <Modal 
+          key={modalKeyRef.current.view}
+          show={showView} 
+          onHide={handleViewClose}
+          onExited={handleViewModalExited}
+          centered 
+          enforceFocus={false}
+          dir={isRTL ? "rtl" : "ltr"}
+        >
           <Modal.Header closeButton>
             <Modal.Title>Service Details</Modal.Title>
           </Modal.Header>
@@ -596,7 +850,15 @@ function Service() {
         </Modal>
         
         {/* Delete Confirmation Modal */}
-        <Modal show={showDeleteConfirm} onHide={handleDeleteConfirmClose} centered>
+        <Modal 
+          key={modalKeyRef.current.delete}
+          show={showDeleteConfirm} 
+          onHide={handleDeleteConfirmClose}
+          onExited={handleDeleteModalExited}
+          centered 
+          enforceFocus={false}
+          dir={isRTL ? "rtl" : "ltr"}
+        >
           <Modal.Header closeButton>
             <Modal.Title>Confirm Deletion</Modal.Title>
           </Modal.Header>
@@ -614,18 +876,20 @@ function Service() {
         </Modal>
       </div>
       
-      {/* Toast Container */}
+      {/* Toast Container - Outside the main container to prevent unmounting issues */}
       <ToastContainer
-        position="top-right"
+        position={isRTL ? "top-left" : "top-right"}
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={true}
         closeOnClick
-        rtl={false}
+        rtl={isRTL}
         pauseOnFocusLoss
         draggable
         pauseOnHover
         limit={3}
+        enableMultiContainer
+        containerId={"service-management"}
       />
     </>
   );

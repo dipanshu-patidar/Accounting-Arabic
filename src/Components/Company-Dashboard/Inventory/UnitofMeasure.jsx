@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Table, Modal, Button, Form } from "react-bootstrap";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import GetCompanyId from '../../../Api/GetCompanyId';
@@ -39,6 +39,10 @@ const UnitOfMeasure = () => {
 
   // ✅ FIXED: Changed from direct assignment to useState hook
   const [dynamicLabel, setDynamicLabel] = useState('Weight per Unit');
+
+  // Modal cleanup refs
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, uom: 0, delete: 0 });
 
   // Initialize uoms as an empty array
   const [uoms, setUoms] = useState([]);
@@ -174,15 +178,54 @@ const UnitOfMeasure = () => {
     fetchUnits();
   }, [canViewUOM]);
 
-  // Handle Create/Edit Unit Modal
-  const handleModalClose = () => {
+  // Close handlers for modals
+  const handleCloseMainModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
     setShowModal(false);
+    modalKeyRef.current.main += 1;
+  };
+  
+  const handleMainModalExited = () => {
     setUnitName("");
     setAbbreviation("");
     setEditId(null);
     setWeightPerUnit("");
     setSelectedCategory("");
     setDynamicLabel("Weight per Unit");
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseUOMModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowUOMModal(false);
+    modalKeyRef.current.uom += 1;
+  };
+  
+  const handleUOMModalExited = () => {
+    setSelectedUnit("");
+    setWeightPerUnit("");
+    setSelectedCategory("");
+    setDynamicLabel("Weight per Unit");
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseDeleteModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowDeleteModal(false);
+    modalKeyRef.current.delete += 1;
+  };
+  
+  const handleDeleteModalExited = () => {
+    setDeleteId(null);
+    isCleaningUpRef.current = false;
+  };
+
+  // Handle Create/Edit Unit Modal
+  const handleModalClose = () => {
+    handleCloseMainModal();
   };
 
   const handleModalShow = (data = null) => {
@@ -195,6 +238,10 @@ const UnitOfMeasure = () => {
       toast.error("You don't have permission to create units");
       return;
     }
+    
+    // Reset cleanup flag before opening
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.main += 1;
     
     console.log("handleModalShow called with data:", data); // Debug log
 
@@ -278,7 +325,10 @@ const UnitOfMeasure = () => {
           });
         }
       }
-      handleModalClose();
+      isCleaningUpRef.current = false; // Reset flag before closing
+      setShowModal(false);
+      modalKeyRef.current.main += 1;
+      // Form reset will happen in onExited
       fetchUnits(); // Refresh data
     } catch (err) {
       console.error("Save Unit API Error:", err);
@@ -299,6 +349,10 @@ const UnitOfMeasure = () => {
       return;
     }
     
+    // Reset cleanup flag before opening
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.delete += 1;
+    
     console.log("Delete clicked for ID:", id); // Debug log
     setDeleteId(id);
     setShowDeleteModal(true);
@@ -307,7 +361,9 @@ const UnitOfMeasure = () => {
   // Confirm Delete
   const handleConfirmDelete = async () => {
     console.log("Confirming delete for ID:", deleteId); // Debug log
+    isCleaningUpRef.current = false; // Reset flag before closing
     setShowDeleteModal(false);
+    modalKeyRef.current.delete += 1;
     setLoading(true);
 
     try {
@@ -488,11 +544,10 @@ const UnitOfMeasure = () => {
           toastId: 'unit-details-save-success',
           autoClose: 3000
         });
+        isCleaningUpRef.current = false; // Reset flag before closing
         setShowUOMModal(false);
-        setSelectedUnit("");
-        setWeightPerUnit("");
-        setSelectedCategory("");
-        setDynamicLabel("Weight per Unit");
+        modalKeyRef.current.uom += 1;
+        // Form reset will happen in onExited
         // Refresh units list
         fetchUnits(); // Refresh data
       } else {
@@ -575,7 +630,11 @@ const UnitOfMeasure = () => {
                 <Button
                   className="set_btn text-white fw-semibold"
                   style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
-                  onClick={() => setShowUOMModal(true)}
+                  onClick={() => {
+                    isCleaningUpRef.current = false;
+                    modalKeyRef.current.uom += 1;
+                    setShowUOMModal(true);
+                  }}
                   disabled={loading}
                 >
                   {loading ? (
@@ -701,7 +760,13 @@ const UnitOfMeasure = () => {
         </div>
 
         {/* ✅ Edit Unit Modal */}
-        <Modal show={showModal} onHide={handleModalClose} centered>
+        <Modal 
+          key={modalKeyRef.current.main}
+          show={showModal} 
+          onHide={handleCloseMainModal}
+          onExited={handleMainModalExited}
+          centered
+        >
           <Modal.Header closeButton>
             <Modal.Title>{editId ? "Edit Unit" : "Add Unit"}</Modal.Title>
           </Modal.Header>
@@ -801,7 +866,13 @@ const UnitOfMeasure = () => {
         </Modal>
 
         {/* ✅ Unit Details Modal */}
-        <Modal show={showUOMModal} onHide={() => setShowUOMModal(false)} centered>
+        <Modal 
+          key={modalKeyRef.current.uom}
+          show={showUOMModal} 
+          onHide={handleCloseUOMModal}
+          onExited={handleUOMModalExited}
+          centered
+        >
           <Modal.Header closeButton>
             <Modal.Title>Unit Details</Modal.Title>
           </Modal.Header>
@@ -874,7 +945,7 @@ const UnitOfMeasure = () => {
           <Modal.Footer>
             <Button
               variant="secondary"
-              onClick={() => setShowUOMModal(false)}
+              onClick={handleCloseUOMModal}
               style={{
                 border: 'none',
                 color: '#fff',
@@ -901,7 +972,13 @@ const UnitOfMeasure = () => {
         </Modal>
 
         {/* ✅ Delete Confirmation Modal */}
-        <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal 
+          key={modalKeyRef.current.delete}
+          show={showDeleteModal} 
+          onHide={handleCloseDeleteModal}
+          onExited={handleDeleteModalExited}
+          centered
+        >
           <Modal.Header closeButton>
             <Modal.Title>Confirm Delete</Modal.Title>
           </Modal.Header>
@@ -911,7 +988,7 @@ const UnitOfMeasure = () => {
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary"
-              onClick={() => setShowDeleteModal(false)}
+              onClick={handleCloseDeleteModal}
               disabled={loading}
             >
               Cancel

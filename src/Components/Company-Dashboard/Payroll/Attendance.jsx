@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Row,
@@ -60,6 +60,10 @@ const Attendance = () => {
   const [form, setForm] = useState(emptyRecord);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState(null);
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, delete: 0 });
 
   // Fetch employees by company_id
   useEffect(() => {
@@ -160,12 +164,24 @@ const Attendance = () => {
   };
 
   const handleAdd = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setForm(emptyRecord);
     setModalType("add");
     setShowModal(true);
   };
 
   const handleEdit = (record) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setForm({ ...record });
     setModalType("edit");
     setShowModal(true);
@@ -236,8 +252,9 @@ const Attendance = () => {
         await axiosInstance.put(`attendance/${form.id}`, payload);
       }
       await refreshAttendance();
-      setShowModal(false);
-      setForm(emptyRecord);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (err) {
       console.error("Save error", err);
       alert("Error saving attendance record");
@@ -246,7 +263,52 @@ const Attendance = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setForm(emptyRecord);
+    setModalType("add");
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleDeleteModalClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowDeleteModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.delete += 1;
+  };
+  
+  // Handle delete modal exit - cleanup after animation
+  const handleDeleteModalExited = () => {
+    // Reset delete record after modal fully closed
+    setRecordToDelete(null);
+    isCleaningUpRef.current = false;
+  };
+
   const confirmDelete = (record) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.delete += 1;
+    
     setRecordToDelete(record);
     setShowDeleteModal(true);
   };
@@ -260,8 +322,10 @@ const Attendance = () => {
       console.error("Delete error", err);
       alert("Failed to delete attendance record");
     } finally {
-      setShowDeleteModal(false);
-      setRecordToDelete(null);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleDeleteModalClose();
+      // Record will be reset in handleDeleteModalExited
     }
   };
 
@@ -397,7 +461,13 @@ const Attendance = () => {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="md">
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="md"
+      >
         <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#ffffff" }}>
           <Modal.Title>{modalType === "edit" ? "Edit Attendance" : "Add Attendance Record"}</Modal.Title>
         </Modal.Header>
@@ -490,7 +560,7 @@ const Attendance = () => {
         <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
           <Button
             variant="secondary"
-            onClick={() => setShowModal(false)}
+            onClick={handleCloseModal}
             style={{ border: "1px solid #ced4da" }}
           >
             Cancel
@@ -506,7 +576,13 @@ const Attendance = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={showDeleteModal} 
+        onHide={handleDeleteModalClose}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#ffffff" }}>
           <Modal.Title>Delete Record</Modal.Title>
         </Modal.Header>
@@ -518,7 +594,7 @@ const Attendance = () => {
         <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
           <Button
             variant="secondary"
-            onClick={() => setShowDeleteModal(false)}
+            onClick={handleDeleteModalClose}
             style={{ border: "1px solid #ced4da" }}
           >
             Cancel

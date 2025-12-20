@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Table,
   Modal,
@@ -51,6 +51,10 @@ const WareHouse = () => {
   const [showUOMModal, setShowUOMModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState(null);
+
+  // Modal cleanup refs
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef(0);
 
   // Check permissions
   useEffect(() => {
@@ -158,8 +162,8 @@ const WareHouse = () => {
     fetchWarehouses();
   }, [companyId, canViewWarehouses]);
 
-  // Helper function to reset form and close modal
-  const resetFormAndCloseModal = () => {
+  // Helper function to reset form
+  const resetForm = () => {
     setWarehouseName("");
     setLocation("");
     setAddressLine1("");
@@ -169,12 +173,25 @@ const WareHouse = () => {
     setPincode("");
     setCountry("");
     setEditId(null);
-    setShowModal(false);
     setModalError(null);
   };
 
+  // Close handler for modal
+  const handleCloseModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowModal(false);
+    modalKeyRef.current += 1;
+  };
+
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    resetForm();
+    isCleaningUpRef.current = false;
+  };
+
   const handleModalClose = () => {
-    resetFormAndCloseModal();
+    handleCloseModal();
   };
 
   // FIX: Ensure correct 'id' is used when opening edit modal
@@ -188,6 +205,10 @@ const WareHouse = () => {
       toast.error("You don't have permission to create warehouses");
       return;
     }
+    
+    // Reset cleanup flag before opening
+    isCleaningUpRef.current = false;
+    modalKeyRef.current += 1;
     
     if (data) {
       // Use correct 'id' from data object
@@ -258,7 +279,10 @@ const WareHouse = () => {
 
       if (response.data) {
         await fetchWarehouses();
-        resetFormAndCloseModal();
+        isCleaningUpRef.current = false; // Reset flag before closing
+        setShowModal(false);
+        modalKeyRef.current += 1;
+        resetForm();
         
         // Show success toast
         if (editId) {
@@ -774,7 +798,14 @@ const WareHouse = () => {
         </div>
 
         {/* Add/Edit Warehouse Modal with Full Address Fields */}
-        <Modal show={showModal} onHide={resetFormAndCloseModal} size="lg">
+        <Modal 
+          key={modalKeyRef.current}
+          show={showModal} 
+          onHide={handleCloseModal}
+          onExited={handleModalExited}
+          size="lg"
+          centered
+        >
           <Modal.Header closeButton>
             <Modal.Title>
               {editId ? "Edit Warehouse" : "Create Warehouse"}
@@ -885,7 +916,7 @@ const WareHouse = () => {
               </Form.Group>
 
               <div className="d-flex justify-content-end">
-                <Button variant="secondary" onClick={resetFormAndCloseModal}>
+                <Button variant="secondary" onClick={handleCloseModal}>
                   Close
                 </Button>
                 <Button

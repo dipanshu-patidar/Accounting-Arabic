@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Row,
@@ -88,6 +88,9 @@ const Users = () => {
   const [filterRole, setFilterRole] = useState("All");
 
   const companyId = GetCompanyId();
+  const blobUrlRef = useRef(null); // Track blob URLs for cleanup
+  const isCleaningUpRef = useRef(false); // Prevent multiple cleanup calls
+  const modalKeyRef = useRef(0); // Force modal remount
 
   // Fetch roles dynamically
   useEffect(() => {
@@ -240,8 +243,17 @@ const Users = () => {
         );
         alert('User updated successfully!');
       }
+      // Clean up blob URL after successful save
+      if (blobUrlRef.current) {
+        try {
+          URL.revokeObjectURL(blobUrlRef.current);
+        } catch (err) {
+          // Silently handle
+        }
+        blobUrlRef.current = null;
+      }
       setShowModal(false);
-      setForm(emptyUser);
+      setForm({ ...emptyUser, company_id: companyId });
       setPreviewImg("");
     } catch (err) {
       console.error('Save Error:', err);
@@ -250,7 +262,22 @@ const Users = () => {
     }
   };
 
+
   const handleEdit = (user) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Clean up any existing blob URL before opening
+    if (blobUrlRef.current) {
+      try {
+        URL.revokeObjectURL(blobUrlRef.current);
+      } catch (err) {
+        // Silently handle
+      }
+      blobUrlRef.current = null;
+    }
+    // Force modal remount
+    modalKeyRef.current += 1;
     setForm({
       ...user,
       user_role: user.user_role?.toString() || "",
@@ -262,7 +289,54 @@ const Users = () => {
     setShowModal(true);
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Store blob URL reference before closing
+    const currentBlobUrl = blobUrlRef.current;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Clean up blob URL immediately (synchronously) to prevent memory leak
+    if (currentBlobUrl) {
+      try {
+        URL.revokeObjectURL(currentBlobUrl);
+      } catch (err) {
+        // Silently handle
+      }
+      blobUrlRef.current = null;
+    }
+    
+    // Force modal remount on next open
+    modalKeyRef.current += 1;
+  };
+
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setForm({ ...emptyUser, company_id: companyId });
+    setPreviewImg("");
+    isCleaningUpRef.current = false;
+  };
+
   const handleAdd = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Clean up any existing blob URL before opening
+    if (blobUrlRef.current) {
+      try {
+        URL.revokeObjectURL(blobUrlRef.current);
+      } catch (err) {
+        // Silently handle
+      }
+      blobUrlRef.current = null;
+    }
+    // Force modal remount
+    modalKeyRef.current += 1;
     setForm({ ...emptyUser, company_id: companyId });
     setPreviewImg("");
     setModalType("add");
@@ -312,7 +386,16 @@ const Users = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Revoke previous blob URL if exists to prevent memory leak
+      if (blobUrlRef.current) {
+        try {
+          URL.revokeObjectURL(blobUrlRef.current);
+        } catch (err) {
+          // Silently handle - blob might already be revoked
+        }
+      }
       const imageUrl = URL.createObjectURL(file);
+      blobUrlRef.current = imageUrl; // Track the blob URL
       setPreviewImg(imageUrl);
     }
   };
@@ -559,7 +642,13 @@ const Users = () => {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" backdrop="static" keyboard={false}>
+      <Modal 
+        key={modalKeyRef.current}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>{modalType === "add" ? "Add User" : "Edit User"}</Modal.Title>
         </Modal.Header>
@@ -664,7 +753,7 @@ const Users = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+          <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
           <Button
             variant="primary"
             onClick={handleSave}

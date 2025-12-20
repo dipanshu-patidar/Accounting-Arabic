@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Tabs,
   Tab,
@@ -66,6 +66,10 @@ const Expense = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Modal cleanup refs
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ create: 0, view: 0, edit: 0, delete: 0 });
 
   // Permission states
   const [hasPermission, setHasPermission] = useState(false);
@@ -328,7 +332,9 @@ const Expense = () => {
         setNarration("");
         setManualReceiptNo("");
         setSelectedPaidFrom(accounts.length > 0 ? accounts[0].id : "");
+        isCleaningUpRef.current = false; // Reset flag before closing
         setShowCreateModal(false);
+        modalKeyRef.current.create += 1;
         fetchExpenseVouchers();
       } else {
         toast.error("Error creating voucher: " + (result.message || "Unknown error"));
@@ -341,7 +347,61 @@ const Expense = () => {
     }
   };
 
+  // Close handlers for modals
+  const handleCloseCreateModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowCreateModal(false);
+    modalKeyRef.current.create += 1;
+  };
+  
+  const handleCreateModalExited = () => {
+    setTableRows([{ id: 1, account: "", amount: "0.00", narration: "" }]);
+    setNarration("");
+    setManualReceiptNo("");
+    setPaidTo("");
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseViewModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowViewModal(false);
+    modalKeyRef.current.view += 1;
+  };
+  
+  const handleViewModalExited = () => {
+    setSelectedExpense(null);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseEditModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowEditModal(false);
+    modalKeyRef.current.edit += 1;
+  };
+  
+  const handleEditModalExited = () => {
+    setEditExpense(null);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseDeleteModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowDeleteModal(false);
+    modalKeyRef.current.delete += 1;
+  };
+  
+  const handleDeleteModalExited = () => {
+    setDeleteExpense(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleEdit = (expense) => {
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.edit += 1;
     setEditExpense(expense);
     setShowEditModal(true);
   };
@@ -372,8 +432,9 @@ const Expense = () => {
 
       if (result.status) { // Changed from result.success to result.status
         toast.success("Voucher Updated Successfully!");
+        isCleaningUpRef.current = false; // Reset flag before closing
         setShowEditModal(false);
-        setEditExpense(null);
+        modalKeyRef.current.edit += 1;
         fetchExpenseVouchers();
       } else {
         toast.error("Error updating voucher: " + (result.message || "Unknown error"));
@@ -387,6 +448,8 @@ const Expense = () => {
   };
 
   const handleDelete = (expense) => {
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.delete += 1;
     setDeleteExpense(expense);
     setShowDeleteModal(true);
   };
@@ -404,8 +467,9 @@ const Expense = () => {
 
         if (result.status) { // Changed from result.success to result.status
           toast.success("Voucher Deleted Successfully!");
+          isCleaningUpRef.current = false; // Reset flag before closing
           setShowDeleteModal(false);
-          setDeleteExpense(null);
+          modalKeyRef.current.delete += 1;
           fetchExpenseVouchers();
         } else {
           toast.error("Error deleting voucher: " + (result.message || "Unknown error"));
@@ -484,7 +548,11 @@ const Expense = () => {
             <button
               className="btn text-white d-flex align-items-center gap-2"
               style={{ backgroundColor: "#3daaaa" }}
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                isCleaningUpRef.current = false;
+                modalKeyRef.current.create += 1;
+                setShowCreateModal(true);
+              }}
             >
               <FaPlusCircle /> Create Voucher
             </button>
@@ -586,7 +654,12 @@ const Expense = () => {
                       <td>
                         <div className="d-flex justify-content-center align-items-center gap-2">
                           {expensePermissions.can_view && (
-                            <button className="btn btn-sm text-info p-2" onClick={() => { setSelectedExpense(exp); setShowViewModal(true); }}><FaEye /></button>
+                            <button className="btn btn-sm text-info p-2" onClick={() => {
+                              isCleaningUpRef.current = false;
+                              modalKeyRef.current.view += 1;
+                              setSelectedExpense(exp);
+                              setShowViewModal(true);
+                            }}><FaEye /></button>
                           )}
                           {expensePermissions.can_update && (
                             <button className="btn btn-sm text-warning p-2" onClick={() => handleEdit(exp)}><FaEdit /></button>
@@ -620,7 +693,14 @@ const Expense = () => {
 
       {/* Create Voucher Modal */}
       {expensePermissions.can_create && (
-        <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered size="lg">
+        <Modal 
+          key={modalKeyRef.current.create}
+          show={showCreateModal} 
+          onHide={handleCloseCreateModal}
+          onExited={handleCreateModalExited}
+          centered 
+          size="lg"
+        >
           <Modal.Header closeButton><Modal.Title className="fw-bold">Create Voucher</Modal.Title></Modal.Header>
           <Modal.Body>
             <form onSubmit={handleSubmit}>
@@ -781,7 +861,7 @@ const Expense = () => {
               </div>
 
               <div className="d-flex justify-content-end gap-2">
-                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                <button type="button" className="btn btn-outline-secondary" onClick={handleCloseCreateModal}>Cancel</button>
                 <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
                   {submitting ? 'Saving...' : 'Save'}
                 </button>
@@ -793,7 +873,13 @@ const Expense = () => {
 
       {/* View Modal */}
       {expensePermissions.can_view && (
-        <Modal show={showViewModal} onHide={() => { setShowViewModal(false); setSelectedExpense(null); }} size="lg">
+        <Modal 
+          key={modalKeyRef.current.view}
+          show={showViewModal} 
+          onHide={handleCloseViewModal}
+          onExited={handleViewModalExited}
+          size="lg"
+        >
           <Modal.Header closeButton><Modal.Title>Voucher Details</Modal.Title></Modal.Header>
           <Modal.Body>
             {selectedExpense && (
@@ -838,7 +924,13 @@ const Expense = () => {
 
       {/* Edit Modal */}
       {expensePermissions.can_update && (
-        <Modal show={showEditModal} onHide={() => { setShowEditModal(false); setEditExpense(null); }}>
+        <Modal 
+          key={modalKeyRef.current.edit}
+          show={showEditModal} 
+          onHide={handleCloseEditModal}
+          onExited={handleEditModalExited}
+          centered
+        >
           <Modal.Header closeButton><Modal.Title>Edit Voucher</Modal.Title></Modal.Header>
           <Modal.Body>
             {editExpense && (
@@ -870,7 +962,7 @@ const Expense = () => {
                   <textarea className="form-control" rows="3" defaultValue={editExpense.narration} name="narration"></textarea>
                 </div>
                 <div className="d-flex justify-content-end gap-3 mt-4">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-outline-secondary" onClick={handleCloseEditModal}>Cancel</button>
                   <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
                     {submitting ? 'Updating...' : 'Save Changes'}
                   </button>
@@ -883,7 +975,13 @@ const Expense = () => {
 
       {/* Delete Modal */}
       {expensePermissions.can_delete && (
-        <Modal show={showDeleteModal} onHide={() => { setShowDeleteModal(false); setDeleteExpense(null); }} centered>
+        <Modal 
+          key={modalKeyRef.current.delete}
+          show={showDeleteModal} 
+          onHide={handleCloseDeleteModal}
+          onExited={handleDeleteModalExited}
+          centered
+        >
           <Modal.Body className="text-center py-4">
             <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <FaTrash size={32} color="#F04438" />
@@ -891,7 +989,7 @@ const Expense = () => {
             <h4 className="fw-bold mb-2">Delete Voucher</h4>
             <p className="mb-4" style={{ color: "#555" }}>Are you sure you want to delete this voucher?</p>
             <div className="d-flex justify-content-center gap-3">
-              <button className="btn btn-dark" onClick={() => setShowDeleteModal(false)}>No, Cancel</button>
+              <button className="btn btn-dark" onClick={handleCloseDeleteModal}>No, Cancel</button>
               <button className="btn" style={{ background: "#3daaaa", color: "#fff", fontWeight: 600 }} onClick={confirmDelete} disabled={submitting}>
                 {submitting ? 'Deleting...' : 'Yes, Delete'}
               </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Row,
@@ -44,6 +44,10 @@ const Settlement = () => {
   const [form, setForm] = useState(emptySettlement);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [settlementToDelete, setSettlementToDelete] = useState(null);
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, delete: 0 });
 
   // Fetch employees list for dropdown
   useEffect(() => {
@@ -113,13 +117,64 @@ const Settlement = () => {
     setForm({ ...form, [name]: value });
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setForm(emptySettlement);
+    setModalType("add");
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleDeleteModalClose = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowDeleteModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.delete += 1;
+  };
+  
+  // Handle delete modal exit - cleanup after animation
+  const handleDeleteModalExited = () => {
+    // Reset delete settlement after modal fully closed
+    setSettlementToDelete(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleAdd = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setForm(emptySettlement);
     setModalType("add");
     setShowModal(true);
   };
 
   const handleEdit = async (record) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     try {
       const res = await axiosInstance.get(`settlements/${record.id}`);
       if (res?.data?.success) {
@@ -174,8 +229,9 @@ const Settlement = () => {
         alert("Settlement record updated successfully!");
       }
       await fetchSettlements();
-      setShowModal(false);
-      setForm(emptySettlement);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (err) {
       console.error("Save error:", err);
       alert("Failed to save settlement record.");
@@ -183,6 +239,12 @@ const Settlement = () => {
   };
 
   const confirmDelete = (record) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.delete += 1;
+    
     setSettlementToDelete(record);
     setShowDeleteModal(true);
   };
@@ -196,8 +258,10 @@ const Settlement = () => {
       console.error("Delete error:", err);
       alert("Failed to delete settlement record.");
     } finally {
-      setShowDeleteModal(false);
-      setSettlementToDelete(null);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleDeleteModalClose();
+      // Settlement will be reset in handleDeleteModalExited
     }
   };
 
@@ -338,7 +402,13 @@ const Settlement = () => {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "white" }}>
           <Modal.Title>{modalType === "edit" ? "Edit Settlement" : "Add Settlement Record"}</Modal.Title>
         </Modal.Header>
@@ -474,7 +544,7 @@ const Settlement = () => {
           </Row>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
@@ -484,7 +554,13 @@ const Settlement = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={showDeleteModal} 
+        onHide={handleDeleteModalClose}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton style={{ backgroundColor: "#dc3545", color: "white" }}>
           <Modal.Title>Delete Settlement Record</Modal.Title>
         </Modal.Header>
@@ -493,7 +569,7 @@ const Settlement = () => {
           <strong>{getEmployeeName(settlementToDelete?.employeeId)}</strong>?
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+          <Button variant="secondary" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
           <Button variant="danger" onClick={handleDelete} style={{ backgroundColor: "#dc3545" }}>

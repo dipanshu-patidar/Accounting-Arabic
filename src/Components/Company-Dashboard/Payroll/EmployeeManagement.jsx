@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container,
   Row,
@@ -64,6 +64,10 @@ const EmployeeManagement = () => {
     totalPayroll: 0
   });
 
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, view: 0 });
+
   // Fetch employees and stats by company_id
   const fetchEmployees = async () => {
     if (!companyId) return;
@@ -124,6 +128,12 @@ const generateEmployeeCode = () => {
 };
 
   const handleOpenModal = (employee = null) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     if (employee) {
       setCurrentEmployee(employee);
       setFormData({
@@ -159,8 +169,56 @@ const generateEmployeeCode = () => {
     setShowModal(true);
   };
 
-  const handleCloseModal = () => setShowModal(false);
-  const handleCloseViewModal = () => setShowViewModal(false);
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setCurrentEmployee(null);
+    setFormData({
+      fullName: '',
+      department: '',
+      designation: '',
+      joiningDate: new Date(),
+      salaryType: 'Monthly',
+      baseSalary: '',
+      bankAccount: '',
+      ifscBranch: '',
+      taxId: '',
+      status: 'Active',
+      employeeCode: ''
+    });
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseViewModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowViewModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.view += 1;
+  };
+  
+  // Handle view modal exit - cleanup after animation
+  const handleViewModalExited = () => {
+    // Reset view employee after modal fully closed
+    setViewEmployee(null);
+    isCleaningUpRef.current = false;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -219,6 +277,8 @@ const generateEmployeeCode = () => {
         alert('Employee created successfully!');
       }
       await fetchEmployees();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
       handleCloseModal();
     } catch (err) {
       console.error('API error:', err);
@@ -227,6 +287,12 @@ const generateEmployeeCode = () => {
   };
 
   const handleViewEmployee = async (employee) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.view += 1;
+    
     try {
       const res = await axiosInstance.get(`employee/${employee.id}?company_id=${companyId}`);
       if (res?.data?.success) {
@@ -380,7 +446,14 @@ const generateEmployeeCode = () => {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg" 
+        centered
+      >
         <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#fff' }}>
           <Modal.Title>{currentEmployee ? 'Edit Employee' : 'Add New Employee'}</Modal.Title>
         </Modal.Header>
@@ -528,7 +601,14 @@ const generateEmployeeCode = () => {
       </Modal>
 
       {/* View Modal */}
-      <Modal show={showViewModal} onHide={handleCloseViewModal} size="lg" centered>
+      <Modal 
+        key={modalKeyRef.current.view}
+        show={showViewModal} 
+        onHide={handleCloseViewModal}
+        onExited={handleViewModalExited}
+        size="lg" 
+        centered
+      >
         <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#fff' }}>
           <Modal.Title>Employee Details</Modal.Title>
         </Modal.Header>
@@ -631,8 +711,29 @@ const generateEmployeeCode = () => {
           <Button
             style={{ backgroundColor: '#023347', border: 'none' }}
             onClick={() => {
+              // Close view modal first
               handleCloseViewModal();
-              handleOpenModal(viewEmployee);
+              // Then open edit modal after a brief delay to ensure view modal is closed
+              setTimeout(() => {
+                if (viewEmployee) {
+                  // Convert viewEmployee to the format expected by handleOpenModal
+                  const employeeForEdit = {
+                    id: viewEmployee.id,
+                    fullName: viewEmployee.fullName,
+                    department: viewEmployee.department,
+                    designation: viewEmployee.designation,
+                    joiningDate: viewEmployee.joiningDate,
+                    salaryType: viewEmployee.salaryType,
+                    baseSalary: viewEmployee.baseSalary,
+                    bankAccount: viewEmployee.bankAccount,
+                    ifscBranch: viewEmployee.ifscBranch,
+                    taxId: viewEmployee.taxId,
+                    status: viewEmployee.status,
+                    employeeCode: viewEmployee.employeeCode
+                  };
+                  handleOpenModal(employeeForEdit);
+                }
+              }, 100);
             }}
           >
             Edit
