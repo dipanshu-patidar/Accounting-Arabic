@@ -3,7 +3,6 @@ import { Form, Button, Table, Row, Col, InputGroup, FormControl, Tabs, Tab, Aler
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUpload, faTrash, faSearch, faPlus, } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate, useLocation } from "react-router-dom";
-import AddProductModal from "../Inventory/AddProductModal";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
 
@@ -159,29 +158,10 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
   const [vendors, setVendors] = useState([]);
   const [apiProducts, setApiProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
-  const [categories] = useState([
-    "Electronics",
-    "Furniture",
-    "Apparel",
-    "Stationery",
-    "Other",
-  ]);
 
   // ===============================
   // MODAL & UI STATES
   // ===============================
-  const [showAdd, setShowAdd] = useState(false);
-  const [newItem, setNewItem] = useState({
-    name: "",
-    category: "",
-    hsn: "",
-    tax: 0,
-    sellingPrice: 0,
-    uom: "PCS",
-  });
-  const [newCategory, setNewCategory] = useState("");
-  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-  const [showUOMModal, setShowUOMModal] = useState(false);
   const [rowSearchTerms, setRowSearchTerms] = useState({});
   const [showRowSearch, setShowRowSearch] = useState({});
   const [vendorSearchTerm, setVendorSearchTerm] = useState("");
@@ -899,37 +879,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
         : apiProducts;
     };
 
-    const handleAddItem = () => {
-      if (!newItem.name || !newItem.category) return alert("Name and category required!");
-      setFormData((prev) => ({
-        ...prev,
-        [tab]: {
-          ...prev[tab],
-          items: [
-            ...prev[tab].items,
-            {
-              name: newItem.name,
-              qty: 1,
-              rate: newItem.sellingPrice,
-              tax: newItem.tax,
-              discount: 0,
-              hsn: newItem.hsn,
-              uom: newItem.uom,
-              warehouse: "",
-            },
-          ],
-        },
-      }));
-      setNewItem({
-        name: "",
-        category: "",
-        hsn: "",
-        tax: 0,
-        sellingPrice: 0,
-        uom: "PCS",
-      });
-      setShowAdd(false);
-    };
 
     const handleVendorSearchChange = (value) => {
       setVendorSearchTerm(value);
@@ -1073,18 +1022,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
               >
                 <FontAwesomeIcon icon={faSearch} />
               </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate("/Company/vendorscreditors")}
-                style={{
-                  textWrap: "nowrap",
-                  backgroundColor: "#53b2a5",
-                  border: "none",
-                  marginLeft: "5px",
-                }}
-              >
-                Add Vendor
-              </Button>
             </div>
             {showVendorSearch && (
               <div
@@ -1190,40 +1127,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowAdd(true)}
-              style={{ backgroundColor: "#53b2a5", border: "none" }}
-            >
-              + Add Product
-            </Button>
           </div>
-          <AddProductModal
-            showAdd={showAdd}
-            showEdit={false}
-            newItem={newItem}
-            categories={categories}
-            newCategory={newCategory}
-            showUOMModal={showUOMModal}
-            showAddCategoryModal={showAddCategoryModal}
-            setShowAdd={setShowAdd}
-            setShowEdit={() => { }}
-            setShowUOMModal={setShowUOMModal}
-            setShowAddCategoryModal={setShowAddCategoryModal}
-            setNewCategory={setNewCategory}
-            handleChange={(f, v) => setNewItem((prev) => ({ ...prev, [f]: v }))}
-            handleAddItem={handleAddItem}
-            handleUpdateItem={() => { }}
-            handleAddCategory={(e) => {
-              e.preventDefault();
-              if (newCategory && !categories.includes(newCategory)) {
-                setNewItem((prev) => ({ ...prev, category: newCategory }));
-              }
-              setNewCategory("");
-              setShowAddCategoryModal(false);
-            }}
-            companyId={companyId}
-          />
           <Table bordered hover size="sm" className="dark-bordered-table">
             <thead className="bg-light">
               <tr>
@@ -1600,36 +1504,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
         : apiProducts;
     };
 
-    const handleAddItem = () => {
-      if (!newItem.name || !newItem.category) return alert("Name and category required!");
-      setFormData((prev) => ({
-        ...prev,
-        [tab]: {
-          ...prev[tab],
-          items: [
-            ...prev[tab].items,
-            {
-              name: newItem.name,
-              qty: 1,
-              rate: newItem.sellingPrice,
-              tax: newItem.tax,
-              discount: 0,
-              hsn: newItem.hsn,
-              uom: newItem.uom,
-            },
-          ],
-        },
-      }));
-      setNewItem({
-        name: "",
-        category: "",
-        hsn: "",
-        tax: 0,
-        sellingPrice: 0,
-        uom: "PCS",
-      });
-      setShowAdd(false);
-    };
 
     const handleVendorSearchChange = (value) => {
       setVendorSearchTerm(value);
@@ -1769,18 +1643,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
               >
                 <FontAwesomeIcon icon={faSearch} />
               </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate("/Company/vendorscreditors")}
-                style={{
-                  textWrap: "nowrap",
-                  backgroundColor: "#53b2a5",
-                  border: "none",
-                  marginLeft: "5px",
-                }}
-              >
-                Add Vendor
-              </Button>
             </div>
             {showVendorSearch && (
               <div
@@ -1894,40 +1756,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowAdd(true)}
-              style={{ backgroundColor: "#53b2a5", border: "none" }}
-            >
-              + Add Product
-            </Button>
           </div>
-          <AddProductModal
-            showAdd={showAdd}
-            showEdit={false}
-            newItem={newItem}
-            categories={categories}
-            newCategory={newCategory}
-            showUOMModal={showUOMModal}
-            showAddCategoryModal={showAddCategoryModal}
-            setShowAdd={setShowAdd}
-            setShowEdit={() => { }}
-            setShowUOMModal={setShowUOMModal}
-            setShowAddCategoryModal={setShowAddCategoryModal}
-            setNewCategory={setNewCategory}
-            handleChange={(f, v) => setNewItem((prev) => ({ ...prev, [f]: v }))}
-            handleAddItem={handleAddItem}
-            handleUpdateItem={() => { }}
-            handleAddCategory={(e) => {
-              e.preventDefault();
-              if (newCategory && !categories.includes(newCategory)) {
-                setNewItem((prev) => ({ ...prev, category: newCategory }));
-              }
-              setNewCategory("");
-              setShowAddCategoryModal(false);
-            }}
-            companyId={companyId}
-          />
           <Table bordered hover size="sm" className="dark-bordered-table">
             <thead className="bg-light">
               <tr>
@@ -2273,37 +2102,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
         : apiProducts;
     };
 
-    const handleAddItem = () => {
-      if (!newItem.name || !newItem.category) return alert("Name and category required!");
-      setFormData((prev) => ({
-        ...prev,
-        [tab]: {
-          ...prev[tab],
-          items: [
-            ...prev[tab].items,
-            {
-              name: newItem.name,
-              qty: 1,
-              receivedQty: 1,
-              rate: newItem.sellingPrice,
-              tax: newItem.tax,
-              discount: 0,
-              hsn: newItem.hsn,
-              uom: newItem.uom,
-            },
-          ],
-        },
-      }));
-      setNewItem({
-        name: "",
-        category: "",
-        hsn: "",
-        tax: 0,
-        sellingPrice: 0,
-        uom: "PCS",
-      });
-      setShowAdd(false);
-    };
 
     const handleVendorSearchChange = (value) => {
       setVendorSearchTerm(value);
@@ -2528,18 +2326,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
               >
                 <FontAwesomeIcon icon={faSearch} />
               </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate("/Company/vendorscreditors")}
-                style={{
-                  textWrap: "nowrap",
-                  backgroundColor: "#53b2a5",
-                  border: "none",
-                  marginLeft: "5px",
-                }}
-              >
-                Add Vendor
-              </Button>
             </div>
             {showVendorSearch && (
               <div
@@ -2666,40 +2452,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowAdd(true)}
-              style={{ backgroundColor: "#53b2a5", border: "none" }}
-            >
-              + Add Product
-            </Button>
           </div>
-          <AddProductModal
-            showAdd={showAdd}
-            showEdit={false}
-            newItem={newItem}
-            categories={categories}
-            newCategory={newCategory}
-            showUOMModal={showUOMModal}
-            showAddCategoryModal={showAddCategoryModal}
-            setShowAdd={setShowAdd}
-            setShowEdit={() => { }}
-            setShowUOMModal={setShowUOMModal}
-            setShowAddCategoryModal={setShowAddCategoryModal}
-            setNewCategory={setNewCategory}
-            handleChange={(f, v) => setNewItem((prev) => ({ ...prev, [f]: v }))}
-            handleAddItem={handleAddItem}
-            handleUpdateItem={() => { }}
-            handleAddCategory={(e) => {
-              e.preventDefault();
-              if (newCategory && !categories.includes(newCategory)) {
-                setNewItem((prev) => ({ ...prev, category: newCategory }));
-              }
-              setNewCategory("");
-              setShowAddCategoryModal(false);
-            }}
-            companyId={companyId}
-          />
           <Table bordered hover size="sm" className="dark-bordered-table">
             <thead className="bg-light">
               <tr>
@@ -3015,38 +2768,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
         : apiProducts;
     };
 
-    const handleAddItem = () => {
-      if (!newItem.name || !newItem.category) return alert("Name and category required!");
-      const amount = newItem.sellingPrice;
-      setFormData((prev) => ({
-        ...prev,
-        [tab]: {
-          ...prev[tab],
-          items: [
-            ...prev[tab].items,
-            {
-              description: newItem.name,
-              qty: 1,
-              rate: newItem.sellingPrice,
-              tax: newItem.tax,
-              discount: 0,
-              amount,
-              hsn: newItem.hsn,
-              uom: newItem.uom,
-            },
-          ],
-        },
-      }));
-      setNewItem({
-        name: "",
-        category: "",
-        hsn: "",
-        tax: 0,
-        sellingPrice: 0,
-        uom: "PCS",
-      });
-      setShowAdd(false);
-    };
 
     return (
       <Form>
@@ -3230,18 +2951,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
               >
                 <FontAwesomeIcon icon={faSearch} />
               </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate("/Company/vendorscreditors")}
-                style={{
-                  textWrap: "nowrap",
-                  backgroundColor: "#53b2a5",
-                  border: "none",
-                  marginLeft: "5px",
-                }}
-              >
-                Add Vendor
-              </Button>
             </div>
             {showVendorSearch && (
               <div
@@ -3365,40 +3074,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowAdd(true)}
-              style={{ backgroundColor: "#53b2a5", border: "none" }}
-            >
-              + Add Product
-            </Button>
           </div>
-          <AddProductModal
-            showAdd={showAdd}
-            showEdit={false}
-            newItem={newItem}
-            categories={categories}
-            newCategory={newCategory}
-            showUOMModal={showUOMModal}
-            showAddCategoryModal={showAddCategoryModal}
-            setShowAdd={setShowAdd}
-            setShowEdit={() => { }}
-            setShowUOMModal={setShowUOMModal}
-            setShowAddCategoryModal={setShowAddCategoryModal}
-            setNewCategory={setNewCategory}
-            handleChange={(f, v) => setNewItem((prev) => ({ ...prev, [f]: v }))}
-            handleAddItem={handleAddItem}
-            handleUpdateItem={() => { }}
-            handleAddCategory={(e) => {
-              e.preventDefault();
-              if (newCategory && !categories.includes(newCategory)) {
-                setNewItem((prev) => ({ ...prev, category: newCategory }));
-              }
-              setNewCategory("");
-              setShowAddCategoryModal(false);
-            }}
-            companyId={companyId}
-          />
           <Table bordered hover size="sm" className="dark-bordered-table">
             <thead className="bg-light">
               <tr>
@@ -3673,38 +3349,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
       setFormData((prev) => ({ ...prev, [tab]: { ...prev[tab], items } }));
     };
 
-    const handleAddItem = () => {
-      if (!newItem.name || !newItem.category) return alert("Name and category required!");
-      const amount = newItem.sellingPrice;
-      setFormData((prev) => ({
-        ...prev,
-        [tab]: {
-          ...prev[tab],
-          items: [
-            ...prev[tab].items,
-            {
-              description: newItem.name,
-              qty: 1,
-              rate: newItem.sellingPrice,
-              tax: newItem.tax,
-              discount: 0,
-              amount,
-              hsn: newItem.hsn,
-              uom: newItem.uom,
-            },
-          ],
-        },
-      }));
-      setNewItem({
-        name: "",
-        category: "",
-        hsn: "",
-        tax: 0,
-        sellingPrice: 0,
-        uom: "PCS",
-      });
-      setShowAdd(false);
-    };
 
     const totalBill = parseFloat(data.totalAmount) || calculateTotalAmount(formData.bill?.items || []);
     const amountPaid = parseFloat(data.amount) || 0;
@@ -3886,18 +3530,6 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
                 onClick={() => setShowVendorSearch(!showVendorSearch)} // Reuse vendor search logic
               >
                 <FontAwesomeIcon icon={faSearch} />
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate("/Company/vendorscreditors")}
-                style={{
-                  textWrap: "nowrap",
-                  backgroundColor: "#53b2a5",
-                  border: "none",
-                  marginLeft: "5px",
-                }}
-              >
-                Add Vendor
               </Button>
             </div>
             {showVendorSearch && (

@@ -82,6 +82,31 @@ const MultiStepSalesForm = ({
     return true; // If no required field for this step, return true
   };
 
+  // Validate if quotation step is properly filled
+  const isQuotationFilled = () => {
+    const quotation = formData.quotation;
+    const hasManualRef = quotation?.manualQuotationRef?.trim() || false;
+    const hasItems = quotation?.items && quotation.items.length > 0 && 
+                     quotation.items.some(item => item.item_name && item.item_name.trim() !== "");
+    const hasCustomerInfo = quotation?.billToName?.trim() || false;
+    
+    return hasManualRef && hasItems && hasCustomerInfo;
+  };
+
+  // Handle tab change with validation
+  const handleTabChange = (selectedKey) => {
+    // If trying to move from quotation to salesOrder, validate quotation first
+    if (key === "quotation" && selectedKey === "salesOrder") {
+      if (!isQuotationFilled()) {
+        alert("Please complete the Quotation step first. Make sure to fill:\n- Manual Quotation Reference No\n- At least one item\n- Customer information");
+        return; // Prevent tab change
+      }
+    }
+    
+    // Allow tab change
+    setKey(selectedKey);
+  };
+
 
 // Add this useEffect to your MultiStepSalesForm component
 useEffect(() => {
@@ -691,27 +716,8 @@ const handleSkip = () => {
   const [warehouseSearchTerms, setWarehouseSearchTerms] = useState({});
   const [showWarehouseSearch, setShowWarehouseSearch] = useState({});
 
-  // Modals and state for adding items/services
-  const [showAdd, setShowAdd] = useState(false);
+  // Modals and state for editing items
   const [showEdit, setShowEdit] = useState(false);
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [showUOMModal, setShowUOMModal] = useState(false);
-  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-  const [newCategory, setNewCategory] = useState("");
-  const [newItem, setNewItem] = useState({
-    name: "",
-    category: "",
-    hsn: "",
-    tax: 0,
-    sellingPrice: 0,
-    uom: "PCS",
-  });
-  const [serviceForm, setServiceForm] = useState({
-    name: "",
-    serviceDescription: "",
-    price: "",
-    tax: "",
-  });
 
   // Customer search state (for Quotation Tab)
   const [customerList, setCustomerList] = useState([]); // Should come from parent or API call
@@ -998,17 +1004,6 @@ const handleSkip = () => {
     }));
   };
 
-  const handleProductChange = (field, value) => {
-    setNewItem((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleServiceInput = (e) => {
-    const { name, value } = e.target;
-    setServiceForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const addItem = (tab) => {
     setFormData((prev) => ({
@@ -1856,84 +1851,6 @@ const handleSaveDraft = async () => {
     handleChange(tab, "files", updatedFiles);
   };
 
-  const handleAddItem = () => {
-    if (!newItem.name || !newItem.category) {
-      alert("Product name and category are required!");
-      return;
-    }
-    const itemToAdd = {
-      item_name: newItem.name,
-      qty: 1,
-      rate: newItem.sellingPrice,
-      tax: newItem.tax,
-      discount: 0,
-      hsn: newItem.hsn,
-      uom: newItem.uom,
-      warehouse: "",
-    };
-    const tab = key;
-    setFormData((prev) => ({
-      ...prev,
-      [tab]: {
-        ...prev[tab],
-        items: [...prev[tab].items, itemToAdd],
-      },
-    }));
-    setNewItem({
-      name: "",
-      category: "",
-      hsn: "",
-      tax: 0,
-      sellingPrice: 0,
-      uom: "PCS",
-    });
-    setShowAdd(false);
-  };
-
-  const handleUpdateItem = () => {
-    console.log("Update item:", newItem);
-    setShowEdit(false);
-  };
-
-  const handleAddCategory = (e) => {
-    e.preventDefault();
-    if (newCategory && !categories.includes(newCategory)) {
-      setCategories((prev) => [...prev, newCategory]);
-      setNewItem((prev) => ({ ...prev, category: newCategory }));
-      setNewCategory("");
-    }
-    setShowAddCategoryModal(false);
-  };
-
-  const handleAddService = () => {
-    if (!serviceForm.name || !serviceForm.price) {
-      alert("Service name and price are required!");
-      return;
-    }
-    const serviceItem = {
-      item_name: serviceForm.name,
-      qty: 1,
-      rate: serviceForm.price,
-      tax: serviceForm.tax || 0,
-      discount: 0,
-      description: serviceForm.serviceDescription,
-      warehouse: "",
-    };
-    setFormData((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        items: [...prev[key].items, serviceItem],
-      },
-    }));
-    setServiceForm({
-      name: "",
-      serviceDescription: "",
-      price: "",
-      tax: "",
-    });
-    setShowServiceModal(false);
-  };
 
   // --- Quotation Tab Specific Handlers ---
   // Filter customers based on search term
@@ -2165,231 +2082,9 @@ const handleSaveDraft = async () => {
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowAdd(true)}
-              style={{
-                backgroundColor: "#53b2a5",
-                border: "none",
-                padding: "6px 12px",
-                fontWeight: "500",
-                marginRight: "5px",
-              }}
-            >
-              + Add Product
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setShowServiceModal(true)}
-              style={{
-                backgroundColor: "#53b2a5",
-                border: "none",
-                padding: "6px 12px",
-                fontWeight: "500",
-              }}
-            >
-              + Add Service
-            </Button>
           </div>
         </div>
 
-        {/* Add Product Modal */}
-        <Modal show={showAdd} onHide={() => setShowAdd(false)} centered>
-          <Modal.Header closeButton className="bg-light">
-            <Modal.Title>Add Product</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Product Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="name"
-                  value={newItem.name}
-                  onChange={(e) =>
-                    handleProductChange(e.target.name, e.target.value)
-                  }
-                  placeholder="Enter product name"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Category</Form.Label>
-                <div className="d-flex">
-                  <Form.Select
-                    name="category"
-                    value={newItem.category}
-                    onChange={(e) =>
-                      handleProductChange(e.target.name, e.target.value)
-                    }
-                    className="flex-grow-1 me-2"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((cat, idx) => (
-                      <option key={idx} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </Form.Select>
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    onClick={() => setShowAddCategoryModal(true)}
-                  >
-                    <FontAwesomeIcon icon={faPlus} />
-                  </Button>
-                </div>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>HSN Code</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="hsn"
-                  value={newItem.hsn}
-                  onChange={(e) =>
-                    handleProductChange(e.target.name, e.target.value)
-                  }
-                  placeholder="Enter HSN code"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Selling Price</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="sellingPrice"
-                  value={newItem.sellingPrice}
-                  onChange={(e) =>
-                    handleProductChange(e.target.name, e.target.value)
-                  }
-                  placeholder="Enter selling price"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Tax %</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="tax"
-                  value={newItem.tax}
-                  onChange={(e) =>
-                    handleProductChange(e.target.name, e.target.value)
-                  }
-                  placeholder="e.g. 18"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>UOM</Form.Label>
-                <div className="d-flex">
-                  <Form.Control
-                    type="text"
-                    name="uom"
-                    value={newItem.uom}
-                    onChange={(e) =>
-                      handleProductChange(e.target.name, e.target.value)
-                    }
-                    placeholder="e.g. PCS"
-                    className="flex-grow-1 me-2"
-                  />
-                  <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    onClick={() => setShowUOMModal(true)}
-                  >
-                    Add
-                  </Button>
-                </div>
-              </Form.Group>
-            </Form>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowAdd(false)}>
-              Cancel
-            </Button>
-            <Button
-              style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5" }}
-              onClick={handleAddItem}
-            >
-              Add Product
-            </Button>
-          </Modal.Footer>
-        </Modal>
-
-        {/* Service Modal */}
-        <Modal
-          show={showServiceModal}
-          onHide={() => setShowServiceModal(false)}
-          centered
-        >
-          <Modal.Header closeButton className="bg-light">
-            <Modal.Title>Add Service</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Service Name</Form.Label>
-                <Form.Control
-                  name="name"
-                  value={serviceForm.name}
-                  onChange={handleServiceInput}
-                  required
-                  className="shadow-sm"
-                  placeholder="Enter service name"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Service Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  name="serviceDescription"
-                  value={serviceForm.serviceDescription}
-                  onChange={handleServiceInput}
-                  rows={3}
-                  className="shadow-sm"
-                  placeholder="Describe the service"
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Price</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="price"
-                  value={serviceForm.price}
-                  onChange={handleServiceInput}
-                  placeholder="Enter service price"
-                  className="shadow-sm"
-                  required
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Tax %</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="tax"
-                  value={serviceForm.tax}
-                  onChange={handleServiceInput}
-                  className="shadow-sm"
-                  placeholder="e.g. 18"
-                />
-              </Form.Group>
-            </Form>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setShowServiceModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5" }}
-              onClick={handleAddService}
-            >
-              Add Service
-            </Button>
-          </Modal.Footer>
-        </Modal>
 
     
 
@@ -2437,7 +2132,7 @@ const handleSaveDraft = async () => {
                         }}
                         onFocus={() => toggleRowSearch(tab, idx)}
                         placeholder="Click to search products"
-                        style={{ marginRight: "5px" }}
+                        style={{ marginRight: "5px", minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                       />
                       <Button
                         variant="outline-secondary"
@@ -2572,7 +2267,7 @@ const handleSaveDraft = async () => {
                         }
                         onFocus={() => toggleWarehouseSearch(tab, idx)}
                         placeholder="Click to search warehouses"
-                        style={{ marginRight: "5px" }}
+                        style={{ marginRight: "5px", minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                         readOnly
                       />
                       <Button
@@ -2685,6 +2380,7 @@ const handleSaveDraft = async () => {
                         handleItemChange(idx, "qty", e.target.value)
                       }
                       placeholder="Qty"
+                      style={{ minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                     />
                   </td>
                   {tab === "deliveryChallan" && (
@@ -2697,6 +2393,7 @@ const handleSaveDraft = async () => {
                           handleItemChange(idx, "deliveredQty", e.target.value)
                         }
                         placeholder="Delivered Qty"
+                        style={{ minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                       />
                     </td>
                   )}
@@ -2710,6 +2407,7 @@ const handleSaveDraft = async () => {
                         handleItemChange(idx, "rate", e.target.value)
                       }
                       placeholder="Rate"
+                      style={{ minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                     />
                   </td>
                   <td>
@@ -2722,6 +2420,7 @@ const handleSaveDraft = async () => {
                         handleItemChange(idx, "tax", e.target.value)
                       }
                       placeholder="Tax %"
+                      style={{ minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                     />
                   </td>
                   <td>
@@ -2734,6 +2433,7 @@ const handleSaveDraft = async () => {
                         handleItemChange(idx, "discount", e.target.value)
                       }
                       placeholder="Discount"
+                      style={{ minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                     />
                   </td>
                   <td>
@@ -2743,7 +2443,7 @@ const handleSaveDraft = async () => {
                       size="sm"
                       value={amount.toFixed(2)}
                       readOnly
-                      style={{ backgroundColor: "#f8f9fa", fontWeight: "bold" }}
+                      style={{ backgroundColor: "#f8f9fa", fontWeight: "bold", minHeight: "40px", height: "40px", padding: "8px 12px", width: "100%" }}
                     />
                   </td>
                   <td>
@@ -2949,10 +2649,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address, City, State, Pincode......."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -2966,10 +2669,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -2981,10 +2687,13 @@ const handleSaveDraft = async () => {
                 placeholder="Phone No........"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </div>
@@ -3089,10 +2798,13 @@ const handleSaveDraft = async () => {
                 placeholder="Customer Address"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
@@ -3106,10 +2818,13 @@ const handleSaveDraft = async () => {
                 placeholder="Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
@@ -3123,23 +2838,16 @@ const handleSaveDraft = async () => {
                 placeholder="Phone"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <div className="mt-2">
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={() => navigate("/add-customer")} // Example navigation
-                title="Add Customer"
-              >
-                Add Customer
-              </Button>
-            </div>
           </Col>
           <Col md={4} className="d-flex flex-column align-items-start">
             <div
@@ -3166,16 +2874,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -3206,11 +2917,14 @@ const handleSaveDraft = async () => {
                     className="form-control-no-border text-end flex-grow-1"
                     isInvalid={!formData.quotation.manualQuotationRef?.trim()}
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -3240,7 +2954,7 @@ const handleSaveDraft = async () => {
                     onChange={(e) =>
                       handleChange("quotation", "quotationDate", e.target.value)
                     }
-                    style={{ border: "1px solid #495057", fontSize: "1rem" }}
+                    style={{ border: "1px solid #495057", fontSize: "1.1rem", minHeight: "55px", height: "55px", padding: "12px 18px", width: "100%", marginBottom: "12px" }}
                   />
                 </Col>
               </Row>
@@ -3264,7 +2978,7 @@ const handleSaveDraft = async () => {
                     onChange={(e) =>
                       handleChange("quotation", "validDate", e.target.value)
                     }
-                    style={{ border: "1px solid #495057", fontSize: "1rem" }}
+                    style={{ border: "1px solid #495057", fontSize: "1.1rem", minHeight: "55px", height: "55px", padding: "12px 18px", width: "100%", marginBottom: "12px" }}
                   />
                 </Col>
               </Row>
@@ -3350,7 +3064,7 @@ const handleSaveDraft = async () => {
           <Col
             md={6}
             className="p-2 rounded"
-            style={{ border: "1px solid #343a40" }}
+            style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
           >
             {["bankName", "accountNo", "accountHolder", "ifsc"].map((field) => (
               <Form.Group key={field} className="mb-2">
@@ -3369,12 +3083,14 @@ const handleSaveDraft = async () => {
                     handleChange("quotation", field, e.target.value)
                   }
                   className="form-control-no-border"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                  }}
+                    style={{
+                      fontSize: "1rem",
+                      lineHeight: "1.5",
+                      minHeight: "45px",
+                      height: "45px",
+                      padding: "10px 15px",
+                      width: "100%",
+                    }}
                 />
               </Form.Group>
             ))}
@@ -3389,7 +3105,7 @@ const handleSaveDraft = async () => {
               onChange={(e) =>
                 handleChange("quotation", "notes", e.target.value)
               }
-              style={{ border: "1px solid #343a40" }}
+              style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
             />
           </Col>
         </Row>
@@ -3416,7 +3132,7 @@ const handleSaveDraft = async () => {
                   handleChange("quotation", "terms", e.target.value)
                 }
                 placeholder="e.g. Payment within 15 days"
-                style={{ border: "1px solid #343a40" }}
+                style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
               />
             </Form.Group>
           </Col>
@@ -3546,10 +3262,13 @@ const handleSaveDraft = async () => {
                 placeholder="Your Company Name"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -3561,10 +3280,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address, City, State, Pincode"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -3576,10 +3298,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -3591,17 +3316,20 @@ const handleSaveDraft = async () => {
                 placeholder="Phone No."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </div>
           </Col>
           <Col md={6} className="d-flex flex-column align-items-end">
             <div
-              className="d-flex flex-column gap-2 text-end"
+              className="d-flex flex-column gap-3 text-end"
               style={{ maxWidth: "400px", width: "100%" }}
             >
               {/* Sales Order No (Auto or Manual) */}
@@ -3625,16 +3353,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -3660,16 +3391,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -3701,11 +3435,14 @@ const handleSaveDraft = async () => {
                     className="form-control-no-border text-end flex-grow-1"
                     isInvalid={!formData.salesOrder.manualQuotationRef?.trim()}
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -3725,13 +3462,16 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Customer No."
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -3751,7 +3491,7 @@ const handleSaveDraft = async () => {
         <Row className="mb-4 d-flex justify-content-between">
           <Col md={6} className="d-flex flex-column align-items-start">
             <h5>BILL TO</h5>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Label>ATN: Name / Dept</Form.Label>
               <Form.Control
                 type="text"
@@ -3762,14 +3502,17 @@ const handleSaveDraft = async () => {
                 placeholder="Attention Name / Department"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Form.Control
                   type="text"
@@ -3793,7 +3536,7 @@ const handleSaveDraft = async () => {
                 />
               </div>
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="text"
                 value={formData.salesOrder.billToAddress}
@@ -3803,14 +3546,17 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="text"
                 value={formData.salesOrder.billToPhone}
@@ -3820,14 +3566,17 @@ const handleSaveDraft = async () => {
                 placeholder="Phone"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="email"
                 value={formData.salesOrder.billToEmail}
@@ -3837,10 +3586,13 @@ const handleSaveDraft = async () => {
                 placeholder="Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
@@ -3848,7 +3600,7 @@ const handleSaveDraft = async () => {
           <Col md={6} className="d-flex flex-column align-items-end">
             <h5>SHIP TO</h5>
             <div className="w-100 text-end" style={{ maxWidth: "400px" }}>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Label>ATN: Name / Dept</Form.Label>
                 <Form.Control
                   type="text"
@@ -3858,16 +3610,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Attention Name / Department"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.salesOrder.shipToCompanyName}
@@ -3880,16 +3635,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Company Name"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.salesOrder.shipToAddress}
@@ -3898,16 +3656,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Company Address"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.salesOrder.shipToPhone}
@@ -3916,16 +3677,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Phone"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="email"
                   value={formData.salesOrder.shipToEmail}
@@ -3934,13 +3698,16 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Email"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -3991,7 +3758,7 @@ const handleSaveDraft = async () => {
             onChange={(e) =>
               handleChange("salesOrder", "terms", e.target.value)
             }
-            style={{ border: "1px solid #343a40" }}
+            style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
           />
         </Form.Group>
         {/* Attachment Fields */}
@@ -4111,10 +3878,13 @@ const handleSaveDraft = async () => {
                 placeholder="Your Company Name"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -4130,10 +3900,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address, City, State, Pincode"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -4149,10 +3922,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -4168,17 +3944,20 @@ const handleSaveDraft = async () => {
                 placeholder="Phone No."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </div>
           </Col>
           <Col md={6} className="d-flex flex-column align-items-end">
             <div
-              className="d-flex flex-column gap-2 text-end"
+              className="d-flex flex-column gap-3 text-end"
               style={{ maxWidth: "400px", width: "100%" }}
             >
               {/* Challan No (Auto or Manual) */}
@@ -4202,16 +3981,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4243,11 +4025,14 @@ const handleSaveDraft = async () => {
                     className="form-control-no-border text-end flex-grow-1"
                     isInvalid={!formData.deliveryChallan.manualChallanNo?.trim()}
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4278,16 +4063,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4318,11 +4106,14 @@ const handleSaveDraft = async () => {
                     placeholder="e.g. SO-CUST-001"
                     className="form-control-no-border text-end flex-grow-1"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4337,13 +4128,16 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Vehicle No."
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -4363,7 +4157,7 @@ const handleSaveDraft = async () => {
         <Row className="mb-4 d-flex justify-content-between">
           <Col md={6} className="d-flex flex-column align-items-start">
             <h5>BILL TO</h5>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <div style={{ display: "flex", alignItems: "center" }}>
                 <Form.Control
                   type="text"
@@ -4387,7 +4181,7 @@ const handleSaveDraft = async () => {
                 />
               </div>
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="text"
                 value={formData.deliveryChallan.billToAddress}
@@ -4401,14 +4195,17 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="text"
                 value={formData.deliveryChallan.billToPhone}
@@ -4418,14 +4215,17 @@ const handleSaveDraft = async () => {
                 placeholder="Phone"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="email"
                 value={formData.deliveryChallan.billToEmail}
@@ -4435,10 +4235,13 @@ const handleSaveDraft = async () => {
                 placeholder="Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
@@ -4446,7 +4249,7 @@ const handleSaveDraft = async () => {
           <Col md={6} className="d-flex flex-column align-items-end">
             <h5>SHIP TO</h5>
             <div className="w-100 text-end" style={{ maxWidth: "400px" }}>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Label>ATN: Name / Dept</Form.Label>
                 <Form.Control
                   type="text"
@@ -4460,16 +4263,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Attention Name / Department"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.deliveryChallan.shipToAddress}
@@ -4482,16 +4288,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Company Address"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.deliveryChallan.shipToPhone}
@@ -4504,16 +4313,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Phone"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="email"
                   value={formData.deliveryChallan.shipToEmail}
@@ -4526,13 +4338,16 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Email"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -4561,7 +4376,7 @@ const handleSaveDraft = async () => {
                   handleChange("deliveryChallan", "driverName", e.target.value)
                 }
                 placeholder="Driver Name"
-                style={{ border: "1px solid #343a40" }}
+                style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
               />
             </Form.Group>
             <Form.Group className="mb-2">
@@ -4573,7 +4388,7 @@ const handleSaveDraft = async () => {
                   handleChange("deliveryChallan", "driverPhone", e.target.value)
                 }
                 placeholder="Driver Phone"
-                style={{ border: "1px solid #343a40" }}
+                style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
               />
             </Form.Group>
           </Col>
@@ -4617,7 +4432,7 @@ const handleSaveDraft = async () => {
             onChange={(e) =>
               handleChange("deliveryChallan", "terms", e.target.value)
             }
-            style={{ border: "1px solid #343a40" }}
+            style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
           />
         </Form.Group>
         {/* Attachment Fields */}
@@ -4734,7 +4549,7 @@ const handleSaveDraft = async () => {
         />
         <Row className="mb-4 mt-3">
           <Col md={6}>
-            <div className="d-flex flex-column gap-1">
+            <div className="d-flex flex-column gap-2">
               <Form.Control
                 type="text"
                 value={formData.invoice.companyName}
@@ -4744,10 +4559,13 @@ const handleSaveDraft = async () => {
                 placeholder="Your Company Name"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -4759,10 +4577,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address, City, State, Pincode"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -4774,10 +4595,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -4789,17 +4613,20 @@ const handleSaveDraft = async () => {
                 placeholder="Phone No."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </div>
           </Col>
           <Col md={6} className="d-flex flex-column align-items-end">
             <div
-              className="d-flex flex-column gap-2 text-end"
+              className="d-flex flex-column gap-3 text-end"
               style={{ maxWidth: "400px", width: "100%" }}
             >
               {/* Invoice No (Auto or Manual) */}
@@ -4823,16 +4650,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4860,11 +4690,14 @@ const handleSaveDraft = async () => {
                     className="form-control-no-border text-end flex-grow-1"
                     isInvalid={!formData.invoice.manualInvoiceNo?.trim()}
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4895,16 +4728,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -4931,11 +4767,14 @@ const handleSaveDraft = async () => {
                     placeholder="e.g. DC-CUST-001"
                     className="form-control-no-border text-end flex-grow-1"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   /> */}
                 </div>
@@ -4955,13 +4794,16 @@ const handleSaveDraft = async () => {
                     handleChange("invoice", "dueDate", e.target.value)
                   }
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -4981,35 +4823,27 @@ const handleSaveDraft = async () => {
         <Row className="mb-4 d-flex justify-content-between">
           <Col md={6} className="d-flex flex-column align-items-start">
             <h5>BILL TO</h5>
-            <Form.Group className="mb-2 w-100">
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <Form.Control
-                  type="text"
-                  value={formData.invoice.customerName}
-                  onChange={(e) =>
-                    handleChange("invoice", "customerName", e.target.value)
-                  }
-                  placeholder="Customer Name"
-                  className="form-control-no-border"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    marginRight: "5px",
-                  }}
-                />
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  onClick={() => navigate("/add-customer")} // Example navigation
-                  title="Add Customer"
-                >
-                  Add Customer
-                </Button>
-              </div>
+            <Form.Group className="mb-3 w-100">
+              <Form.Control
+                type="text"
+                value={formData.invoice.customerName}
+                onChange={(e) =>
+                  handleChange("invoice", "customerName", e.target.value)
+                }
+                placeholder="Customer Name"
+                className="form-control-no-border"
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
+                }}
+              />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 as="textarea"
                 rows={2}
@@ -5020,14 +4854,17 @@ const handleSaveDraft = async () => {
                 placeholder="Customer Address"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="email"
                 value={formData.invoice.customerEmail}
@@ -5037,14 +4874,17 @@ const handleSaveDraft = async () => {
                 placeholder="Email"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
-            <Form.Group className="mb-2 w-100">
+            <Form.Group className="mb-3 w-100">
               <Form.Control
                 type="text"
                 value={formData.invoice.customerPhone}
@@ -5054,10 +4894,13 @@ const handleSaveDraft = async () => {
                 placeholder="Phone"
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </Form.Group>
@@ -5067,7 +4910,7 @@ const handleSaveDraft = async () => {
             <h5>SHIP TO</h5>
 
             <div className="w-100 text-end" style={{ maxWidth: "400px" }}>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.invoice.shipToName || ""}
@@ -5076,16 +4919,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Name"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.invoice.shipToAddress || ""}
@@ -5094,16 +4940,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Address"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="email"
                   value={formData.invoice.shipToEmail || ""}
@@ -5112,16 +4961,19 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Email"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
+              <Form.Group className="mb-3">
                 <Form.Control
                   type="text"
                   value={formData.invoice.shipToPhone || ""}
@@ -5130,13 +4982,16 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Phone"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -5176,15 +5031,15 @@ const handleSaveDraft = async () => {
           </Col>
         </Row>
         {/* Terms & Conditions */}
-        <Form.Group className="mt-4">
-          <Form.Label>Terms & Conditions</Form.Label>
+        <Form.Group className="mt-4 mb-4">
+          <Form.Label style={{ fontSize: "1.1rem", marginBottom: "12px", fontWeight: "500" }}>Terms & Conditions</Form.Label>
           <Form.Control
             as="textarea"
-            rows={3}
+            rows={4}
             value={formData.invoice.terms}
             onChange={(e) => handleChange("invoice", "terms", e.target.value)}
             placeholder="e.g. Payment within 15 days. Late fees may apply."
-            style={{ border: "1px solid #343a40" }}
+            style={{ border: "1px solid #343a40", minHeight: "120px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6" }}
           />
         </Form.Group>
         {/* Attachment Fields */}
@@ -5198,8 +5053,15 @@ const handleSaveDraft = async () => {
               onChange={(e) =>
                 handleChange("invoice", "footerNote", e.target.value)
               }
-              className="text-center mb-2 fw-bold"
+              className="text-center mb-3 fw-bold"
               placeholder=" Thank you for your business!"
+              style={{
+                fontSize: "1.1rem",
+                minHeight: "55px",
+                height: "55px",
+                padding: "12px 18px",
+                width: "100%",
+              }}
             />
           </Col>
         </Row>
@@ -5316,10 +5178,13 @@ const handleSaveDraft = async () => {
                 placeholder=" Enter Your Company Name. . . . ."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -5331,10 +5196,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Address, City, State, Pincode  . . . "
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -5346,10 +5214,13 @@ const handleSaveDraft = async () => {
                 placeholder="Company Email. . . ."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
               <Form.Control
@@ -5361,17 +5232,20 @@ const handleSaveDraft = async () => {
                 placeholder="Phone No....."
                 className="form-control-no-border"
                 style={{
-                  fontSize: "1rem",
-                  lineHeight: "1.5",
-                  minHeight: "auto",
-                  padding: "0",
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  marginBottom: "12px",
                 }}
               />
             </div>
           </Col>
           <Col md={6} className="d-flex flex-column align-items-end">
             <div
-              className="d-flex flex-column gap-2 text-end"
+              className="d-flex flex-column gap-3 text-end"
               style={{ maxWidth: "400px", width: "100%" }}
             >
               {/* Payment No (Auto) */}
@@ -5395,16 +5269,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -5432,11 +5309,14 @@ const handleSaveDraft = async () => {
                     className="form-control-no-border text-end flex-grow-1"
                     isInvalid={!formData.payment.manualPaymentNo?.trim()}
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0.375rem 0.75rem",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       textAlign: "right",
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -5467,16 +5347,19 @@ const handleSaveDraft = async () => {
                     readOnly
                     className="form-control-no-border text-end"
                     style={{
-                      fontSize: "1rem",
-                      lineHeight: "1.5",
-                      minHeight: "auto",
-                      padding: "0",
+                      fontSize: "1.1rem",
+                      lineHeight: "1.6",
+                      minHeight: "55px",
+                      height: "55px",
+                      padding: "12px 18px",
                       fontWeight: "500",
                       backgroundColor: "#f8f9fa",
                       color: "#495057",
                       cursor: "not-allowed",
                       textAlign: "right",
                       flexGrow: 1,
+                      width: "100%",
+                      marginBottom: "12px",
                     }}
                   />
                 </div>
@@ -5497,13 +5380,16 @@ const handleSaveDraft = async () => {
                   }
                   placeholder="Payment Method"
                   className="form-control-no-border text-end"
-                  style={{
-                    fontSize: "1rem",
-                    lineHeight: "1.5",
-                    minHeight: "auto",
-                    padding: "0",
-                    textAlign: "right",
-                  }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
                 />
               </Form.Group>
             </div>
@@ -5530,12 +5416,14 @@ const handleSaveDraft = async () => {
       }
       placeholder="Enter Customer Name. . . . ."
       className="form-control-no-border"
-      style={{
-        fontSize: "1rem",
-        lineHeight: "1.5",
-        minHeight: "auto",
-        padding: "0",
-      }}
+                    style={{
+                      fontSize: "1rem",
+                      lineHeight: "1.5",
+                      minHeight: "45px",
+                      height: "45px",
+                      padding: "10px 15px",
+                      width: "100%",
+                    }}
     />
     <Form.Group className="mb-1 w-100">
       <Form.Control
@@ -5546,12 +5434,14 @@ const handleSaveDraft = async () => {
         }
         placeholder="Customer Address. . . .  ."
         className="form-control-no-border"
-        style={{
-          fontSize: "1rem",
-          lineHeight: "1.5",
-          minHeight: "auto",
-          padding: "0",
-        }}
+                    style={{
+                      fontSize: "1rem",
+                      lineHeight: "1.5",
+                      minHeight: "45px",
+                      height: "45px",
+                      padding: "10px 15px",
+                      width: "100%",
+                    }}
       />
     </Form.Group>
     <Form.Group className="mb-2 w-100">
@@ -5563,12 +5453,14 @@ const handleSaveDraft = async () => {
         }
         placeholder="Email. . . . . "
         className="form-control-no-border"
-        style={{
-          fontSize: "1rem",
-          lineHeight: "1.5",
-          minHeight: "auto",
-          padding: "0",
-        }}
+                    style={{
+                      fontSize: "1rem",
+                      lineHeight: "1.5",
+                      minHeight: "45px",
+                      height: "45px",
+                      padding: "10px 15px",
+                      width: "100%",
+                    }}
       />
     </Form.Group>
     <Form.Group className="mb-2 w-100">
@@ -5580,12 +5472,14 @@ const handleSaveDraft = async () => {
         }
         placeholder="Phone. . . . . ."
         className="form-control-no-border"
-        style={{
-          fontSize: "1rem",
-          lineHeight: "1.5",
-          minHeight: "auto",
-          padding: "0",
-        }}
+                    style={{
+                      fontSize: "1rem",
+                      lineHeight: "1.5",
+                      minHeight: "45px",
+                      height: "45px",
+                      padding: "10px 15px",
+                      width: "100%",
+                    }}
       />
     </Form.Group>
   </Col>
@@ -5605,13 +5499,16 @@ const handleSaveDraft = async () => {
           }
           placeholder="Amount"
           className="form-control-no-border text-end"
-          style={{
-            fontSize: "1rem",
-            lineHeight: "1.5",
-            minHeight: "auto",
-            padding: "0",
-            textAlign: "right",
-          }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
         />
       </Form.Group>
       <Form.Group className="mb-2">
@@ -5639,13 +5536,16 @@ const handleSaveDraft = async () => {
           }
           placeholder="Payment Status"
           className="form-control-no-border text-end"
-          style={{
-            fontSize: "1rem",
-            lineHeight: "1.5",
-            minHeight: "auto",
-            padding: "0",
-            textAlign: "right",
-          }}
+                style={{
+                  fontSize: "1.1rem",
+                  lineHeight: "1.6",
+                  minHeight: "55px",
+                  height: "55px",
+                  padding: "12px 18px",
+                  width: "100%",
+                  textAlign: "right",
+                  marginBottom: "12px",
+                }}
         />
       </Form.Group>
 
@@ -5711,7 +5611,7 @@ const handleSaveDraft = async () => {
             value={formData.payment.note}
             onChange={(e) => handleChange("payment", "note", e.target.value)}
             placeholder="e.g. Payment received via UPI / Cash"
-            style={{ border: "1px solid #343a40" }}
+            style={{ border: "1px solid #343a40", minHeight: "100px", padding: "15px 20px", width: "100%", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "12px" }}
           />
         </Form.Group>
         {/* Attachment Fields */}
@@ -6135,7 +6035,7 @@ const handleSaveDraft = async () => {
         <h4 className="text-center mb-4">Sales Process</h4>
 
     
-        <Tabs activeKey={key} onSelect={setKey}  className="mb-4 custom-tabs" fill>
+        <Tabs activeKey={key} onSelect={handleTabChange}  className="mb-4 custom-tabs" fill>
           <Tab eventKey="quotation" title="Quotation">
             {renderQuotationTab()}
           </Tab>
