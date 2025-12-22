@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Table, Button, Badge, Modal, Form, Row, Col, Card, Spinner } from 'react-bootstrap';
 import { FaArrowLeft, FaTrash, FaEye } from "react-icons/fa";
 import MultiStepSalesForm from './MultiStepSalesForm';
@@ -92,6 +92,10 @@ const Invoice = () => {
   const [viewModal, setViewModal] = useState(false);
   const [viewOrder, setViewOrder] = useState(null);
 
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, view: 0, delete: 0 });
+
   // Filters
   const [showFilters, setShowFilters] = useState(false);
   const [fromDate, setFromDate] = useState('');
@@ -167,6 +171,12 @@ const Invoice = () => {
       return;
     }
     
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setSelectedOrder(order);
     setStepModal(true);
   };
@@ -177,20 +187,73 @@ const Invoice = () => {
       return;
     }
     
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.view += 1;
+    
     setViewOrder(order);
     setViewModal(true);
   };
 
   const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
     setStepModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
     setSelectedOrder(null);
     // 🔥 Reset step filter when closing modal
     setStepNameFilter('');
+    isCleaningUpRef.current = false;
   };
-
+  
   const handleCloseViewModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
     setViewModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.view += 1;
+  };
+  
+  // Handle view modal exit - cleanup after animation
+  const handleViewModalExited = () => {
+    // Reset view order after modal fully closed
     setViewOrder(null);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseDeleteModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setDeleteConfirm({ show: false, id: null });
+    
+    // Force modal remount on next open
+    modalKeyRef.current.delete += 1;
+  };
+  
+  // Handle delete modal exit - cleanup after animation
+  const handleDeleteModalExited = () => {
+    // Reset delete confirm after modal fully closed
+    setDeleteConfirm({ show: false, id: null });
+    isCleaningUpRef.current = false;
   };
 
   const handleFormSubmit = async (formData, lastStep = 'quotation') => {
@@ -227,6 +290,8 @@ const Invoice = () => {
       // Refetch data after successful operation
       console.log("Refetching orders after save...");
       await fetchOrders();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
       handleCloseModal();
     } catch (err) {
       console.error("Error saving sales order:", err);
@@ -627,7 +692,14 @@ const Invoice = () => {
       )}
 
       {/* Modal for creating/editing sales order */}
-      <Modal show={stepModal} onHide={handleCloseModal} size="xl" centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={stepModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="xl" 
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {selectedOrder && selectedOrder.id
@@ -648,7 +720,14 @@ const Invoice = () => {
       </Modal>
 
       {/* View Order Details Modal */}
-      <Modal show={viewModal} onHide={handleCloseViewModal} size="xl" centered>
+      <Modal 
+        key={modalKeyRef.current.view}
+        show={viewModal} 
+        onHide={handleCloseViewModal}
+        onExited={handleViewModalExited}
+        size="xl" 
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Sales Order Details</Modal.Title>
         </Modal.Header>
@@ -839,7 +918,13 @@ const Invoice = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={deleteConfirm.show} onHide={() => setDeleteConfirm({ show: false, id: null })} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={deleteConfirm.show} 
+        onHide={handleCloseDeleteModal}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
@@ -847,10 +932,18 @@ const Invoice = () => {
           Are you sure you want to delete this sales order? This action cannot be undone.
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setDeleteConfirm({ show: false, id: null })}>
+          <Button variant="secondary" onClick={handleCloseDeleteModal}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={() => handleDeleteOrder(deleteConfirm.id)}>
+          <Button 
+            variant="danger" 
+            onClick={() => {
+              handleDeleteOrder(deleteConfirm.id);
+              // Reset cleanup flag before closing
+              isCleaningUpRef.current = false;
+              handleCloseDeleteModal();
+            }}
+          >
             Delete
           </Button>
         </Modal.Footer>

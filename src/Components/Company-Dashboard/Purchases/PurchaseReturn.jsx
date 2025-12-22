@@ -1101,7 +1101,7 @@
 // export default PurchaseReturn;
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Button,
@@ -1143,6 +1143,8 @@ const PurchaseReturn = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [selectedReturn, setSelectedReturn] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const isCleaningUpRef = useRef(false); // Prevent multiple cleanup calls
+  const modalKeyRef = useRef({ main: 0, view: 0, delete: 0 }); // Force modal remount
   const [statusFilter, setStatusFilter] = useState('All');
   const [warehouseFilter, setWarehouseFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1558,10 +1560,7 @@ const PurchaseReturn = () => {
         alert("Purchase return created successfully.");
       }
       fetchData();
-      setShowModal(false);
-      setFormData(initialFormData);
-      setIsEditMode(false);
-      closeAllDropdowns();
+      handleCloseModal();
     } catch (err) {
       console.error("Submit error", err);
       const message = err.response?.data?.message || "An error occurred. Please try again.";
@@ -1579,12 +1578,62 @@ const PurchaseReturn = () => {
     return w ? w.warehouse_name : '—';
   };
 
+  // Modal close handlers
+  const handleCloseModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowModal(false);
+    modalKeyRef.current.main += 1;
+  };
+
+  const handleCloseViewModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowViewModal(false);
+    modalKeyRef.current.view += 1;
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowDeleteModal(false);
+    modalKeyRef.current.delete += 1;
+  };
+
+  // Modal exited handlers
+  const handleModalExited = () => {
+    setFormData(initialFormData);
+    setIsEditMode(false);
+    closeAllDropdowns();
+    setVendorSearch('');
+    setWarehouseSearch('');
+    setProductSearch('');
+    setSelectedProduct(null);
+    setItemQty(1);
+    setItemRate(0);
+    setItemTaxPercent(18);
+    setItemDiscount(0);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleViewModalExited = () => {
+    setSelectedReturn(null);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleDeleteModalExited = () => {
+    setDeleteId(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleViewClick = (item) => {
     if (!purchaseReturnPermissions.can_view) {
       alert("You don't have permission to view purchase returns.");
       return;
     }
     
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.view += 1;
     setSelectedReturn(item);
     setShowViewModal(true);
   };
@@ -1633,6 +1682,8 @@ const PurchaseReturn = () => {
       discount_total: parseFloat(item.discount_total) || 0,
       grand_total: parseFloat(item.grand_total) || 0,
     });
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.main += 1;
     setIsEditMode(true);
     setShowModal(true);
   };
@@ -1643,6 +1694,8 @@ const PurchaseReturn = () => {
       return;
     }
     
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.delete += 1;
     setDeleteId(id);
     setShowDeleteModal(true);
   };
@@ -1653,7 +1706,7 @@ const PurchaseReturn = () => {
       await axiosInstance.delete(`/delete-purchase/${deleteId}`);
       alert("Purchase return deleted successfully.");
       fetchData();
-      setShowDeleteModal(false);
+      handleCloseDeleteModal();
     } catch (err) {
       console.error("Delete error", err);
       alert(err.response?.data?.message || "Failed to delete. Please try again.");
@@ -1716,6 +1769,8 @@ const PurchaseReturn = () => {
               size="sm"
               className="rounded-pill py-0 text-nowrap"
               onClick={() => {
+                isCleaningUpRef.current = false;
+                modalKeyRef.current.main += 1;
                 const now = new Date();
                 const year = now.getFullYear();
                 const uniqueSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -1860,7 +1915,14 @@ const PurchaseReturn = () => {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal show={showModal} onHide={() => { setShowModal(false); closeAllDropdowns(); }} size="lg" centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg" 
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>{isEditMode ? 'Edit Purchase Return' : 'Add New Purchase Return'}</Modal.Title>
         </Modal.Header>
@@ -2247,7 +2309,7 @@ const PurchaseReturn = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => { setShowModal(false); closeAllDropdowns(); }}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           {(purchaseReturnPermissions.can_create && !isEditMode) || (purchaseReturnPermissions.can_update && isEditMode) ? (
@@ -2263,7 +2325,13 @@ const PurchaseReturn = () => {
       </Modal>
 
       {/* View Modal */}
-      <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg">
+      <Modal 
+        key={modalKeyRef.current.view}
+        show={showViewModal} 
+        onHide={handleCloseViewModal}
+        onExited={handleViewModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Purchase Return Details</Modal.Title>
         </Modal.Header>
@@ -2350,12 +2418,18 @@ const PurchaseReturn = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="primary" onClick={() => setShowViewModal(false)}>Close</Button>
+          <Button variant="primary" onClick={handleCloseViewModal}>Close</Button>
         </Modal.Footer>
       </Modal>
 
       {/* Delete Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={showDeleteModal} 
+        onHide={handleCloseDeleteModal}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
@@ -2363,7 +2437,7 @@ const PurchaseReturn = () => {
           <p>Are you sure you want to delete this purchase return? This action cannot be undone.</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+          <Button variant="secondary" onClick={handleCloseDeleteModal}>Cancel</Button>
           <Button variant="danger" onClick={handleConfirmDelete}>Delete</Button>
         </Modal.Footer>
       </Modal>

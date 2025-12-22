@@ -39,6 +39,10 @@ const TaskManagement = () => {
   });
   const fileInputRef = useRef(null);
 
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0 });
+
   // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -132,7 +136,33 @@ const TaskManagement = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    resetForm();
+    setEditingTask(null);
+    isCleaningUpRef.current = false;
+  };
+
   const openModal = async (task = null) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     if (task) {
       try {
         const res = await axiosInstance.get(`taskRequest/tasks/${task.id}`);
@@ -158,11 +188,6 @@ const TaskManagement = () => {
       resetForm();
     }
     setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    resetForm();
   };
 
   const handleSave = async () => {
@@ -191,7 +216,9 @@ const TaskManagement = () => {
         alert('Task created successfully!');
       }
       await fetchTasks();
-      closeModal();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (err) {
       console.error('Save error:', err);
       alert('Failed to save task.');
@@ -349,7 +376,14 @@ const TaskManagement = () => {
       </Card>
 
       {/* Modal */}
-      <Modal show={showModal} onHide={closeModal} centered size="lg">
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        centered 
+        size="lg"
+      >
         <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#fff' }}>
           <Modal.Title>{editingTask ? 'Edit Task' : 'Add New Task'}</Modal.Title>
         </Modal.Header>
@@ -449,7 +483,7 @@ const TaskManagement = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: '#f0f7f8' }}>
-          <Button variant="secondary" onClick={closeModal}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Table, Button, Badge, Modal, Form, Row, Col, Alert, Card } from "react-bootstrap";
 import MultiStepPurchaseForm from "./MultiStepPurchaseForms";
 import { FaArrowRight, FaTrash, FaEye } from "react-icons/fa";
@@ -34,6 +34,8 @@ const PurchaseOrderr = () => {
   const [viewOrder, setViewOrder] = useState(null);
   const [viewModal, setViewModal] = useState(false);
   const companyId = GetCompanyId();
+  const isCleaningUpRef = useRef(false); // Prevent multiple cleanup calls
+  const modalKeyRef = useRef({ step: 0, view: 0, delete: 0 }); // Force modal remount
 
   // Permission states
   const [userPermissions, setUserPermissions] = useState([]);
@@ -180,6 +182,8 @@ const PurchaseOrderr = () => {
       return;
     }
     
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.step += 1;
     const initialStep = order ? getFirstIncompleteStep(order) : "purchaseQuotation";
     
     setSelectedOrder({
@@ -196,11 +200,45 @@ const PurchaseOrderr = () => {
     setStepModal(true);
   };
 
-  // ✅ DEFINE THIS — fixes "handleModalClose is not defined"
-  const handleFormClose = () => {
+  // Modal close handlers
+  const handleCloseStepModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
     setStepModal(false);
-    setSelectedOrder(null);
+    modalKeyRef.current.step += 1;
   };
+
+  const handleCloseViewModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setViewModal(false);
+    modalKeyRef.current.view += 1;
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setDeleteConfirm(null);
+    modalKeyRef.current.delete += 1;
+  };
+
+  // Modal exited handlers
+  const handleStepModalExited = () => {
+    setSelectedOrder(null);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleViewModalExited = () => {
+    setViewOrder(null);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleDeleteModalExited = () => {
+    isCleaningUpRef.current = false;
+  };
+
+  // ✅ DEFINE THIS — fixes "handleModalClose is not defined"
+  const handleFormClose = handleCloseStepModal;
 
   // ✅ Handle form submit (optional — you can remove if not needed)
   const handleFormSubmit = () => {
@@ -220,7 +258,7 @@ const PurchaseOrderr = () => {
       const res = await axiosInstance.delete(`purchase-orders/${deleteConfirm.id}`);
       if (res.data.success) {
         setOrders((prev) => prev.filter((o) => o.id !== deleteConfirm.id));
-        setDeleteConfirm(null);
+        handleCloseDeleteModal();
       } else {
         alert("Failed to delete order.");
       }
@@ -238,6 +276,8 @@ const PurchaseOrderr = () => {
     }
     
     try {
+      isCleaningUpRef.current = false;
+      modalKeyRef.current.view += 1;
       // If we already have the full order data, use it
       if (order.fullOrderData) {
         setViewOrder(order.fullOrderData);
@@ -538,7 +578,11 @@ const PurchaseOrderr = () => {
                     <Button
                       size="sm"
                       variant="outline-danger"
-                      onClick={() => setDeleteConfirm({ id: order.id, name: order.orderNo })}
+                      onClick={() => {
+                        isCleaningUpRef.current = false;
+                        modalKeyRef.current.delete += 1;
+                        setDeleteConfirm({ id: order.id, name: order.orderNo });
+                      }}
                       title="Delete Order"
                     >
                       <FaTrash />
@@ -552,7 +596,14 @@ const PurchaseOrderr = () => {
       </Table>
 
       {/* Create/Edit Modal */}
-      <Modal show={stepModal} onHide={handleFormClose} size="xl" centered>
+      <Modal 
+        key={modalKeyRef.current.step}
+        show={stepModal} 
+        onHide={handleCloseStepModal}
+        onExited={handleStepModalExited}
+        size="xl" 
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {selectedOrder?.id ? "Continue Purchase" : "Create Purchase"}
@@ -570,7 +621,15 @@ const PurchaseOrderr = () => {
       </Modal>
 
       {/* View Order Modal */}
-      <Modal show={viewModal} onHide={() => setViewModal(false)} size="xl" centered scrollable>
+      <Modal 
+        key={modalKeyRef.current.view}
+        show={viewModal} 
+        onHide={handleCloseViewModal}
+        onExited={handleViewModalExited}
+        size="xl" 
+        centered 
+        scrollable
+      >
         <Modal.Header closeButton>
           <Modal.Title>Purchase Order Details</Modal.Title>
         </Modal.Header>
@@ -726,14 +785,14 @@ const PurchaseOrderr = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setViewModal(false)}>
+          <Button variant="secondary" onClick={handleCloseViewModal}>
             Close
           </Button>
           {purchaseOrderPermissions.can_update && (
             <Button
               variant="primary"
               onClick={() => {
-                setViewModal(false);
+                handleCloseViewModal();
                 handleCreateNewPurchase(viewOrder);
               }}
             >
@@ -744,7 +803,13 @@ const PurchaseOrderr = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={!!deleteConfirm} onHide={() => setDeleteConfirm(null)} centered>
+      <Modal 
+        key={modalKeyRef.current.delete}
+        show={!!deleteConfirm} 
+        onHide={handleCloseDeleteModal}
+        onExited={handleDeleteModalExited}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
@@ -755,7 +820,7 @@ const PurchaseOrderr = () => {
           </Alert>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
+          <Button variant="secondary" onClick={handleCloseDeleteModal}>
             Cancel
           </Button>
           <Button variant="danger" onClick={handleDelete}>

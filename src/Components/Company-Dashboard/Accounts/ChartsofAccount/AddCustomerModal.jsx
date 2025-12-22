@@ -7,7 +7,7 @@ import GetCompanyId from "../../../../Api/GetCompanyId";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const AddCustomerModal = ({ show, onHide, onSave, customerFormData, setCustomerFormData }) => {
+const AddCustomerModal = ({ show, onHide, onExited, onSave, customerFormData, setCustomerFormData }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const companyId = GetCompanyId();
 
@@ -114,6 +114,7 @@ const AddCustomerModal = ({ show, onHide, onSave, customerFormData, setCustomerF
       <Modal
         show={show}
         onHide={onHide}
+        onExited={onExited}
         size="xl"
         centered
         backdrop="static"

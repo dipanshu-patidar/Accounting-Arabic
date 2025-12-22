@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Table, Button, Modal, Form, Row, Col, Card, Container, Badge, Alert
 } from 'react-bootstrap';
@@ -16,6 +16,10 @@ const ZATCAEInvoicing = () => {
     status: 'Draft',
     zatcaResponse: ''
   });
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0 });
 
   useEffect(() => {
     setInvoices([
@@ -49,7 +53,40 @@ const ZATCAEInvoicing = () => {
     ]);
   }, []);
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setEditingInvoice(null);
+    setFormData({
+      customer: '',
+      date: '',
+      type: 'Standard',
+      total: '',
+      status: 'Draft',
+      zatcaResponse: ''
+    });
+    isCleaningUpRef.current = false;
+  };
+
   const openModal = (invoice = null) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     if (invoice) {
       setEditingInvoice(invoice);
       setFormData(invoice);
@@ -66,8 +103,6 @@ const ZATCAEInvoicing = () => {
     }
     setShowModal(true);
   };
-
-  const closeModal = () => setShowModal(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -88,7 +123,9 @@ const ZATCAEInvoicing = () => {
       };
       setInvoices([...invoices, newInvoice]);
     }
-    closeModal();
+    // Reset cleanup flag before closing
+    isCleaningUpRef.current = false;
+    handleCloseModal();
   };
 
   const syncToZATCA = (invoiceId) => {
@@ -290,7 +327,13 @@ const ZATCAEInvoicing = () => {
       </Card>
 
       {/* Modal */}
-      <Modal show={showModal} onHide={closeModal} centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        centered
+      >
         <Modal.Header
           closeButton
           style={{
@@ -381,7 +424,7 @@ const ZATCAEInvoicing = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer style={{ backgroundColor: '#e6f3f5', borderTop: 'none' }}>
-          <Button variant="secondary" onClick={closeModal}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button

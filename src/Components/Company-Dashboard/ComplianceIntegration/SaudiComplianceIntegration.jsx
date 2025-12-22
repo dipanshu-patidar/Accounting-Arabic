@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Table, Button, Modal, Form, Row, Col, Card, Container, Badge, Alert
 } from 'react-bootstrap';
@@ -25,6 +25,10 @@ const SaudiComplianceIntegration = () => {
     password: '',
     notes: ''
   });
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0 });
 
   // Fetch integrations on mount
   useEffect(() => {
@@ -59,7 +63,41 @@ const SaudiComplianceIntegration = () => {
       : '******';
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setEditingIntegration(null);
+    setFormData({
+      name: '',
+      apiKey: '',
+      endpointUrl: '',
+      username: '',
+      password: '',
+      notes: ''
+    });
+    setError('');
+    isCleaningUpRef.current = false;
+  };
+
   const openModal = (integration = null) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     if (integration) {
       setEditingIntegration(integration);
       setFormData({
@@ -83,11 +121,6 @@ const SaudiComplianceIntegration = () => {
     }
     setError('');
     setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setError('');
   };
 
   const handleInputChange = (e) => {
@@ -131,7 +164,9 @@ const SaudiComplianceIntegration = () => {
         const data = res.data?.data || [];
         const mapped = Array.isArray(data) ? data : [data].filter(Boolean);
         setIntegrations(mapped);
-        closeModal();
+        // Reset cleanup flag before closing
+        isCleaningUpRef.current = false;
+        handleCloseModal();
       } else {
         setError(response.data.message || 'Operation failed.');
       }
@@ -281,7 +316,13 @@ const SaudiComplianceIntegration = () => {
       </Card>
 
       {/* Modal */}
-      <Modal show={showModal} onHide={closeModal} centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        centered
+      >
         <Modal.Header
           closeButton
           style={{
@@ -379,7 +420,7 @@ const SaudiComplianceIntegration = () => {
         </Modal.Body>
 
         <Modal.Footer style={{ borderTop: '1px solid #d1e6e9' }}>
-          <Button variant="secondary" onClick={closeModal}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button

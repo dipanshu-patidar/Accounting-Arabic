@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Button,
   Card,
@@ -58,6 +58,10 @@ const GeneratePayroll = () => {
 
   // Actions
   const [selectedRows, setSelectedRows] = useState([]);
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, payslip: 0 });
 
   // Static data
   const months = [
@@ -135,20 +139,61 @@ const GeneratePayroll = () => {
   }, [monthFilter, departmentFilter, payrollData]);
 
   // Modal handlers
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setSelectedMonth('');
+    setSelectedYear('');
+    setSelectedEmployees([]);
+    setRemarks('');
+    setPreviewData([]);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleClosePayslipModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowPayslipModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.payslip += 1;
+  };
+  
+  // Handle payslip modal exit - cleanup after animation
+  const handlePayslipModalExited = () => {
+    // Reset payslip data after modal fully closed
+    setCurrentPayslip(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleShowModal = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     const now = new Date();
     setSelectedMonth(months[now.getMonth()]);
     setSelectedYear(now.getFullYear().toString());
     setSelectedEmployees([]);
     setPreviewData([]);
     setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedEmployees([]);
-    setRemarks('');
-    setPreviewData([]);
   };
 
   const handleEmployeeSelect = (employeeId) => {
@@ -226,6 +271,8 @@ const GeneratePayroll = () => {
         }));
 
         setPayrollData(prev => [...prev, ...newPayroll]);
+        // Reset cleanup flag before closing
+        isCleaningUpRef.current = false;
         handleCloseModal();
         alert('Payroll generated successfully!');
       } else {
@@ -291,6 +338,12 @@ const GeneratePayroll = () => {
   };
 
   const handleViewPayslip = (payslipId) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.payslip += 1;
+    
     const payslip = payrollData.find(item => item.id === payslipId);
     if (payslip) {
       setCurrentPayslip(payslip);
@@ -580,7 +633,14 @@ const GeneratePayroll = () => {
           </div>
 
           {/* Generate Payroll Modal */}
-          <Modal show={showModal} onHide={handleCloseModal} size="lg" fullscreen="sm-down">
+          <Modal 
+            key={modalKeyRef.current.main}
+            show={showModal} 
+            onHide={handleCloseModal}
+            onExited={handleModalExited}
+            size="lg" 
+            fullscreen="sm-down"
+          >
             <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
               <Modal.Title>Generate Payroll</Modal.Title>
             </Modal.Header>
@@ -706,7 +766,14 @@ const GeneratePayroll = () => {
           </Modal>
 
           {/* Payslip Modal */}
-          <Modal show={showPayslipModal} onHide={() => setShowPayslipModal(false)} size="lg" fullscreen="sm-down">
+          <Modal 
+            key={modalKeyRef.current.payslip}
+            show={showPayslipModal} 
+            onHide={handleClosePayslipModal}
+            onExited={handlePayslipModalExited}
+            size="lg" 
+            fullscreen="sm-down"
+          >
             <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
               <Modal.Title>Payslip Details</Modal.Title>
             </Modal.Header>
@@ -776,7 +843,7 @@ const GeneratePayroll = () => {
               <Button variant="outline-success" className="d-flex align-items-center" style={{ borderColor: '#25D366', color: '#25D366' }}>
                 <FaWhatsapp className="me-1" /> WhatsApp
               </Button>
-              <Button variant="secondary" onClick={() => setShowPayslipModal(false)} style={{ border: '1px solid #ced4da' }}>
+              <Button variant="secondary" onClick={handleClosePayslipModal} style={{ border: '1px solid #ced4da' }}>
                 Close
               </Button>
             </Modal.Footer>

@@ -59,6 +59,8 @@ const AllAccounts = () => {
   const isSavingRef = useRef(false);
   const apiCallLock = useRef(false);
   const lastSaveTime = useRef(0);
+  const isCleaningUpRef = useRef(false); // Prevent multiple cleanup calls
+  const modalKeyRef = useRef({ customer: 0, vendor: 0, newAccount: 0, action: 0 }); // Force modal remount
 
   // Check permissions
   useEffect(() => {
@@ -275,15 +277,136 @@ const AllAccounts = () => {
     fetchAccountData();
   }, [fetchAccountData, refreshData]);
 
+  // Modal close handlers
+  const handleCloseCustomerModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowCustomerModal(false);
+    modalKeyRef.current.customer += 1;
+  };
+
+  const handleCloseVendorModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowVendorModal(false);
+    modalKeyRef.current.vendor += 1;
+  };
+
+  const handleCloseNewAccountModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowNewAccountModal(false);
+    modalKeyRef.current.newAccount += 1;
+  };
+
+  const handleCloseActionModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setActionModal({ show: false, mode: null });
+    modalKeyRef.current.action += 1;
+  };
+
+  // Modal exited handlers
+  const handleCustomerModalExited = () => {
+    setCustomerFormData({
+      gstin: "",
+      gstEnabled: true,
+      name: "",
+      nameArabic: "",
+      companyName: "",
+      companyLocation: "",
+      idCardImage: null,
+      extraFile: null,
+      accountType: "Sundry Debtors",
+      accountName: "",
+      balanceType: "Debit",
+      accountBalance: "0.00",
+      creationDate: "",
+      bankAccountNumber: "",
+      bankIFSC: "",
+      bankName: "",
+      country: "",
+      state: "",
+      pincode: "",
+      address: "",
+      stateCode: "",
+      shippingAddress: "",
+      phone: "",
+      email: "",
+      creditPeriod: "",
+      gstin: "",
+      gstType: "Registered",
+      taxEnabled: true,
+      taxNumber: "",
+    });
+    isCleaningUpRef.current = false;
+  };
+
+  const handleVendorModalExited = () => {
+    setVendorFormData({
+      name: "",
+      nameArabic: "",
+      companyName: "",
+      companyLocation: "",
+      idCardImage: null,
+      extraFile: null,
+      accountType: "Sundry Creditors",
+      accountName: "",
+      balanceType: "Credit",
+      accountBalance: "0.00",
+      creationDate: "",
+      bankAccountNumber: "",
+      bankIFSC: "",
+      bankName: "",
+      country: "",
+      state: "",
+      pincode: "",
+      address: "",
+      stateCode: "",
+      shippingAddress: "",
+      phone: "",
+      email: "",
+      creditPeriod: "",
+      gstin: "",
+      gstType: "Registered",
+      taxEnabled: true,
+      taxNumber: "",
+    });
+    isCleaningUpRef.current = false;
+  };
+
+  const handleNewAccountModalExited = () => {
+    setNewAccountData({
+      type: "",
+      subgroup: "",
+      name: "",
+      bankAccountNumber: "",
+      bankIFSC: "",
+      bankNameBranch: "",
+      parentId: "",
+      balance: "0.00",
+      phone: "",
+      email: "",
+      isDefault: false,
+    });
+    setShowBankDetails(true);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleActionModalExited = () => {
+    setSelectedAccount(null);
+    isCleaningUpRef.current = false;
+  };
+
   // Handlers (no changes here, but included for completeness)
   const handleSaveVendor = () => {
     console.log("Vendor Saved:", vendorFormData);
-    setShowVendorModal(false);
+    handleCloseVendorModal();
   };
 
   const handleSaveCustomer = () => {
     console.log("Customer Saved:", customerFormData);
-    setShowCustomerModal(false);
+    handleCloseCustomerModal();
   };
 
   const handleSaveNewAccount = async (e) => {
@@ -315,7 +438,7 @@ const AllAccounts = () => {
         sub_of_subgroup_id: newAccountData.sub_of_subgroup_id || "",
       });
 
-      setShowNewAccountModal(false);
+      handleCloseNewAccountModal();
       setNewAccountData({
         /* reset state */
       });
@@ -342,6 +465,8 @@ const AllAccounts = () => {
   const handleViewAccount = (type, name) => {
     if (!canView) return; // Check view permission
     
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.action += 1;
     const accountGroup = accountData.find((acc) => acc.type === type);
     const row = accountGroup?.rows.find(
       (r) => r.name === name || r.originalName === name
@@ -367,6 +492,8 @@ const AllAccounts = () => {
   const handleEditAccount = (type, name) => {
     if (!canUpdate) return; // Check update permission
     
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.action += 1;
     const accountGroup = accountData.find((acc) => acc.type === type);
     const row = accountGroup?.rows.find(
       (r) => r.name === name || r.originalName === name
@@ -479,7 +606,7 @@ const AllAccounts = () => {
         payload
       );
 
-      setActionModal({ show: false, mode: null });
+      handleCloseActionModal();
       setRefreshData((prev) => prev + 1);
     } catch (error) {
       console.error("Failed to update account:", error);
@@ -504,7 +631,7 @@ const AllAccounts = () => {
       }
       await axiosInstance.delete(`${BaseUrl}account/${selectedAccount.id}`);
 
-      setActionModal({ show: false, mode: null });
+      handleCloseActionModal();
       setRefreshData((prev) => prev + 1);
     } catch (error) {
       console.error("Failed to delete account:", error);
@@ -582,7 +709,11 @@ const AllAccounts = () => {
                 padding: "8px 16px",
               }}
               className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
-              onClick={() => setShowNewAccountModal(true)}
+              onClick={() => {
+                isCleaningUpRef.current = false;
+                modalKeyRef.current.newAccount += 1;
+                setShowNewAccountModal(true);
+              }}
             >
               + Add New Account
             </Button>
@@ -791,23 +922,29 @@ const AllAccounts = () => {
 
       {/* Modals */}
       <AddCustomerModal
+        key={modalKeyRef.current.customer}
         show={showCustomerModal}
-        onHide={() => setShowCustomerModal(false)}
+        onHide={handleCloseCustomerModal}
+        onExited={handleCustomerModalExited}
         onSave={handleSaveCustomer}
         customerFormData={customerFormData}
         setCustomerFormData={setCustomerFormData}
         keyboard={false}
       />
       <AddVendorModal
+        key={modalKeyRef.current.vendor}
         show={showVendorModal}
-        onHide={() => setShowVendorModal(false)}
+        onHide={handleCloseVendorModal}
+        onExited={handleVendorModalExited}
         onSave={handleSaveVendor}
         vendorFormData={vendorFormData}
         setVendorFormData={setVendorFormData}
       />
       <AddNewAccountModal
+        key={modalKeyRef.current.newAccount}
         show={showNewAccountModal}
-        onHide={() => setShowNewAccountModal(false)}
+        onHide={handleCloseNewAccountModal}
+        onExited={handleNewAccountModalExited}
         onSave={handleSaveNewAccount}
         newAccountData={newAccountData}
         setNewAccountData={setNewAccountData}
@@ -821,8 +958,10 @@ const AllAccounts = () => {
         handleAddNewParent={handleAddNewParent}
       />
       <AccountActionModal
+        key={modalKeyRef.current.action}
         show={actionModal.show}
-        onHide={() => setActionModal({ show: false, mode: null })}
+        onHide={handleCloseActionModal}
+        onExited={handleActionModalExited}
         mode={actionModal.mode}
         accountData={accountData}
         selectedAccount={selectedAccount}

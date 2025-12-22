@@ -8,6 +8,7 @@ import axiosInstance from "../../../../Api/axiosInstance";
 const AccountActionModal = ({
   show,
   onHide,
+  onExited,
   mode, // 'view', 'edit', 'delete'
   accountData,
   selectedAccount,
@@ -337,7 +338,7 @@ const AccountActionModal = ({
   };
 
   return (
-    <Modal show={show} onHide={resetFormAndCloseModal} centered size={mode === 'edit' ? "lg" : undefined}>
+    <Modal show={show} onHide={resetFormAndCloseModal} onExited={onExited} centered size={mode === 'edit' ? "lg" : undefined}>
       <Modal.Header closeButton>
         <Modal.Title>{renderModalTitle()}</Modal.Title>
       </Modal.Header>

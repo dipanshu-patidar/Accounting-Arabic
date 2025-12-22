@@ -111,6 +111,10 @@ const ContraVoucher = () => {
   const accountFromRef = useRef(null);
   const accountToRef = useRef(null);
 
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0 });
+
   // Helpers
   const generateAutoVoucherNo = () => {
     const timestamp = Date.now();
@@ -257,11 +261,40 @@ const ContraVoucher = () => {
     if (file) setUploadedFile(file);
   };
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setIsEditing(false);
+    setCurrentVoucherId(null);
+    setCurrentDocumentUrl('');
+    resetForm();
+    setError('');
+    isCleaningUpRef.current = false;
+  };
+
   const handleAddClick = () => {
     if (!contraVoucherPermissions.can_create) {
       toast.error("You don't have permission to create contra vouchers.");
       return;
     }
+    
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
     
     setIsEditing(false);
     setCurrentVoucherId(null);
@@ -324,6 +357,12 @@ const ContraVoucher = () => {
       setAccountToDisplay('Unknown Account');
     }
 
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setShowModal(true);
   };
 
@@ -409,7 +448,9 @@ const ContraVoucher = () => {
         toast.success('Contra Voucher created successfully!');
       }
 
-      setShowModal(false);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (err) {
       console.error('API Error:', err);
       setError(
@@ -591,7 +632,14 @@ const ContraVoucher = () => {
 
       {/* Modal */}
       {contraVoucherPermissions.can_create && (
-        <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+        <Modal 
+          key={modalKeyRef.current.main}
+          show={showModal} 
+          onHide={handleCloseModal}
+          onExited={handleModalExited}
+          size="lg" 
+          centered
+        >
           <Modal.Header closeButton>
             <Modal.Title>{isEditing ? 'Edit Contra Voucher' : 'Add Contra Voucher'}</Modal.Title>
           </Modal.Header>
@@ -754,7 +802,7 @@ const ContraVoucher = () => {
               </Row>
 
               <div className="d-flex justify-content-end gap-2">
-                <Button variant="secondary" onClick={() => setShowModal(false)}>
+                <Button variant="secondary" onClick={handleCloseModal}>
                   Cancel
                 </Button>
                 <Button variant="primary" type="submit" disabled={loading}>
