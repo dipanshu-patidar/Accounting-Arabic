@@ -375,7 +375,7 @@ function JournalEntries() {
       {/* Add/Update Modal */}
       {showModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
+          <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{isUpdateMode ? 'Update Journal Entry' : 'New Journal Entry'}</h5>

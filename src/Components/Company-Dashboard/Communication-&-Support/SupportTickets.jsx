@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, Button, Table, Modal, Form, Badge } from "react-bootstrap";
 import {
   FaLifeRing,
@@ -20,6 +20,10 @@ const SupportTickets = () => {
   const [showModal, setShowModal] = useState(false);
   const [newTicket, setNewTicket] = useState({ subject: "", message: "" });
   const [error, setError] = useState("");
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0 });
 
   // Fetch all tickets on mount
   useEffect(() => {
@@ -48,13 +52,37 @@ const SupportTickets = () => {
     fetchTickets();
   }, [companyId]);
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setNewTicket({ subject: "", message: "" });
+    setError("");
+    isCleaningUpRef.current = false;
+  };
+
   const handleShow = () => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setNewTicket({ subject: "", message: "" });
     setError("");
     setShowModal(true);
   };
-
-  const handleClose = () => setShowModal(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,7 +110,9 @@ const SupportTickets = () => {
       };
 
       setTickets([newTicketWithDate, ...tickets]);
-      handleClose();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (err) {
       console.error("Failed to create ticket:", err);
       setError("Failed to submit ticket. Please try again.");
@@ -217,7 +247,13 @@ const SupportTickets = () => {
       </Card>
 
       {/* Create Ticket Modal */}
-      <Modal show={showModal} onHide={handleClose} centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        centered
+      >
         <Modal.Header
           closeButton
           style={{ backgroundColor: "#023347", color: "white" }}
@@ -254,7 +290,7 @@ const SupportTickets = () => {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-            <Button variant="secondary" onClick={handleClose}>
+            <Button variant="secondary" onClick={handleCloseModal}>
               Cancel
             </Button>
             <Button

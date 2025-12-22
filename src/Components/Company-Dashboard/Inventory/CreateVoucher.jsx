@@ -262,7 +262,7 @@ const mapApiVoucherToLocal = (apiVoucher) => {
 };
 
 // ✅ CreateVoucherModal
-const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId, permissions }) => {
+const CreateVoucherModal = ({ show, onHide, onExited, onSave, editData, companyId, permissions }) => {
   const [voucherType, setVoucherType] = useState(editData?.voucherType || "Expense");
   const [formData, setFormData] = useState(editData || initialFormData);
   const [isSaving, setIsSaving] = useState(false); // ✅ ADDED: Loading state for save operation
@@ -1251,7 +1251,7 @@ const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId, permiss
 
   return (
     <>
-      <Modal show={show} onHide={onHide} centered size="xl">
+      <Modal show={show} onHide={onHide} onExited={onExited} centered size="xl">
         <Modal.Header closeButton>
           <Modal.Title>{editData ? "Edit Voucher" : "Create Voucher"}</Modal.Title>
         </Modal.Header>
@@ -1549,9 +1549,9 @@ const CreateVoucherModal = ({ show, onHide, onSave, editData, companyId, permiss
 };
 
 // VoucherViewModal
-const VoucherViewModal = ({ show, onHide, voucher, permissions }) => {
+const VoucherViewModal = ({ show, onHide, onExited, voucher, permissions }) => {
   const pdfRef = useRef();
-  if (!voucher) return <Modal show={show} onHide={onHide}><Modal.Body>No data</Modal.Body></Modal>;
+  if (!voucher) return <Modal show={show} onHide={onHide} onExited={onExited}><Modal.Body>No data</Modal.Body></Modal>;
 
   const subtotal = voucher.items.reduce((sum, item) => sum + item.amount, 0);
   const adjustedSubtotal = voucher.voucherType === "Expense" && voucher.discount > 0
@@ -1576,7 +1576,7 @@ const VoucherViewModal = ({ show, onHide, voucher, permissions }) => {
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="xl">
+    <Modal show={show} onHide={onHide} onExited={onExited} centered size="xl">
       <Modal.Header closeButton><Modal.Title>Voucher Details</Modal.Title></Modal.Header>
       <Modal.Body>
         <div ref={pdfRef} style={{ display: 'none' }}>
@@ -1626,6 +1626,10 @@ const CreateVoucher = () => {
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const companyId = GetCompanyId();
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0, view: 0 });
   
   // Permission states
   const [userPermissions, setUserPermissions] = useState([]);
@@ -1710,6 +1714,44 @@ const CreateVoucher = () => {
     fetchVouchers(); 
   }, [companyId, createVoucherPermissions.can_view]);
 
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setEditVoucher(null);
+    isCleaningUpRef.current = false;
+  };
+  
+  const handleCloseViewModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowViewModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.view += 1;
+  };
+  
+  // Handle view modal exit - cleanup after animation
+  const handleViewModalExited = () => {
+    // Reset view voucher after modal fully closed
+    setViewVoucher(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleSaveVoucher = async (voucher, vendors, customers, accounts) => {
     try {
       if (editVoucher !== null) {
@@ -1736,8 +1778,9 @@ const CreateVoucher = () => {
         setVouchers(prev => [...prev, newVoucher]);
         toast.success("Voucher created successfully!");
       }
-      setShowModal(false);
-      setEditVoucher(null);
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleCloseModal();
     } catch (error) {
       console.error("Error saving voucher:", error);
       toast.error("Failed to save voucher. Please try again.");
@@ -1758,11 +1801,23 @@ const CreateVoucher = () => {
   };
 
   const handleEdit = (idx) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.main += 1;
+    
     setEditVoucher(idx);
     setShowModal(true);
   };
 
   const handleView = (idx) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current.view += 1;
+    
     setViewVoucher(vouchers[idx]);
     setShowViewModal(true);
   };
@@ -1789,7 +1844,16 @@ const CreateVoucher = () => {
         {createVoucherPermissions.can_create && (
           <Button
             style={{ backgroundColor: "#53b2a5", border: "none", borderRadius: "50px", fontWeight: 600 }}
-            onClick={() => { setEditVoucher(null); setShowModal(true); }}
+            onClick={() => {
+              // Reset cleanup flag
+              isCleaningUpRef.current = false;
+              
+              // Force modal remount
+              modalKeyRef.current.main += 1;
+              
+              setEditVoucher(null);
+              setShowModal(true);
+            }}
           >
             Create Voucher
           </Button>
@@ -1845,8 +1909,10 @@ const CreateVoucher = () => {
       )}
 
       <CreateVoucherModal
+        key={modalKeyRef.current.main}
         show={showModal}
-        onHide={() => { setShowModal(false); setEditVoucher(null); }}
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
         onSave={handleSaveVoucher}
         editData={editVoucher !== null ? vouchers[editVoucher] : null}
         companyId={companyId}
@@ -1854,8 +1920,10 @@ const CreateVoucher = () => {
       />
 
       <VoucherViewModal
+        key={modalKeyRef.current.view}
         show={showViewModal}
-        onHide={() => setShowViewModal(false)}
+        onHide={handleCloseViewModal}
+        onExited={handleViewModalExited}
         voucher={viewVoucher}
         permissions={createVoucherPermissions}
       />

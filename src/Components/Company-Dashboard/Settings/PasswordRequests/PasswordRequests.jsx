@@ -1,5 +1,5 @@
 // CompanyPasswordRequests.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Table, Button, Badge, Modal, Form } from "react-bootstrap";
 import { toast } from "react-toastify";
 import GetCompanyId from "../../../../Api/GetCompanyId";
@@ -11,6 +11,10 @@ const PasswordRequests = () => {
   const [requests, setRequests] = useState([]);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef({ main: 0 });
 
   // Fetch existing password change requests on mount
   useEffect(() => {
@@ -55,8 +59,9 @@ const PasswordRequests = () => {
       if (res.data.success) {
         toast.success("Password change request submitted successfully.");
         await fetchRequests(); // Refresh list
-        setReason("");
-        setShowModal(false);
+        // Reset cleanup flag before closing
+        isCleaningUpRef.current = false;
+        handleCloseModal();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to submit request.");
@@ -66,9 +71,23 @@ const PasswordRequests = () => {
     }
   };
 
-  const handleClose = () => {
-    setReason("");
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
     setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current.main += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset form state after modal fully closed
+    setReason("");
+    isCleaningUpRef.current = false;
   };
 
   const renderStatus = (status) => {
@@ -87,7 +106,18 @@ const PasswordRequests = () => {
     <div className="p-3">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-0">Password Change Requests</h4>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
+        <Button 
+          variant="primary" 
+          onClick={() => {
+            // Reset cleanup flag
+            isCleaningUpRef.current = false;
+            
+            // Force modal remount
+            modalKeyRef.current.main += 1;
+            
+            setShowModal(true);
+          }}
+        >
           + Request Password Change
         </Button>
       </div>
@@ -124,7 +154,13 @@ const PasswordRequests = () => {
       </Table>
 
       {/* Modal */}
-      <Modal show={showModal} onHide={handleClose} centered>
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Request Password Change</Modal.Title>
         </Modal.Header>
@@ -143,7 +179,7 @@ const PasswordRequests = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
+          <Button variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button variant="primary" onClick={handleSubmit} disabled={loading}>
