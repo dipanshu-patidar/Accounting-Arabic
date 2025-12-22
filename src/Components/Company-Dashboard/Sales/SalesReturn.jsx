@@ -94,6 +94,8 @@ const SalesReturn = () => {
 
   const navigate = useNavigate();
   const fileInputRef = useRef();
+  const isCleaningUpRef = useRef(false); // Prevent multiple cleanup calls
+  const modalKeyRef = useRef({ view: 0, edit: 0, add: 0 }); // Force modal remount
 
   // Modal States
   const [showViewModal, setShowViewModal] = useState(false);
@@ -351,12 +353,74 @@ const SalesReturn = () => {
     setVoucherNo('');
   };
 
+  // Modal close handlers
+  const handleCloseViewModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowViewModal(false);
+    modalKeyRef.current.view += 1;
+  };
+
+  const handleCloseEditModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowEditModal(false);
+    modalKeyRef.current.edit += 1;
+  };
+
+  const handleCloseAddModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowAddModal(false);
+    modalKeyRef.current.add += 1;
+  };
+
+  // Modal exited handlers
+  const handleViewModalExited = () => {
+    setSelectedReturn(null);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleEditModalExited = () => {
+    setEditReturn(null);
+    setAddItemError('');
+    setOpenDropdown(null);
+    isCleaningUpRef.current = false;
+  };
+
+  const handleAddModalExited = () => {
+    setNewReturn({
+      returnNo: '',
+      invoiceNo: '',
+      customerId: null,
+      customerName: '',
+      date: new Date().toISOString().split('T')[0],
+      items: 0,
+      status: 'pending',
+      amount: 0,
+      returnType: 'Sales Return',
+      reason: '',
+      warehouseId: null,
+      warehouseName: '',
+      referenceId: '',
+      voucherNo: '',
+      narration: '',
+      itemsList: []
+    });
+    setVoucherNo('');
+    setAddItemError('');
+    setOpenDropdown(null);
+    isCleaningUpRef.current = false;
+  };
+
   const handleAddClick = () => {
     if (!salesReturnPermissions.can_create) {
       alert("You don't have permission to create sales returns.");
       return;
     }
     
+    isCleaningUpRef.current = false;
+    modalKeyRef.current.add += 1;
     setAddItemError('');
     setNewReturn({
       returnNo: '',
@@ -485,8 +549,7 @@ const SalesReturn = () => {
       const response = await axiosInstance.post('/sales-return/create-sales-return', payload);
       if (response.data.success) {
         alert("Sales return created successfully!");
-        setShowAddModal(false);
-        setVoucherNo('');
+        handleCloseAddModal();
         await Promise.all([fetchProducts(), fetchReturns()]);
       } else {
         setAddItemError(response.data.message || "Failed to create sales return.");
@@ -504,6 +567,8 @@ const SalesReturn = () => {
     }
     
     try {
+      isCleaningUpRef.current = false;
+      modalKeyRef.current.edit += 1;
       setAddItemError('');
       setOpenDropdown(null);
 
@@ -589,7 +654,7 @@ const SalesReturn = () => {
       const response = await axiosInstance.put(`/sales-return/update-sale/${editReturn.id}`, payload);
       if (response.data.success) {
         alert("Sales return updated successfully!");
-        setShowEditModal(false);
+        handleCloseEditModal();
         await Promise.all([fetchProducts(), fetchReturns()]);
       } else {
         setAddItemError(response.data.message || "Failed to update sales return.");
@@ -920,6 +985,8 @@ const SalesReturn = () => {
                     <div className="d-flex justify-content-center gap-2">
                       {salesReturnPermissions.can_view && (
                         <Button variant="outline-info" size="sm" onClick={() => {
+                          isCleaningUpRef.current = false;
+                          modalKeyRef.current.view += 1;
                           setSelectedReturn(item);
                           setShowViewModal(true);
                         }}>
@@ -952,7 +1019,13 @@ const SalesReturn = () => {
       </div>
 
       {/* View Modal */}
-      <Modal show={showViewModal} onHide={() => setShowViewModal(false)} size="lg">
+      <Modal 
+        key={modalKeyRef.current.view}
+        show={showViewModal} 
+        onHide={handleCloseViewModal} 
+        onExited={handleViewModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Sales Return Details</Modal.Title>
         </Modal.Header>
@@ -1007,16 +1080,18 @@ const SalesReturn = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowViewModal(false)}>Close</Button>
+          <Button variant="secondary" onClick={handleCloseViewModal}>Close</Button>
         </Modal.Footer>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal show={showEditModal} onHide={() => {
-        setShowEditModal(false);
-        setAddItemError('');
-        setOpenDropdown(null);
-      }} size="lg">
+      <Modal 
+        key={modalKeyRef.current.edit}
+        show={showEditModal} 
+        onHide={handleCloseEditModal}
+        onExited={handleEditModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Edit Sales Return</Modal.Title>
         </Modal.Header>
@@ -1262,11 +1337,7 @@ const SalesReturn = () => {
           </Alert>
         )}
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => {
-            setShowEditModal(false);
-            setAddItemError('');
-            setOpenDropdown(null);
-          }}>Cancel</Button>
+          <Button variant="secondary" onClick={handleCloseEditModal}>Cancel</Button>
           {salesReturnPermissions.can_update && (
             <Button variant="primary" onClick={handleEditSave} style={{ backgroundColor: '#3daaaa' }}>Save Changes</Button>
           )}
@@ -1274,11 +1345,13 @@ const SalesReturn = () => {
       </Modal>
 
       {/* Add Modal */}
-      <Modal show={showAddModal} onHide={() => {
-        setShowAddModal(false);
-        setAddItemError('');
-        setOpenDropdown(null);
-      }} size="lg">
+      <Modal 
+        key={modalKeyRef.current.add}
+        show={showAddModal} 
+        onHide={handleCloseAddModal}
+        onExited={handleAddModalExited}
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Add New Sales Return</Modal.Title>
         </Modal.Header>
@@ -1497,11 +1570,7 @@ const SalesReturn = () => {
           </Alert>
         )}
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => {
-            setShowAddModal(false);
-            setAddItemError('');
-            setOpenDropdown(null);
-          }}>Cancel</Button>
+          <Button variant="secondary" onClick={handleCloseAddModal}>Cancel</Button>
           {salesReturnPermissions.can_create && (
             <Button variant="primary" onClick={handleAddReturn} style={{ backgroundColor: '#3daaaa' }}>
               Add Return
