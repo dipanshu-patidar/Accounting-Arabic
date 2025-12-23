@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Modal, Button, Form, Row, Col, Card } from "react-bootstrap";
 import { FaEye, FaEdit, FaTrash, FaPlus, FaInfoCircle } from "react-icons/fa";
 import * as XLSX from "xlsx";
@@ -38,6 +38,8 @@ const InventoryItems = () => {
   const [newCategory, setNewCategory] = useState("");
   const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const fileInputRef = React.useRef(null);
+  const isCleaningUpRef = useRef(false); // Prevent multiple cleanup calls
+  const modalKeyRef = useRef({ view: 0 }); // Force modal remount
 
   const companyId = GetCompanyId();
 
@@ -252,6 +254,20 @@ const InventoryItems = () => {
     setSelectedItems((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  };
+
+  // Modal close handlers
+  const handleCloseViewModal = () => {
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    setShowView(false);
+    modalKeyRef.current.view += 1;
+  };
+
+  // Modal exited handlers
+  const handleViewModalExited = () => {
+    setSelectedItem(null);
+    isCleaningUpRef.current = false;
   };
 
   const handleDeleteItem = async () => {
@@ -746,6 +762,8 @@ const InventoryItems = () => {
                             className="text-info p-0"
                             onClick={(e) => {
                               e.stopPropagation();
+                              isCleaningUpRef.current = false;
+                              modalKeyRef.current.view += 1;
                               setSelectedItem(item);
                               setShowView(true);
                             }}
@@ -860,8 +878,10 @@ const InventoryItems = () => {
 
         {/* View Modal */}
         <Modal
+          key={modalKeyRef.current.view}
           show={showView}
-          onHide={() => setShowView(false)}
+          onHide={handleCloseViewModal}
+          onExited={handleViewModalExited}
           centered
           size="lg"
         >
@@ -956,7 +976,7 @@ const InventoryItems = () => {
             )}
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowView(false)}>
+            <Button variant="secondary" onClick={handleCloseViewModal}>
               Close
             </Button>
           </Modal.Footer>

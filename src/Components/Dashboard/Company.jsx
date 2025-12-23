@@ -24,6 +24,8 @@ import { useNavigate } from "react-router-dom";
 import BaseUrl from "../../Api/BaseUrl";
 import GetCompanyId from "../../Api/GetCompanyId";
 import axiosInstance from "../../Api/axiosInstance";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Company = () => {
   const companyId = GetCompanyId();
@@ -148,24 +150,45 @@ const Company = () => {
     fetchCompanyUsers();
   }, [viewUserIndex, companies]);
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
+    // Validation
     if (!newPassword || !confirmPassword) {
-      alert("Please fill both fields.");
+      toast.error("Please fill both password fields.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
-    console.log(
-      "Password reset for:",
-      companies[resetIndex]?.name || "Company",
-      "=>",
-      newPassword
-    );
-    setResetIndex(null);
-    setNewPassword("");
-    setConfirmPassword("");
+
+    try {
+      const companyToReset = companies[resetIndex];
+      if (!companyToReset || !companyToReset.id) {
+        toast.error("Company not found.");
+        return;
+      }
+
+      // Make API call to reset password
+      await axios.put(`${BaseUrl}auth/Company/${companyToReset.id}/reset-password`, {
+        password: newPassword,
+      });
+
+      toast.success("Password reset successfully!");
+      setResetIndex(null);
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error(
+        `Failed to reset password: ${
+          error.response?.data?.message || error.message
+        }`
+      );
+    }
   };
 
   const filteredCompanies = companies.filter((company) => {
@@ -219,6 +242,12 @@ const Company = () => {
     if (deleteIndex === null) return;
 
     const companyToDelete = companies[deleteIndex];
+    if (!companyToDelete || !companyToDelete.id) {
+      toast.error("Company not found.");
+      setDeleteIndex(null);
+      return;
+    }
+
     setDeleting(true);
 
     try {
@@ -234,10 +263,10 @@ const Company = () => {
       setDeleteIndex(null);
 
       // Show success message
-      alert("Company deleted successfully!");
+      toast.success("Company deleted successfully!");
     } catch (error) {
       console.error("Error deleting company:", error);
-      alert(
+      toast.error(
         `Failed to delete company: ${
           error.response?.data?.message || error.message
         }`
@@ -248,15 +277,40 @@ const Company = () => {
   };
 
   const saveChanges = async () => {
-    if (
-      !editCompany.name ||
-      !editCompany.email ||
-      !editCompany.plan_id ||
-      !editCompany.plan_type ||
-      !editCompany.start_date ||
-      !editCompany.expire_date
-    ) {
-      alert("Please fill all required fields.");
+    // Validation for required fields
+    if (!editCompany.name || editCompany.name.trim() === "") {
+      toast.error("Company name is required.");
+      return;
+    }
+    if (!editCompany.email || editCompany.email.trim() === "") {
+      toast.error("Email is required.");
+      return;
+    }
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editCompany.email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (!editCompany.plan_id) {
+      toast.error("Please select a plan.");
+      return;
+    }
+    if (!editCompany.plan_type) {
+      toast.error("Please select a plan type.");
+      return;
+    }
+    if (!editCompany.start_date) {
+      toast.error("Start date is required.");
+      return;
+    }
+    if (!editCompany.expire_date) {
+      toast.error("Expire date is required.");
+      return;
+    }
+    // Date validation
+    if (new Date(editCompany.start_date) >= new Date(editCompany.expire_date)) {
+      toast.error("Expire date must be after start date.");
       return;
     }
 
@@ -264,8 +318,8 @@ const Company = () => {
     try {
       // Create FormData object
       const formData = new FormData();
-      formData.append("name", editCompany.name);
-      formData.append("email", editCompany.email);
+      formData.append("name", editCompany.name.trim());
+      formData.append("email", editCompany.email.trim());
       formData.append("plan_id", parseInt(editCompany.plan_id));
       formData.append("plan_type", editCompany.plan_type.toLowerCase());
       formData.append("start_date", editCompany.start_date);
@@ -287,8 +341,8 @@ const Company = () => {
       const updatedCompanies = [...companies];
       updatedCompanies[editIndex] = {
         ...updatedCompanies[editIndex],
-        name: editCompany.name,
-        email: editCompany.email,
+        name: editCompany.name.trim(),
+        email: editCompany.email.trim(),
         user_plans: [
           {
             ...updatedCompanies[editIndex].user_plans[0],
@@ -309,10 +363,10 @@ const Company = () => {
       setEditIndex(null);
 
       // Show success message
-      alert("Company updated successfully!");
+      toast.success("Company updated successfully!");
     } catch (error) {
       console.error("Error updating company:", error);
-      alert(
+      toast.error(
         `Failed to update company: ${
           error.response?.data?.message || error.message
         }`
@@ -324,21 +378,52 @@ const Company = () => {
 
   // Function to handle adding a new company via API
   const handleAddCompany = async () => {
-    // Validation
-    if (
-      !newCompany.name ||
-      !newCompany.email ||
-      !newCompany.start_date ||
-      !newCompany.expire_date ||
-      !newCompany.plan_id ||
-      !newCompany.plan_type ||
-      !newCompany.password
-    ) {
-      alert("Please fill all required fields.");
+    // Validation for required fields
+    if (!newCompany.name || newCompany.name.trim() === "") {
+      toast.error("Company name is required.");
+      return;
+    }
+    if (!newCompany.email || newCompany.email.trim() === "") {
+      toast.error("Email is required.");
+      return;
+    }
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newCompany.email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (!newCompany.start_date) {
+      toast.error("Start date is required.");
+      return;
+    }
+    if (!newCompany.expire_date) {
+      toast.error("Expire date is required.");
+      return;
+    }
+    // Date validation
+    if (new Date(newCompany.start_date) >= new Date(newCompany.expire_date)) {
+      toast.error("Expire date must be after start date.");
+      return;
+    }
+    if (!newCompany.plan_id) {
+      toast.error("Please select a plan.");
+      return;
+    }
+    if (!newCompany.plan_type) {
+      toast.error("Please select a plan type.");
+      return;
+    }
+    if (!newCompany.password || newCompany.password.trim() === "") {
+      toast.error("Password is required.");
+      return;
+    }
+    if (newCompany.password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
       return;
     }
     if (newCompany.password !== newCompany.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 
@@ -346,8 +431,8 @@ const Company = () => {
     try {
       // Create FormData object
       const formData = new FormData();
-      formData.append("name", newCompany.name);
-      formData.append("email", newCompany.email);
+      formData.append("name", newCompany.name.trim());
+      formData.append("email", newCompany.email.trim());
       formData.append("password", newCompany.password);
       formData.append("startDate", newCompany.start_date);
       formData.append("expireDate", newCompany.expire_date);
@@ -373,7 +458,7 @@ const Company = () => {
       setShowModal(false);
 
       // Show success message
-      alert("Company created successfully!");
+      toast.success("Company created successfully!");
 
       // Refetch companies to get the latest data
       setRefetching(true);
@@ -381,7 +466,7 @@ const Company = () => {
       setRefetching(false);
     } catch (error) {
       console.error("Error creating company:", error);
-      alert(
+      toast.error(
         `Failed to create company: ${
           error.response?.data?.message || error.message
         }`
@@ -1067,7 +1152,12 @@ const Company = () => {
                         if (file) {
                           // Check file size
                           if (file.size > 4 * 1024 * 1024) {
-                            alert("Image size should be less than 4MB");
+                            toast.error("Image size should be less than 4MB");
+                            return;
+                          }
+                          // Check file type
+                          if (!file.type.startsWith('image/')) {
+                            toast.error("Please select a valid image file.");
                             return;
                           }
 
@@ -1401,7 +1491,12 @@ const Company = () => {
                         if (file) {
                           // Check file size
                           if (file.size > 4 * 1024 * 1024) {
-                            alert("Image size should be less than 4MB");
+                            toast.error("Image size should be less than 4MB");
+                            return;
+                          }
+                          // Check file type
+                          if (!file.type.startsWith('image/')) {
+                            toast.error("Please select a valid image file.");
                             return;
                           }
 
@@ -1867,6 +1962,19 @@ const Company = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 };
