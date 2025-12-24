@@ -379,7 +379,7 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
 
   const markInvalid = (tab) => {
     setInvalidSteps((p) => ({ ...p, [tab]: true }));
-    setError("Manual number is required for this step.");
+    // Don't show alert error - validation will be shown in form fields
   };
 
   const clearInvalid = (tab) => {
@@ -3792,18 +3792,9 @@ const MultiStepPurchaseForm = ({ onSubmit, initialData, initialStep, onClose, se
 
   const handleTabSelect = (key) => {
     if (!key || key === activeTab) return;
-    // prevent switching away if current step manual number is missing
-    const manualFilled =
-      (activeTab === "purchaseQuotation" && (formData.purchaseQuotation.manualRefNo || formData.purchaseQuotation.manualQuotationNo)) ||
-      (activeTab === "purchaseOrder" && formData.purchaseOrder.manualOrderNo) ||
-      (activeTab === "goodsReceipt" && formData.goodsReceipt.manualReceiptNo) ||
-      (activeTab === "bill" && formData.bill.manualBillNo) ||
-      (activeTab === "payment" && (formData.payment.Manual_payment_no || formData.payment.manualPaymentNo));
-
-    if (!manualFilled || manualFilled.toString().trim() === "") {
-      markInvalid(activeTab);
-      return;
-    }
+    // Allow free tab navigation - validation only happens on Save/Save & Next
+    // Clear any previous validation errors when switching tabs
+    clearInvalid(activeTab);
     setActiveTab(key);
   };
 
