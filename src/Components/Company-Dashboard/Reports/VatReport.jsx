@@ -23,7 +23,7 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -36,9 +36,9 @@ class ErrorBoundary extends React.Component {
         <div className="alert alert-danger">
           <h5>Something went wrong.</h5>
           <p>Please refresh the page and try again.</p>
-          <details>
-            {this.state.error && this.state.error.toString()}
-          </details>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
         </div>
       );
     }
@@ -56,7 +56,8 @@ const VatReport = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isRTL, setIsRTL] = useState(false);
-  const [datePickerKey, setDatePickerKey] = useState(0); // Key to force re-render of DatePicker
+  const [useSimpleDateInput, setUseSimpleDateInput] = useState(false);
+  const [componentReady, setComponentReady] = useState(false);
   
   // Refs to track component mount status
   const isMountedRef = useRef(true);
@@ -66,7 +67,7 @@ const VatReport = () => {
   // ✅ Get currency context
   const { convertPrice, symbol } = useContext(CurrencyContext);
   
-  // Check if RTL mode is active - simplified version
+  // Check if RTL mode is active
   useEffect(() => {
     const checkRTL = () => {
       if (!isMountedRef.current) return;
@@ -76,20 +77,28 @@ const VatReport = () => {
                        htmlElement.style.direction === 'rtl' ||
                        getComputedStyle(htmlElement).direction === 'rtl';
       
-      if (isRTLMode !== isRTL) {
-        setIsRTL(isRTLMode);
-        // Force re-render of DatePicker when RTL changes
-        setDatePickerKey(prev => prev + 1);
+      setIsRTL(isRTLMode);
+      
+      // If RTL is detected, use simple date input to avoid DatePicker issues
+      if (isRTLMode) {
+        setUseSimpleDateInput(true);
+      } else {
+        setUseSimpleDateInput(false);
       }
     };
     
-    checkRTL();
+    // Delay component rendering to ensure DOM is ready
+    const timer = setTimeout(() => {
+      checkRTL();
+      setComponentReady(true);
+    }, 100);
     
-    // Only check on specific events
+    // Check on language changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && 
-            (mutation.attributeName === 'dir' || mutation.attributeName === 'style')) {
+            (mutation.attributeName === 'dir' || 
+             mutation.attributeName === 'style')) {
           checkRTL();
         }
       });
@@ -101,9 +110,10 @@ const VatReport = () => {
     });
     
     return () => {
+      clearTimeout(timer);
       observer.disconnect();
     };
-  }, [isRTL]);
+  }, []);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -111,6 +121,18 @@ const VatReport = () => {
       isMountedRef.current = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
+      }
+      
+      // Clean up any remaining DatePicker elements
+      try {
+        const datepickerElements = document.querySelectorAll('.react-datepicker-popper, .react-datepicker__month-container');
+        datepickerElements.forEach(el => {
+          if (el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        });
+      } catch (e) {
+        console.warn("Could not remove datepicker elements:", e);
       }
     };
   }, []);
@@ -151,7 +173,6 @@ const VatReport = () => {
       // Check if the error is because the request was aborted
       if (axiosInstance.isCancel(err) || err.name === 'CanceledError' || err.name === 'AbortError') {
         console.log("Request was canceled.");
-        // Don't update state if component unmounted or request was intentionally canceled
         return;
       }
 
@@ -161,13 +182,12 @@ const VatReport = () => {
         setVatData([]);
       }
     } finally {
-      // Always set loading to false in finally block
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!companyId || !isMountedRef.current) return;
+    if (!companyId || !isMountedRef.current || !componentReady) return;
     
     // Cancel any previous request
     if (abortControllerRef.current) {
@@ -179,7 +199,6 @@ const VatReport = () => {
     abortControllerRef.current = controller;
     const { signal } = controller;
 
-    // Call the fetch function and pass the signal
     fetchVatReport(signal);
 
     // Cleanup function for useEffect
@@ -190,7 +209,7 @@ const VatReport = () => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId]);
+  }, [companyId, componentReady]);
 
   const filteredRows = useMemo(() => {
     if (!vatData || !Array.isArray(vatData)) return [];
@@ -199,22 +218,21 @@ const VatReport = () => {
     );
   }, [vatData, filterType]);
 
-  // Cleanup DatePicker on unmount
-  useEffect(() => {
-    return () => {
-      // Force cleanup of any DatePicker DOM elements
-      const datepickerElements = document.querySelectorAll('.react-datepicker-popper, .react-datepicker__month-container');
-      datepickerElements.forEach(el => {
-        if (el.parentNode) {
-          try {
-            el.parentNode.removeChild(el);
-          } catch (e) {
-            console.warn("Could not remove datepicker element:", e);
-          }
-        }
-      });
-    };
-  }, []);
+  // Format date range for display
+  const formatDateRange = () => {
+    if (!startDate && !endDate) return "Select date range";
+    if (startDate && !endDate) return `${startDate.toLocaleDateString()} - `;
+    if (!startDate && endDate) return ` - ${endDate.toLocaleDateString()}`;
+    return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+  };
+
+  if (!componentReady) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "300px" }}>
+        <Spinner animation="border" />
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -228,51 +246,57 @@ const VatReport = () => {
             <Col md={4}>
               <Form.Label className="fw-semibold">Choose Date</Form.Label>
               <div style={{ position: "relative", minHeight: "38px", width: "100%" }}>
-                {/* Use a custom input for better control */}
-                <DatePicker
-                  key={datePickerKey} // Force re-render when RTL changes
-                  selectsRange
-                  startDate={startDate}
-                  endDate={endDate}
-                  onChange={(update) => {
-                    if (isMountedRef.current) {
-                      setDateRange(update);
-                    }
-                  }}
-                  isClearable
-                  customInput={
-                    <Form.Control
-                      type="text"
-                      placeholder="Select date range"
-                      readOnly
-                    />
-                  }
-                  dateFormat="dd/MM/yyyy"
-                  disabled
-                  // Use portal to avoid DOM conflicts
-                  withPortal={true}
-                  portalId="root" // Use your app's root element ID
-                  popperPlacement={isRTL ? "bottom-end" : "bottom-start"}
-                  popperModifiers={[
-                    {
-                      name: "preventOverflow",
-                      enabled: true,
-                      options: {
-                        altBoundary: true,
-                        altAxis: true,
-                        tether: false,
+                {useSimpleDateInput ? (
+                  // Use simple input for RTL to avoid DatePicker issues
+                  <Form.Control
+                    type="text"
+                    value={formatDateRange()}
+                    readOnly
+                    placeholder="Select date range"
+                    disabled
+                    style={{ textAlign: isRTL ? "right" : "left" }}
+                  />
+                ) : (
+                  // Use DatePicker for LTR mode
+                  <DatePicker
+                    selectsRange
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChange={(update) => {
+                      if (isMountedRef.current) {
+                        setDateRange(update);
+                      }
+                    }}
+                    isClearable
+                    className="form-control"
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="Select date range"
+                    disabled
+                    // Disable portal to avoid DOM issues in RTL mode
+                    withPortal={false}
+                    // Add RTL-specific positioning
+                    popperPlacement={isRTL ? "bottom-end" : "bottom-start"}
+                    popperModifiers={[
+                      {
+                        name: "preventOverflow",
+                        enabled: true,
+                        options: {
+                          altBoundary: true,
+                          altAxis: true,
+                          tether: false,
+                        },
                       },
-                    },
-                    {
-                      name: "flip",
-                      enabled: true,
-                      options: {
-                        altBoundary: true,
-                        fallbackPlacements: isRTL ? ["bottom-start", "top-end"] : ["bottom-end", "top-start"],
+                      {
+                        name: "flip",
+                        enabled: true,
+                        options: {
+                          altBoundary: true,
+                          fallbackPlacements: isRTL ? ["bottom-start", "top-end"] : ["bottom-end", "top-start"],
+                        },
                       },
-                    },
-                  ]}
-                />
+                    ]}
+                  />
+                )}
               </div>
             </Col>
             <Col md={4}>
@@ -305,7 +329,6 @@ const VatReport = () => {
                 className="py-2"
                 onClick={() => {
                   if (!isMountedRef.current) return;
-                  // For manual clicks, create a new controller just for this call
                   const controller = new AbortController();
                   fetchVatReport(controller.signal);
                 }}
@@ -313,7 +336,8 @@ const VatReport = () => {
               >
                 {loading ? (
                   <>
-                    <Spinner as="span" animation="border" size="sm" className="me-2" /> Loading...
+                    <Spinner as="span" animation="border" size="sm" className="me-2" />
+                    Loading...
                   </>
                 ) : (
                   "Generate Report"
