@@ -28,11 +28,12 @@ const VatReport = () => {
   // Refs to track component mount status
   const isMountedRef = useRef(true);
   const abortControllerRef = useRef(null);
+  const datepickerRef = useRef(null);
 
   // ✅ Get currency context
   const { convertPrice, symbol } = useContext(CurrencyContext);
   
-  // Check if RTL mode is active
+  // Check if RTL mode is active - simplified version
   useEffect(() => {
     const checkRTL = () => {
       if (!isMountedRef.current) return;
@@ -46,17 +47,23 @@ const VatReport = () => {
     
     checkRTL();
     
-    const observer = new MutationObserver(checkRTL);
+    // Simplified RTL detection - only check once and on specific events
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && 
+            (mutation.attributeName === 'dir' || mutation.attributeName === 'style')) {
+          checkRTL();
+        }
+      });
+    });
+    
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['dir', 'style']
     });
     
-    const intervalId = setInterval(checkRTL, 1000);
-    
     return () => {
       observer.disconnect();
-      clearInterval(intervalId);
     };
   }, []);
   
@@ -154,6 +161,19 @@ const VatReport = () => {
     );
   }, [vatData, filterType]);
 
+  // Cleanup DatePicker on unmount
+  useEffect(() => {
+    return () => {
+      if (datepickerRef.current) {
+        // Force cleanup of any DatePicker DOM elements
+        const datepickerPopper = document.querySelector('.react-datepicker-popper');
+        if (datepickerPopper && datepickerPopper.parentNode) {
+          datepickerPopper.parentNode.removeChild(datepickerPopper);
+        }
+      }
+    };
+  }, []);
+
   return (
     <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative", minHeight: "400px", overflow: "visible" }}>
       <h4 className="fw-bold">GCC VAT Return Report</h4>
@@ -166,6 +186,7 @@ const VatReport = () => {
             <Form.Label className="fw-semibold">Choose Date</Form.Label>
             <div style={{ position: "relative", minHeight: "38px", width: "100%" }}>
               <DatePicker
+                ref={datepickerRef}
                 selectsRange
                 startDate={startDate}
                 endDate={endDate}
@@ -179,15 +200,25 @@ const VatReport = () => {
                 dateFormat="dd/MM/yyyy"
                 placeholderText="Select date range"
                 disabled
-                withPortal={false}
+                // Use portal to avoid DOM conflicts
+                withPortal={true}
+                portalId="root" // Use your app's root element ID
                 popperModifiers={[
                   {
                     name: "preventOverflow",
                     enabled: true,
+                    options: {
+                      altBoundary: true,
+                      altAxis: true,
+                      tether: false,
+                    },
                   },
                   {
-                    name: "hide",
-                    enabled: false,
+                    name: "flip",
+                    enabled: true,
+                    options: {
+                      altBoundary: true,
+                    },
                   },
                 ]}
               />
