@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext, useRef, useMemo } from "react";
 import {
   Button,
   Card,
@@ -147,12 +147,15 @@ const VatReport = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
-  const filteredRows = vatData.filter(
-    (e) => filterType === "All" || e.type === filterType
-  );
+  const filteredRows = useMemo(() => {
+    if (!vatData || !Array.isArray(vatData)) return [];
+    return vatData.filter(
+      (e) => filterType === "All" || e.type === filterType
+    );
+  }, [vatData, filterType]);
 
   return (
-    <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative" }}>
+    <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative", minHeight: "400px" }}>
       <h4 className="fw-bold">GCC VAT Return Report</h4>
       <p className="text-muted mb-4">Auto-generated VAT summary.</p>
 
@@ -161,7 +164,7 @@ const VatReport = () => {
         <Row className="g-3 align-items-end">
           <Col md={4}>
             <Form.Label className="fw-semibold">Choose Date</Form.Label>
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", minHeight: "38px", width: "100%" }}>
               <DatePicker
                 selectsRange
                 startDate={startDate}
@@ -176,7 +179,7 @@ const VatReport = () => {
                 dateFormat="dd/MM/yyyy"
                 placeholderText="Select date range"
                 disabled
-                key={`datepicker-${isRTL ? 'rtl' : 'ltr'}`}
+                withPortal={false}
               />
             </div>
           </Col>
@@ -238,51 +241,57 @@ const VatReport = () => {
           </div>
         </div>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && (
+          <div className="alert alert-danger" key="error-alert">
+            {error}
+          </div>
+        )}
 
-        <Table hover responsive className="border-2text-nowrap mb-0 align-middle">
-          <thead className=" text-dark fw-semibold">
-            <tr>
-              <th>Type</th>
-              <th>Description</th>
-              <th>Taxable Amount</th>
-              <th>VAT Rate (%)</th>
-              <th>VAT Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        <div className="table-responsive" style={{ position: "relative" }}>
+          <Table hover responsive className="border-2text-nowrap mb-0 align-middle">
+            <thead className=" text-dark fw-semibold">
               <tr>
-                <td colSpan="5" className="text-center py-3">
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  Loading VAT data...
-                </td>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Taxable Amount</th>
+                <th>VAT Rate (%)</th>
+                <th>VAT Amount</th>
               </tr>
-            ) : filteredRows && filteredRows.length > 0 ? (
-              filteredRows.map((row, idx) => (
-                <tr key={`vat-row-${row.type}-${idx}`}>
-                  <td>{row.type}</td>
-                  <td>{row.description}</td>
-                  <td>
-                    {symbol} {convertPrice(row.taxableAmount)}
-                  </td>
-                  <td>
-                    {parseFloat(row.vatRate).toFixed(2)}%
-                  </td>
-                  <td>
-                    {symbol} {convertPrice(row.vatAmount)}
+            </thead>
+            <tbody key="vat-table-body">
+              {loading ? (
+                <tr key="loading-row">
+                  <td colSpan="5" className="text-center py-3">
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Loading VAT data...
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" className="text-center text-muted py-3">
-                  No VAT records found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
+              ) : filteredRows && filteredRows.length > 0 ? (
+                filteredRows.map((row, idx) => (
+                  <tr key={`vat-row-${row.type || 'unknown'}-${idx}-${row.description || ''}`}>
+                    <td>{row.type || ''}</td>
+                    <td>{row.description || ''}</td>
+                    <td>
+                      {symbol} {convertPrice(row.taxableAmount || 0)}
+                    </td>
+                    <td>
+                      {parseFloat(row.vatRate || 0).toFixed(2)}%
+                    </td>
+                    <td>
+                      {symbol} {convertPrice(row.vatAmount || 0)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr key="no-data-row">
+                  <td colSpan="5" className="text-center text-muted py-3">
+                    No VAT records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        </div>
       </Card>
 
       {/* Page Info */}
