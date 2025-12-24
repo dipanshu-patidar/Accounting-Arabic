@@ -1255,7 +1255,7 @@ const handleSaveDraft = async () => {
 
   // Check if required fields are filled
   if (!validateRequiredFields()) {
-    toast.error("Please fill all required fields before saving");
+    alert("Please fill all required fields before saving");
     return;
   }
 
@@ -1894,21 +1894,29 @@ const handleSaveDraft = async () => {
 
   // Handle clicks outside the customer dropdown to close it
   useEffect(() => {
+    if (!showCustomerDropdown) return;
+    
     const handleClickOutside = (event) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
         searchRef.current &&
+        !dropdownRef.current.contains(event.target) &&
         !searchRef.current.contains(event.target)
       ) {
         setShowCustomerDropdown(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    
+    // Use setTimeout to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 0);
+    
     return () => {
+      clearTimeout(timeoutId);
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [showCustomerDropdown]);
 
   // Fetch customers for the logged-in company so search works by name/phone
   useEffect(() => {
@@ -2088,21 +2096,22 @@ const handleSaveDraft = async () => {
 
     
 
-        <Table bordered hover size="sm" className="dark-bordered-table">
-          <thead className="bg-light">
-            <tr>
-              <th>Item Name</th>
-              <th>Warehouse (Stock)</th>
-              <th>Qty</th>
-              {tab === "deliveryChallan" && <th>Delivered Qty</th>}
-              <th>Rate</th>
-              <th>Tax %</th>
-              <th>Discount</th>
-              <th>Amount</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div style={{ position: "relative", overflow: "visible" }}>
+          <Table bordered hover size="sm" className="dark-bordered-table">
+            <thead className="bg-light">
+              <tr>
+                <th>Item Name</th>
+                <th>Warehouse (Stock)</th>
+                <th>Qty</th>
+                {tab === "deliveryChallan" && <th key="delivered-qty-header">Delivered Qty</th>}
+                <th>Rate</th>
+                <th>Tax %</th>
+                <th>Discount</th>
+                <th>Amount</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
             {items.map((item, idx) => {
               const qty =
                 tab === "deliveryChallan"
@@ -2118,14 +2127,14 @@ const handleSaveDraft = async () => {
                 showWarehouseSearch[warehouseRowKey];
 
               return (
-                <tr key={idx}>
+                <tr key={`${tab}-row-${idx}`}>
                   {/* Item Name Cell with Search */}
-                  <td style={{ position: "relative" }}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
+                  <td style={{ position: "relative", overflow: "visible" }}>
+                    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                       <Form.Control
                         type="text"
                         size="sm"
-                        value={item.item_name}
+                        value={item.item_name || ""}
                         onChange={(e) => {
                           handleItemChange(idx, "item_name", e.target.value);
                           handleRowSearchChange(tab, idx, e.target.value);
@@ -2139,24 +2148,26 @@ const handleSaveDraft = async () => {
                         size="sm"
                         onClick={() => toggleRowSearch(tab, idx)}
                         title="Search Items"
+                        type="button"
                       >
                         <FontAwesomeIcon icon={faSearch} />
                       </Button>
-                    </div>
-                    {isItemSearchVisible && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          right: 0,
-                          zIndex: 10,
-                          backgroundColor: "white",
-                          border: "1px solid #ccc",
-                          borderRadius: "4px",
-                          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                        }}
-                      >
+                      {isItemSearchVisible && (
+                        <div
+                          key={`item-dropdown-${tab}-${idx}`}
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            zIndex: 1050,
+                            backgroundColor: "white",
+                            border: "1px solid #ccc",
+                            borderRadius: "4px",
+                            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                            marginTop: "2px",
+                          }}
+                        >
                         <InputGroup size="sm">
                           <InputGroup.Text>
                             <FontAwesomeIcon icon={faSearch} />
@@ -2184,9 +2195,9 @@ const handleSaveDraft = async () => {
                           <div
                             style={{ maxHeight: "200px", overflowY: "auto" }}
                           >
-                            {filteredItems.map((filteredItem) => (
+                            {filteredItems.map((filteredItem, itemIdx) => (
                               <div
-                                key={filteredItem.id}
+                                key={filteredItem.id || `item-${tab}-${idx}-${itemIdx}`}
                                 style={{
                                   padding: "8px",
                                   cursor: "pointer",
@@ -2252,12 +2263,13 @@ const handleSaveDraft = async () => {
                             No items found
                           </div>
                         )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   {/* Warehouse Cell with Search */}
-                  <td style={{ position: "relative" }}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
+                  <td style={{ position: "relative", overflow: "visible" }}>
+                    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                       <Form.Control
                         type="text"
                         size="sm"
@@ -2275,24 +2287,26 @@ const handleSaveDraft = async () => {
                         size="sm"
                         onClick={() => toggleWarehouseSearch(tab, idx)}
                         title="Search Warehouses"
+                        type="button"
                       >
                         <FontAwesomeIcon icon={faSearch} />
                       </Button>
-                    </div>
-                    {isWarehouseSearchVisible && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          right: 0,
-                          zIndex: 9,
-                          backgroundColor: "white",
-                          border: "1px solid #ccc",
-                          borderRadius: "4px",
-                          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                        }}
-                      >
+                      {isWarehouseSearchVisible && (
+                        <div
+                          key={`warehouse-dropdown-${tab}-${idx}`}
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            zIndex: 1049,
+                            backgroundColor: "white",
+                            border: "1px solid #ccc",
+                            borderRadius: "4px",
+                            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                            marginTop: "2px",
+                          }}
+                        >
                         <InputGroup size="sm">
                           <InputGroup.Text>
                             <FontAwesomeIcon icon={faSearch} />
@@ -2324,9 +2338,9 @@ const handleSaveDraft = async () => {
                           <div
                             style={{ maxHeight: "200px", overflowY: "auto" }}
                           >
-                            {filteredWarehouses.map((wh) => (
+                            {filteredWarehouses.map((wh, whIdx) => (
                               <div
-                                key={wh.warehouse_id || wh.warehouse_name}
+                                key={wh.warehouse_id || wh.warehouse_name || `warehouse-${tab}-${idx}-${whIdx}`}
                                 style={{
                                   padding: "8px",
                                   cursor: "pointer",
@@ -2368,8 +2382,9 @@ const handleSaveDraft = async () => {
                             No warehouses found
                           </div>
                         )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <Form.Control
@@ -2460,6 +2475,7 @@ const handleSaveDraft = async () => {
             })}
           </tbody>
         </Table>
+        </div>
       </div>
     );
   };
@@ -2727,7 +2743,7 @@ const handleSaveDraft = async () => {
         <Row className="mb-4 d-flex justify-content-between">
           <Col md={8}>
             <h5>Quotation To</h5>
-            <Form.Group className="mb-2 position-relative">
+            <Form.Group className="mb-2">
               <div className="position-relative" ref={searchRef}>
                 <Form.Control
                   type="text"
@@ -2747,7 +2763,7 @@ const handleSaveDraft = async () => {
                 <FontAwesomeIcon
                   icon={faChevronDown}
                   className="position-absolute end-0 top-50 translate-middle-y me-2 text-muted"
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: "pointer", zIndex: 1, pointerEvents: "auto" }}
                   onClick={() => {
                     setShowCustomerDropdown(!showCustomerDropdown);
                     if (!showCustomerDropdown && !customerSearchTerm) {
@@ -2755,38 +2771,47 @@ const handleSaveDraft = async () => {
                     }
                   }}
                 />
-              </div>
-              {showCustomerDropdown && filteredCustomerList.length > 0 && (
-                <div
-                  ref={dropdownRef}
-                  className="position-absolute w-100 bg-white border rounded mt-1 shadow-sm z-index-10"
-                  style={{ maxHeight: "200px", overflowY: "auto" }}
-                >
-                  {filteredCustomerList.map((customer) => (
-                    <div
-                      key={customer.id}
-                      className="p-2 hover:bg-light cursor-pointer"
-                      onClick={() => handleCustomerSelect(customer)}
-                    >
-                      <div className="fw-bold">{customer.name_english}</div>
-                      {customer.company_name && (
-                        <div className="text-muted small">
-                          {customer.company_name}
+                {showCustomerDropdown && (
+                  <div
+                    ref={dropdownRef}
+                    className="position-absolute w-100 bg-white border rounded shadow-sm"
+                    style={{ 
+                      maxHeight: "200px", 
+                      overflowY: "auto", 
+                      zIndex: 1050, 
+                      top: "100%",
+                      left: 0,
+                      marginTop: "2px"
+                    }}
+                  >
+                    {filteredCustomerList.length > 0 ? (
+                      filteredCustomerList.map((customer) => (
+                        <div
+                          key={customer.id}
+                          className="p-2 cursor-pointer"
+                          onClick={() => handleCustomerSelect(customer)}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f0f0f0")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor = "white")
+                          }
+                        >
+                          <div className="fw-bold">{customer.name_english}</div>
+                          {customer.company_name && (
+                            <div className="text-muted small">
+                              {customer.company_name}
+                            </div>
+                          )}
+                          <div className="text-muted small">{customer.email}</div>
                         </div>
-                      )}
-                      <div className="text-muted small">{customer.email}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {showCustomerDropdown && filteredCustomerList.length === 0 && (
-                <div
-                  ref={dropdownRef}
-                  className="position-absolute w-100 bg-white border rounded mt-1 shadow-sm z-index-10 p-2 text-muted"
-                >
-                  No customers found
-                </div>
-              )}
+                      ))
+                    ) : (
+                      <div className="p-2 text-muted">No customers found</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </Form.Group>
             <Form.Group className="mb-2">
               <Form.Control
@@ -6030,46 +6055,33 @@ const handleSaveDraft = async () => {
   };
 
   return (
-    <>
-      <div className="container-fluid mt-4 px-2" ref={formRef}>
-        <h4 className="text-center mb-4">Sales Process</h4>
-
-    
-        <Tabs activeKey={key} onSelect={handleTabChange}  className="mb-4 custom-tabs" fill>
-          <Tab eventKey="quotation" title="Quotation">
+    <div className="container-fluid mt-4 px-2" ref={formRef} style={{ position: "relative", minHeight: "100px" }}>
+      <h4 className="text-center mb-4">Sales Process</h4>
+      <div key={`tabs-wrapper-${key}`}>
+        <Tabs 
+          activeKey={key} 
+          onSelect={handleTabChange} 
+          className="mb-4 custom-tabs" 
+          fill
+        >
+          <Tab eventKey="quotation" title="Quotation" key="tab-quotation">
             {renderQuotationTab()}
           </Tab>
-          <Tab eventKey="salesOrder" title="Sales Order">
+          <Tab eventKey="salesOrder" title="Sales Order" key="tab-salesOrder">
             {renderSalesOrderTab()}
           </Tab>
-          <Tab eventKey="deliveryChallan" title="Delivery Challan">
+          <Tab eventKey="deliveryChallan" title="Delivery Challan" key="tab-deliveryChallan">
             {renderDeliveryChallanTab()}
           </Tab>
-          <Tab eventKey="invoice" title="Invoice">
+          <Tab eventKey="invoice" title="Invoice" key="tab-invoice">
             {renderInvoiceTab()}
           </Tab>
-          <Tab eventKey="payment" title="Payment">
+          <Tab eventKey="payment" title="Payment" key="tab-payment">
             {renderPaymentTab()}
           </Tab>
         </Tabs>
-        {/* Hidden PDF View - Only for PDF generation and printing */}
-        <div
-          style={{
-            visibility: "hidden",
-            position: "absolute",
-            left: "-9999px",
-            top: "-9999px",
-            width: "210mm",
-            padding: "15mm",
-            boxSizing: "border-box",
-          }}
-        >
-          <div id="pdf-view" ref={pdfRef}>
-            {renderPDFView()}
-          </div>
-        </div>
       </div>
-    </>
+    </div>
   );
 };
 export default MultiStepSalesForm;

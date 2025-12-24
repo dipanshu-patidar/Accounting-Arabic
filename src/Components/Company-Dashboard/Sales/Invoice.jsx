@@ -710,12 +710,15 @@ const Invoice = () => {
             }
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <MultiStepSalesForm
-            initialData={selectedOrder}
-            initialStep={selectedOrder?.draftStep || getTabKeyFromStepName(stepNameFilter) || 'quotation'}
-            onSubmit={handleFormSubmit}
-          />
+        <Modal.Body style={{ position: "relative", overflow: "visible" }}>
+          {stepModal && (
+            <MultiStepSalesForm
+              key={`form-${modalKeyRef.current.main}`}
+              initialData={selectedOrder}
+              initialStep={selectedOrder?.draftStep || getTabKeyFromStepName(stepNameFilter) || 'quotation'}
+              onSubmit={handleFormSubmit}
+            />
+          )}
         </Modal.Body>
       </Modal>
 
