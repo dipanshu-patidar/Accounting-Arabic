@@ -155,12 +155,12 @@ const VatReport = () => {
   }, [vatData, filterType]);
 
   return (
-    <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative", minHeight: "400px" }}>
+    <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative", minHeight: "400px", overflow: "visible" }}>
       <h4 className="fw-bold">GCC VAT Return Report</h4>
       <p className="text-muted mb-4">Auto-generated VAT summary.</p>
 
       {/* 🔍 Filter Section */}
-      <div className="shadow-sm rounded-4 p-4 mb-4 border" style={{ position: "relative" }}>
+      <div className="shadow-sm rounded-4 p-4 mb-4 border" style={{ position: "relative", overflow: "visible" }}>
         <Row className="g-3 align-items-end">
           <Col md={4}>
             <Form.Label className="fw-semibold">Choose Date</Form.Label>
@@ -180,6 +180,16 @@ const VatReport = () => {
                 placeholderText="Select date range"
                 disabled
                 withPortal={false}
+                popperModifiers={[
+                  {
+                    name: "preventOverflow",
+                    enabled: true,
+                  },
+                  {
+                    name: "hide",
+                    enabled: false,
+                  },
+                ]}
               />
             </div>
           </Col>
@@ -247,7 +257,7 @@ const VatReport = () => {
           </div>
         )}
 
-        <div className="table-responsive" style={{ position: "relative" }}>
+        <div className="table-responsive" style={{ position: "relative", overflow: "visible" }}>
           <Table hover responsive className="border-2text-nowrap mb-0 align-middle">
             <thead className=" text-dark fw-semibold">
               <tr>
@@ -258,31 +268,31 @@ const VatReport = () => {
                 <th>VAT Amount</th>
               </tr>
             </thead>
-            <tbody key="vat-table-body">
-              {loading ? (
+            <tbody>
+              {loading && (
                 <tr key="loading-row">
                   <td colSpan="5" className="text-center py-3">
                     <Spinner animation="border" size="sm" className="me-2" />
                     Loading VAT data...
                   </td>
                 </tr>
-              ) : filteredRows && filteredRows.length > 0 ? (
-                filteredRows.map((row, idx) => (
-                  <tr key={`vat-row-${row.type || 'unknown'}-${idx}-${row.description || ''}`}>
-                    <td>{row.type || ''}</td>
-                    <td>{row.description || ''}</td>
-                    <td>
-                      {symbol} {convertPrice(row.taxableAmount || 0)}
-                    </td>
-                    <td>
-                      {parseFloat(row.vatRate || 0).toFixed(2)}%
-                    </td>
-                    <td>
-                      {symbol} {convertPrice(row.vatAmount || 0)}
-                    </td>
-                  </tr>
-                ))
-              ) : (
+              )}
+              {!loading && filteredRows && filteredRows.length > 0 && filteredRows.map((row, idx) => (
+                <tr key={`vat-row-${row.type || 'unknown'}-${idx}-${row.description || ''}`}>
+                  <td>{row.type || ''}</td>
+                  <td>{row.description || ''}</td>
+                  <td>
+                    {symbol} {convertPrice(row.taxableAmount || 0)}
+                  </td>
+                  <td>
+                    {parseFloat(row.vatRate || 0).toFixed(2)}%
+                  </td>
+                  <td>
+                    {symbol} {convertPrice(row.vatAmount || 0)}
+                  </td>
+                </tr>
+              ))}
+              {!loading && (!filteredRows || filteredRows.length === 0) && (
                 <tr key="no-data-row">
                   <td colSpan="5" className="text-center text-muted py-3">
                     No VAT records found.
