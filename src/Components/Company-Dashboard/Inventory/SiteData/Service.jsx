@@ -316,8 +316,9 @@ function Service() {
   
   // Handle modal exit - cleanup after animation
   const handleMainModalExited = () => {
+    if (!isMountedRef.current) return;
     // Reset form state after modal fully closed
-    setForm({ 
+    safeSetState(setForm, { 
       id: null, 
       name: "", 
       sku: "", 
@@ -328,7 +329,7 @@ function Service() {
       remarks: "", 
       isInvoiceable: true 
     });
-    setEditMode(false);
+    safeSetState(setEditMode, false);
     isCleaningUpRef.current = false;
   };
   
@@ -346,8 +347,9 @@ function Service() {
   
   // Handle view modal exit - cleanup after animation
   const handleViewModalExited = () => {
+    if (!isMountedRef.current) return;
     // Reset view data after modal fully closed
-    setViewData(null);
+    safeSetState(setViewData, null);
     isCleaningUpRef.current = false;
   };
   
@@ -365,8 +367,9 @@ function Service() {
   
   // Handle delete modal exit - cleanup after animation
   const handleDeleteModalExited = () => {
+    if (!isMountedRef.current) return;
     // Reset delete id after modal fully closed
-    setDeleteId(null);
+    safeSetState(setDeleteId, null);
     isCleaningUpRef.current = false;
   };
 
@@ -379,6 +382,8 @@ function Service() {
   };
 
   const handleSave = async () => {
+    if (!isMountedRef.current) return;
+    
     if (!form.name.trim()) {
       toast.error("Service Name Required", {
         toastId: 'service-name-required',
@@ -397,7 +402,7 @@ function Service() {
       return;
     }
     
-    setLoading(true);
+    safeSetState(setLoading, true);
     try {
       const payload = {
         company_id: parseInt(companyId),
@@ -425,11 +430,14 @@ function Service() {
         });
       }
 
-      await fetchServices();
-      // Reset cleanup flag before closing
-      isCleaningUpRef.current = false;
-      handleClose();
+      if (isMountedRef.current) {
+        await fetchServices();
+        // Reset cleanup flag before closing
+        isCleaningUpRef.current = false;
+        handleClose();
+      }
     } catch (error) {
+      if (!isMountedRef.current) return;
       console.error("Error saving service:", error.response?.data || error.message);
       const errorMessage = error.response?.data?.message || 
         `Failed to ${editMode ? 'update' : 'add'} service. Please try again.`;
@@ -438,7 +446,9 @@ function Service() {
         autoClose: 3000
       });
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        safeSetState(setLoading, false);
+      }
     }
   };
 
@@ -491,18 +501,23 @@ function Service() {
   };
 
   const handleDeleteConfirm = async () => {
-    setLoading(true);
+    if (!isMountedRef.current) return;
+    
+    safeSetState(setLoading, true);
     try {
       await axiosInstance.delete(`${BaseUrl}services/${deleteId}`);
-      toast.success("Service deleted successfully!", {
-        toastId: 'service-delete-success',
-        autoClose: 3000
-      });
-      await fetchServices();
-      // Reset cleanup flag before closing
-      isCleaningUpRef.current = false;
-      handleDeleteConfirmClose();
+      if (isMountedRef.current) {
+        toast.success("Service deleted successfully!", {
+          toastId: 'service-delete-success',
+          autoClose: 3000
+        });
+        await fetchServices();
+        // Reset cleanup flag before closing
+        isCleaningUpRef.current = false;
+        handleDeleteConfirmClose();
+      }
     } catch (error) {
+      if (!isMountedRef.current) return;
       console.error("Error deleting service:", error.response?.data || error.message);
       const errorMessage = error.response?.data?.message || "Failed to delete service. Please try again.";
       toast.error(errorMessage, {
@@ -510,7 +525,9 @@ function Service() {
         autoClose: 3000
       });
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        safeSetState(setLoading, false);
+      }
       // Delete ID will be reset in handleDeleteModalExited
     }
   };
@@ -558,34 +575,39 @@ function Service() {
   // If user doesn't have view permission, show access denied message
   if (!canViewServices) {
     return (
-      <div className="p-4 mt-2">
-        <div className="text-center p-5">
-          <h3>Access Denied</h3>
-          <p>You don't have permission to view Services.</p>
-          <p>Please contact your administrator for access.</p>
+      <>
+        <div className="p-4 mt-2">
+          <div className="text-center p-5">
+            <h3>Access Denied</h3>
+            <p>You don't have permission to view Services.</p>
+            <p>Please contact your administrator for access.</p>
+          </div>
         </div>
         {/* Toast container outside the main component to prevent unmounting issues */}
-        <ToastContainer
-          position={isRTL ? "top-left" : "top-right"}
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={true}
-          closeOnClick
-          rtl={isRTL}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          limit={3}
-          enableMultiContainer
-          containerId={"access-denied"}
-        />
-      </div>
+        {isMountedRef.current && (
+          <ToastContainer
+            key={`toast-container-access-${isRTL ? 'rtl' : 'ltr'}`}
+            position={isRTL ? "top-left" : "top-right"}
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={true}
+            closeOnClick
+            rtl={isRTL}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            limit={3}
+            enableMultiContainer
+            containerId={"service-management"}
+          />
+        )}
+      </>
     );
   }
 
   return (
     <>
-      <div className="container mt-5" dir={isRTL ? "rtl" : "ltr"}>
+      <div className="container mt-5" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative" }}>
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="mb-0">Service Management</h2>
           {canCreateServices && (
@@ -593,12 +615,13 @@ function Service() {
               style={customButtonStyle} 
               onClick={handleShow} 
               disabled={loading}
+              type="button"
             >
               {loading ? 'Loading...' : 'Add Service'}
             </Button>
           )}
         </div>
-        
+          
         <div className="table-responsive">
           <Table striped bordered hover className="shadow-sm">
             <thead>
@@ -674,31 +697,33 @@ function Service() {
                 
         {/* Add/Edit Modal */}
         <Modal 
-          key={modalKeyRef.current.main}
+          key={`main-modal-${modalKeyRef.current.main}`}
           show={show} 
           onHide={handleClose}
           onExited={handleMainModalExited}
           centered 
           enforceFocus={false}
+          backdrop="static"
           dir={isRTL ? "rtl" : "ltr"}
         >
           <Modal.Header closeButton>
             <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Service Name</Form.Label>
-                <Form.Control 
-                  type="text"
-                  name="name" 
-                  value={form.name || ''} 
-                  onChange={handleInput} 
-                  placeholder="Enter service name"
-                  required 
-                  autoFocus
-                />
-              </Form.Group>
+          <Modal.Body style={{ position: "relative" }}>
+            {show && (
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Service Name</Form.Label>
+                  <Form.Control 
+                    type="text"
+                    name="name" 
+                    value={form.name || ''} 
+                    onChange={handleInput} 
+                    placeholder="Enter service name"
+                    required 
+                    autoFocus
+                  />
+                </Form.Group>
               
               <Form.Group className="mb-3">
                 <Form.Label>SKU</Form.Label>
@@ -797,7 +822,8 @@ function Service() {
                   Remarks are for internal use only; they do not display anywhere.
                 </Form.Text>
               </Form.Group>
-            </Form>
+              </Form>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleClose}>
@@ -811,19 +837,20 @@ function Service() {
 
         {/* View Modal */}
         <Modal 
-          key={modalKeyRef.current.view}
+          key={`view-modal-${modalKeyRef.current.view}`}
           show={showView} 
           onHide={handleViewClose}
           onExited={handleViewModalExited}
           centered 
           enforceFocus={false}
+          backdrop="static"
           dir={isRTL ? "rtl" : "ltr"}
         >
           <Modal.Header closeButton>
             <Modal.Title>Service Details</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            {viewData && (
+          <Modal.Body style={{ position: "relative" }}>
+            {showView && viewData && (
               <div className="p-3">
                 <h5 className="text-primary mb-3">{viewData.name}</h5>
                 <p className="mb-2"><strong>SKU:</strong> {viewData.sku || 'N/A'}</p>
@@ -851,19 +878,22 @@ function Service() {
         
         {/* Delete Confirmation Modal */}
         <Modal 
-          key={modalKeyRef.current.delete}
+          key={`delete-modal-${modalKeyRef.current.delete}`}
           show={showDeleteConfirm} 
           onHide={handleDeleteConfirmClose}
           onExited={handleDeleteModalExited}
           centered 
           enforceFocus={false}
+          backdrop="static"
           dir={isRTL ? "rtl" : "ltr"}
         >
           <Modal.Header closeButton>
             <Modal.Title>Confirm Deletion</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            <p>Are you sure you want to delete this service? This action cannot be undone.</p>
+          <Modal.Body style={{ position: "relative" }}>
+            {showDeleteConfirm && (
+              <p>Are you sure you want to delete this service? This action cannot be undone.</p>
+            )}
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleDeleteConfirmClose}>
@@ -877,20 +907,23 @@ function Service() {
       </div>
       
       {/* Toast Container - Outside the main container to prevent unmounting issues */}
-      <ToastContainer
-        position={isRTL ? "top-left" : "top-right"}
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={isRTL}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-        enableMultiContainer
-        containerId={"service-management"}
-      />
+      {isMountedRef.current && (
+        <ToastContainer
+          key={`toast-container-${isRTL ? 'rtl' : 'ltr'}`}
+          position={isRTL ? "top-left" : "top-right"}
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={isRTL}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          limit={3}
+          enableMultiContainer
+          containerId={"service-management"}
+        />
+      )}
     </>
   );
 }
