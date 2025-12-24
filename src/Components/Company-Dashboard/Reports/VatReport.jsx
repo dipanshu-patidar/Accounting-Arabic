@@ -15,6 +15,38 @@ import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
 import { CurrencyContext } from "../../../hooks/CurrencyContext";
 
+// Error Boundary Component to catch and handle errors
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="alert alert-danger">
+          <h5>Something went wrong.</h5>
+          <p>Please refresh the page and try again.</p>
+          <details>
+            {this.state.error && this.state.error.toString()}
+          </details>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const VatReport = () => {
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
@@ -24,11 +56,12 @@ const VatReport = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isRTL, setIsRTL] = useState(false);
+  const [datePickerKey, setDatePickerKey] = useState(0); // Key to force re-render of DatePicker
   
   // Refs to track component mount status
   const isMountedRef = useRef(true);
   const abortControllerRef = useRef(null);
-  const datepickerRef = useRef(null);
+  const containerRef = useRef(null);
 
   // ✅ Get currency context
   const { convertPrice, symbol } = useContext(CurrencyContext);
@@ -42,12 +75,17 @@ const VatReport = () => {
       const isRTLMode = htmlElement.getAttribute('dir') === 'rtl' || 
                        htmlElement.style.direction === 'rtl' ||
                        getComputedStyle(htmlElement).direction === 'rtl';
-      setIsRTL(isRTLMode);
+      
+      if (isRTLMode !== isRTL) {
+        setIsRTL(isRTLMode);
+        // Force re-render of DatePicker when RTL changes
+        setDatePickerKey(prev => prev + 1);
+      }
     };
     
     checkRTL();
     
-    // Simplified RTL detection - only check once and on specific events
+    // Only check on specific events
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && 
@@ -65,7 +103,7 @@ const VatReport = () => {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [isRTL]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -164,189 +202,203 @@ const VatReport = () => {
   // Cleanup DatePicker on unmount
   useEffect(() => {
     return () => {
-      if (datepickerRef.current) {
-        // Force cleanup of any DatePicker DOM elements
-        const datepickerPopper = document.querySelector('.react-datepicker-popper');
-        if (datepickerPopper && datepickerPopper.parentNode) {
-          datepickerPopper.parentNode.removeChild(datepickerPopper);
+      // Force cleanup of any DatePicker DOM elements
+      const datepickerElements = document.querySelectorAll('.react-datepicker-popper, .react-datepicker__month-container');
+      datepickerElements.forEach(el => {
+        if (el.parentNode) {
+          try {
+            el.parentNode.removeChild(el);
+          } catch (e) {
+            console.warn("Could not remove datepicker element:", e);
+          }
         }
-      }
+      });
     };
   }, []);
 
   return (
-    <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative", minHeight: "400px", overflow: "visible" }}>
-      <h4 className="fw-bold">GCC VAT Return Report</h4>
-      <p className="text-muted mb-4">Auto-generated VAT summary.</p>
+    <ErrorBoundary>
+      <div ref={containerRef} className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative", minHeight: "400px" }}>
+        <h4 className="fw-bold">GCC VAT Return Report</h4>
+        <p className="text-muted mb-4">Auto-generated VAT summary.</p>
 
-      {/* 🔍 Filter Section */}
-      <div className="shadow-sm rounded-4 p-4 mb-4 border" style={{ position: "relative", overflow: "visible" }}>
-        <Row className="g-3 align-items-end">
-          <Col md={4}>
-            <Form.Label className="fw-semibold">Choose Date</Form.Label>
-            <div style={{ position: "relative", minHeight: "38px", width: "100%" }}>
-              <DatePicker
-                ref={datepickerRef}
-                selectsRange
-                startDate={startDate}
-                endDate={endDate}
-                onChange={(update) => {
+        {/* 🔍 Filter Section */}
+        <div className="shadow-sm rounded-4 p-4 mb-4 border">
+          <Row className="g-3 align-items-end">
+            <Col md={4}>
+              <Form.Label className="fw-semibold">Choose Date</Form.Label>
+              <div style={{ position: "relative", minHeight: "38px", width: "100%" }}>
+                {/* Use a custom input for better control */}
+                <DatePicker
+                  key={datePickerKey} // Force re-render when RTL changes
+                  selectsRange
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={(update) => {
+                    if (isMountedRef.current) {
+                      setDateRange(update);
+                    }
+                  }}
+                  isClearable
+                  customInput={
+                    <Form.Control
+                      type="text"
+                      placeholder="Select date range"
+                      readOnly
+                    />
+                  }
+                  dateFormat="dd/MM/yyyy"
+                  disabled
+                  // Use portal to avoid DOM conflicts
+                  withPortal={true}
+                  portalId="root" // Use your app's root element ID
+                  popperPlacement={isRTL ? "bottom-end" : "bottom-start"}
+                  popperModifiers={[
+                    {
+                      name: "preventOverflow",
+                      enabled: true,
+                      options: {
+                        altBoundary: true,
+                        altAxis: true,
+                        tether: false,
+                      },
+                    },
+                    {
+                      name: "flip",
+                      enabled: true,
+                      options: {
+                        altBoundary: true,
+                        fallbackPlacements: isRTL ? ["bottom-start", "top-end"] : ["bottom-end", "top-start"],
+                      },
+                    },
+                  ]}
+                />
+              </div>
+            </Col>
+            <Col md={4}>
+              <Form.Label className="fw-semibold">Transaction Type</Form.Label>
+              <Form.Select 
+                value={filterType} 
+                onChange={(e) => {
                   if (isMountedRef.current) {
-                    setDateRange(update);
+                    setFilterType(e.target.value);
                   }
                 }}
-                isClearable
-                className="form-control"
-                dateFormat="dd/MM/yyyy"
-                placeholderText="Select date range"
-                disabled
-                // Use portal to avoid DOM conflicts
-                withPortal={true}
-                portalId="root" // Use your app's root element ID
-                popperModifiers={[
-                  {
-                    name: "preventOverflow",
-                    enabled: true,
-                    options: {
-                      altBoundary: true,
-                      altAxis: true,
-                      tether: false,
-                    },
-                  },
-                  {
-                    name: "flip",
-                    enabled: true,
-                    options: {
-                      altBoundary: true,
-                    },
-                  },
-                ]}
-              />
+              >
+                {types.map((t, i) => (
+                  <option key={`type-${i}`} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col md={4}>
+              <Button
+                type="button"
+                variant=""
+                style={{
+                  backgroundColor: "#27b2b6",
+                  borderColor: "#27b2b6",
+                  color: "white",
+                  width: "100%",
+                }}
+                className="py-2"
+                onClick={() => {
+                  if (!isMountedRef.current) return;
+                  // For manual clicks, create a new controller just for this call
+                  const controller = new AbortController();
+                  fetchVatReport(controller.signal);
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" className="me-2" /> Loading...
+                  </>
+                ) : (
+                  "Generate Report"
+                )}
+              </Button>
+            </Col>
+          </Row>
+        </div>
+
+        {/* 📊 VAT Table */}
+        <Card className="rounded-4 p-4 border-0">
+          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <h5 className="fw-bold mb-2 mb-md-0">VAT Summary</h5>
+            <div className="d-flex gap-2">
+              <Button type="button" variant="outline-danger" size="sm"><FaFilePdf /></Button>
+              <Button type="button" variant="outline-success" size="sm"><FaFileExcel /></Button>
             </div>
-          </Col>
-          <Col md={4}>
-            <Form.Label className="fw-semibold">Transaction Type</Form.Label>
-            <Form.Select 
-              value={filterType} 
-              onChange={(e) => {
-                if (isMountedRef.current) {
-                  setFilterType(e.target.value);
-                }
-              }}
-            >
-              {types.map((t, i) => (
-                <option key={`type-${i}`} value={t}>
-                  {t}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md={4}>
-            <Button
-              type="button"
-              variant=""
-              style={{
-                backgroundColor: "#27b2b6",
-                borderColor: "#27b2b6",
-                color: "white",
-                width: "100%",
-              }}
-              className="py-2"
-              onClick={() => {
-                if (!isMountedRef.current) return;
-                // For manual clicks, create a new controller just for this call
-                const controller = new AbortController();
-                fetchVatReport(controller.signal);
-              }}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Spinner as="span" animation="border" size="sm" className="me-2" /> Loading...
-                </>
-              ) : (
-                "Generate Report"
-              )}
-            </Button>
-          </Col>
-        </Row>
+          </div>
+
+          {error && (
+            <div className="alert alert-danger" key="error-alert">
+              {error}
+            </div>
+          )}
+
+          <div className="table-responsive">
+            <Table hover responsive className="border-2text-nowrap mb-0 align-middle">
+              <thead className="text-dark fw-semibold">
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Taxable Amount</th>
+                  <th>VAT Rate (%)</th>
+                  <th>VAT Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr key="loading-row">
+                    <td colSpan="5" className="text-center py-3">
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Loading VAT data...
+                    </td>
+                  </tr>
+                )}
+                {!loading && filteredRows && filteredRows.length > 0 && filteredRows.map((row, idx) => (
+                  <tr key={`vat-row-${row.type || 'unknown'}-${idx}-${row.description || ''}`}>
+                    <td>{row.type || ''}</td>
+                    <td>{row.description || ''}</td>
+                    <td>
+                      {symbol} {convertPrice(row.taxableAmount || 0)}
+                    </td>
+                    <td>
+                      {parseFloat(row.vatRate || 0).toFixed(2)}%
+                    </td>
+                    <td>
+                      {symbol} {convertPrice(row.vatAmount || 0)}
+                    </td>
+                  </tr>
+                ))}
+                {!loading && (!filteredRows || filteredRows.length === 0) && (
+                  <tr key="no-data-row">
+                    <td colSpan="5" className="text-center text-muted py-3">
+                      No VAT records found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Card>
+
+        {/* Page Info */}
+        <Card className="mb-4 p-3 shadow rounded-4 mt-2">
+          <Card.Body>
+            <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
+            <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
+              <li>VAT (Value Added Tax) is an indirect tax applied on the sale of goods and services.</li>
+              <li>It is charged at every stage of the supply chain — from manufacturer to retailer.</li>
+              <li>The final consumer ultimately bears the VAT cost while businesses collect and remit it.</li>
+            </ul>
+          </Card.Body>
+        </Card>
       </div>
-
-      {/* 📊 VAT Table */}
-      <Card className="rounded-4 p-4 border-0" style={{ position: "relative" }}>
-        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-          <h5 className="fw-bold mb-2 mb-md-0">VAT Summary</h5>
-          <div className="d-flex gap-2">
-            <Button type="button" variant="outline-danger" size="sm"><FaFilePdf /></Button>
-            <Button type="button" variant="outline-success" size="sm"><FaFileExcel /></Button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="alert alert-danger" key="error-alert">
-            {error}
-          </div>
-        )}
-
-        <div className="table-responsive" style={{ position: "relative", overflow: "visible" }}>
-          <Table hover responsive className="border-2text-nowrap mb-0 align-middle">
-            <thead className=" text-dark fw-semibold">
-              <tr>
-                <th>Type</th>
-                <th>Description</th>
-                <th>Taxable Amount</th>
-                <th>VAT Rate (%)</th>
-                <th>VAT Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr key="loading-row">
-                  <td colSpan="5" className="text-center py-3">
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    Loading VAT data...
-                  </td>
-                </tr>
-              )}
-              {!loading && filteredRows && filteredRows.length > 0 && filteredRows.map((row, idx) => (
-                <tr key={`vat-row-${row.type || 'unknown'}-${idx}-${row.description || ''}`}>
-                  <td>{row.type || ''}</td>
-                  <td>{row.description || ''}</td>
-                  <td>
-                    {symbol} {convertPrice(row.taxableAmount || 0)}
-                  </td>
-                  <td>
-                    {parseFloat(row.vatRate || 0).toFixed(2)}%
-                  </td>
-                  <td>
-                    {symbol} {convertPrice(row.vatAmount || 0)}
-                  </td>
-                </tr>
-              ))}
-              {!loading && (!filteredRows || filteredRows.length === 0) && (
-                <tr key="no-data-row">
-                  <td colSpan="5" className="text-center text-muted py-3">
-                    No VAT records found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-        </div>
-      </Card>
-
-      {/* Page Info */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
-          <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-            <li>VAT (Value Added Tax) is an indirect tax applied on the sale of goods and services.</li>
-            <li>It is charged at every stage of the supply chain — from manufacturer to retailer.</li>
-            <li>The final consumer ultimately bears the VAT cost while businesses collect and remit it.</li>
-          </ul>
-        </Card.Body>
-      </Card>
-    </div>
+    </ErrorBoundary>
   );
 };
 
