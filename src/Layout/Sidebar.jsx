@@ -286,7 +286,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
             { to: "/company/profitloss", label: "Profit & Loss" },
             { to: "/company/balancesheet", label: "Balance Sheet" },
             { to: "/company/expense", label: "Expenses" },
-            { to: "/company/vatreport", label: "Vat Report" },
+            // { to: "/company/vatreport", label: "Vat Report" },
             { to: "/company/taxreport", label: "Tax Report" },
           ],
           "fa-solid fa-dollar-sign"
@@ -552,12 +552,12 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
           label: "Expenses"
         });
       }
-      if (hasViewPermission("Vat_Report")) {
-        accountingItems.push({
-          to: "/company/vatreport",
-          label: "Vat Report"
-        });
-      }
+      // if (hasViewPermission("Vat_Report")) {
+      //   accountingItems.push({
+      //     to: "/company/vatreport",
+      //     label: "Vat Report"
+      //   });
+      // }
       if (hasViewPermission("Tax_Report")) {
         accountingItems.push({
           to: "/company/taxreport",
