@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   Button,
   Card,
@@ -23,15 +23,61 @@ const VatReport = () => {
   const [vatData, setVatData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isRTL, setIsRTL] = useState(false);
+  
+  // Refs to track component mount status
+  const isMountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
 
   // ✅ Get currency context
   const { convertPrice, symbol } = useContext(CurrencyContext);
+  
+  // Check if RTL mode is active
+  useEffect(() => {
+    const checkRTL = () => {
+      if (!isMountedRef.current) return;
+      
+      const htmlElement = document.documentElement;
+      const isRTLMode = htmlElement.getAttribute('dir') === 'rtl' || 
+                       htmlElement.style.direction === 'rtl' ||
+                       getComputedStyle(htmlElement).direction === 'rtl';
+      setIsRTL(isRTLMode);
+    };
+    
+    checkRTL();
+    
+    const observer = new MutationObserver(checkRTL);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['dir', 'style']
+    });
+    
+    const intervalId = setInterval(checkRTL, 1000);
+    
+    return () => {
+      observer.disconnect();
+      clearInterval(intervalId);
+    };
+  }, []);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const types = ["All", "Outward Supplies", "Inward Supplies", "Adjustments", "Exempt Supplies"];
 
-  const fetchVatReport = async (signal) => { // ✅ Pass signal into the function
+  const fetchVatReport = async (signal) => {
+    if (!isMountedRef.current) return;
+    
     if (!companyId) {
       setError("Company ID is missing.");
+      setLoading(false);
       return;
     }
 
@@ -42,11 +88,14 @@ const VatReport = () => {
       const params = { company_id: companyId };
       const response = await axiosInstance.get("/vat-report", {
         params,
-        // ✅ Pass the signal to the axios request
         signal: signal,
       });
 
-      // ✅ No need to check if aborted here. If aborted, it will jump to the catch block.
+      if (!isMountedRef.current) {
+        setLoading(false);
+        return;
+      }
+      
       if (response.data?.success && Array.isArray(response.data.vatSummary)) {
         setVatData(response.data.vatSummary);
       } else {
@@ -54,71 +103,95 @@ const VatReport = () => {
         setError("Unexpected response format.");
       }
     } catch (err) {
-      // ✅ Check if the error is because the request was aborted
-      // If it was, we just stop and don't show an error.
-      if (axiosInstance.isCancel(err) || err.name === 'CanceledError') {
+      // Check if the error is because the request was aborted
+      if (axiosInstance.isCancel(err) || err.name === 'CanceledError' || err.name === 'AbortError') {
         console.log("Request was canceled.");
+        // Don't update state if component unmounted or request was intentionally canceled
         return;
       }
 
       console.error("VAT Report fetch error:", err);
-      setError("Failed to load VAT data. Please try again.");
-      setVatData([]);
+      if (isMountedRef.current) {
+        setError("Failed to load VAT data. Please try again.");
+        setVatData([]);
+      }
     } finally {
-      // ✅ Only set loading to false if the request wasn't aborted
-      // The check is not strictly necessary but is good practice.
+      // Always set loading to false in finally block
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // ✅ 1. Create a new AbortController
+    if (!companyId || !isMountedRef.current) return;
+    
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create a new AbortController
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     const { signal } = controller;
 
-    // ✅ 2. Call the fetch function and pass the signal
+    // Call the fetch function and pass the signal
     fetchVatReport(signal);
 
-    // ✅ 3. This is the cleanup function for useEffect
-    // It runs when the component unmounts.
+    // Cleanup function for useEffect
     return () => {
-      console.log("VatReport component is unmounting, cancelling request.");
-      // Abort the request, which will trigger the 'catch' block in fetchVatReport
-      controller.abort();
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
     };
-  }, [companyId]); // Dependency array ensures this runs only when companyId changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
   const filteredRows = vatData.filter(
     (e) => filterType === "All" || e.type === filterType
   );
 
   return (
-    <div className="p-4 mt-4">
+    <div className="p-4 mt-4" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative" }}>
       <h4 className="fw-bold">GCC VAT Return Report</h4>
       <p className="text-muted mb-4">Auto-generated VAT summary.</p>
 
       {/* 🔍 Filter Section */}
-      <div className="shadow-sm rounded-4 p-4 mb-4 border">
+      <div className="shadow-sm rounded-4 p-4 mb-4 border" style={{ position: "relative" }}>
         <Row className="g-3 align-items-end">
           <Col md={4}>
             <Form.Label className="fw-semibold">Choose Date</Form.Label>
-            <DatePicker
-              selectsRange
-              startDate={startDate}
-              endDate={endDate}
-              onChange={(update) => setDateRange(update)}
-              isClearable
-              className="form-control"
-              dateFormat="dd/MM/yyyy"
-              placeholderText="Select date range"
-              disabled
-            />
+            <div style={{ position: "relative" }}>
+              <DatePicker
+                selectsRange
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(update) => {
+                  if (isMountedRef.current) {
+                    setDateRange(update);
+                  }
+                }}
+                isClearable
+                className="form-control"
+                dateFormat="dd/MM/yyyy"
+                placeholderText="Select date range"
+                disabled
+                key={`datepicker-${isRTL ? 'rtl' : 'ltr'}`}
+              />
+            </div>
           </Col>
           <Col md={4}>
             <Form.Label className="fw-semibold">Transaction Type</Form.Label>
-            <Form.Select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+            <Form.Select 
+              value={filterType} 
+              onChange={(e) => {
+                if (isMountedRef.current) {
+                  setFilterType(e.target.value);
+                }
+              }}
+            >
               {types.map((t, i) => (
-                <option key={i} value={t}>
+                <option key={`type-${i}`} value={t}>
                   {t}
                 </option>
               ))}
@@ -126,6 +199,7 @@ const VatReport = () => {
           </Col>
           <Col md={4}>
             <Button
+              type="button"
               variant=""
               style={{
                 backgroundColor: "#27b2b6",
@@ -135,7 +209,8 @@ const VatReport = () => {
               }}
               className="py-2"
               onClick={() => {
-                // ✅ For manual clicks, we create a new controller just for this call
+                if (!isMountedRef.current) return;
+                // For manual clicks, create a new controller just for this call
                 const controller = new AbortController();
                 fetchVatReport(controller.signal);
               }}
@@ -154,12 +229,12 @@ const VatReport = () => {
       </div>
 
       {/* 📊 VAT Table */}
-      <Card className="rounded-4 p-4 border-0">
+      <Card className="rounded-4 p-4 border-0" style={{ position: "relative" }}>
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
           <h5 className="fw-bold mb-2 mb-md-0">VAT Summary</h5>
           <div className="d-flex gap-2">
-            <Button variant="outline-danger" size="sm"><FaFilePdf /></Button>
-            <Button variant="outline-success" size="sm"><FaFileExcel /></Button>
+            <Button type="button" variant="outline-danger" size="sm"><FaFilePdf /></Button>
+            <Button type="button" variant="outline-success" size="sm"><FaFileExcel /></Button>
           </div>
         </div>
 
@@ -183,9 +258,9 @@ const VatReport = () => {
                   Loading VAT data...
                 </td>
               </tr>
-            ) : filteredRows.length > 0 ? (
+            ) : filteredRows && filteredRows.length > 0 ? (
               filteredRows.map((row, idx) => (
-                <tr key={idx}>
+                <tr key={`vat-row-${row.type}-${idx}`}>
                   <td>{row.type}</td>
                   <td>{row.description}</td>
                   <td>
