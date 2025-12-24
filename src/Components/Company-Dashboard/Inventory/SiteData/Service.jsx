@@ -166,7 +166,8 @@ function Service() {
       fetchServices();
       fetchUnitOptions();
     }
-  }, [canViewServices, isRTL]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canViewServices]);
 
   // Cleanup function for component unmount
   useEffect(() => {
@@ -183,7 +184,7 @@ function Service() {
 
   const fetchServices = async () => {
     try {
-      safeSetState(setServicesLoading, true);
+      setServicesLoading(true);
       
       // Cancel any previous request
       if (abortControllerRef.current) {
@@ -197,23 +198,25 @@ function Service() {
         signal: abortControllerRef.current.signal
       });
       
-      if (isMountedRef.current) {
-        if (response.data.success && response.data.data) {
-          const transformedServices = response.data.data.map(service => ({
-            id: service.id,
-            name: service.service_name,
-            sku: service.sku,
-            serviceDescription: service.description,
-            unit: service.uom_name,
-            price: service.price,
-            tax: service.tax_percent,
-            remarks: service.remarks,
-            isInvoiceable: service.allow_in_invoice === "1"
-          }));
-          safeSetState(setServices, transformedServices);
-        } else {
-          safeSetState(setServices, []);
-        }
+      console.log("Services API Response:", response.data); // Debug log
+      
+      if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        const transformedServices = response.data.data.map(service => ({
+          id: service.id,
+          name: service.service_name,
+          sku: service.sku || "",
+          serviceDescription: service.description || "",
+          unit: service.uom || service.uom_name || "",
+          price: service.price || 0,
+          tax: service.tax_percent || 0,
+          remarks: service.remarks || "",
+          isInvoiceable: service.allow_in_invoice === "1"
+        }));
+        console.log("Transformed Services:", transformedServices); // Debug log
+        setServices(transformedServices);
+      } else {
+        console.log("No valid data in response or data is not an array");
+        setServices([]);
       }
     } catch (error) {
       if (error.name !== 'AbortError' && isMountedRef.current) {
@@ -222,12 +225,10 @@ function Service() {
           toastId: 'fetch-services-error',
           autoClose: 3000
         });
-        safeSetState(setServices, []);
+        setServices([]);
       }
     } finally {
-      if (isMountedRef.current) {
-        safeSetState(setServicesLoading, false);
-      }
+      setServicesLoading(false);
     }
   };
 
@@ -381,8 +382,9 @@ function Service() {
     }));
   };
 
-  const handleSave = async () => {
-    if (!isMountedRef.current) return;
+  const handleSave = async (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     
     if (!form.name.trim()) {
       toast.error("Service Name Required", {
@@ -402,7 +404,7 @@ function Service() {
       return;
     }
     
-    safeSetState(setLoading, true);
+    setLoading(true);
     try {
       const payload = {
         company_id: parseInt(companyId),
@@ -430,14 +432,11 @@ function Service() {
         });
       }
 
-      if (isMountedRef.current) {
-        await fetchServices();
-        // Reset cleanup flag before closing
-        isCleaningUpRef.current = false;
-        handleClose();
-      }
+      await fetchServices();
+      // Reset cleanup flag before closing
+      isCleaningUpRef.current = false;
+      handleClose();
     } catch (error) {
-      if (!isMountedRef.current) return;
       console.error("Error saving service:", error.response?.data || error.message);
       const errorMessage = error.response?.data?.message || 
         `Failed to ${editMode ? 'update' : 'add'} service. Please try again.`;
@@ -446,9 +445,7 @@ function Service() {
         autoClose: 3000
       });
     } finally {
-      if (isMountedRef.current) {
-        safeSetState(setLoading, false);
-      }
+      setLoading(false);
     }
   };
 
@@ -584,27 +581,29 @@ function Service() {
           </div>
         </div>
         {/* Toast container outside the main component to prevent unmounting issues */}
-        {isMountedRef.current && (
-          <ToastContainer
-            key={`toast-container-access-${isRTL ? 'rtl' : 'ltr'}`}
-            position={isRTL ? "top-left" : "top-right"}
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={true}
-            closeOnClick
-            rtl={isRTL}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            limit={3}
-            enableMultiContainer
-            containerId={"service-management"}
-          />
-        )}
+        <ToastContainer
+          key={`toast-access-${isRTL ? 'rtl' : 'ltr'}`}
+          position={isRTL ? "top-left" : "top-right"}
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={isRTL}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          limit={3}
+          enableMultiContainer
+          containerId={"service-management"}
+        />
       </>
     );
   }
 
+  // Debug: Log services state
+  console.log("Current services state:", services);
+  console.log("Services loading:", servicesLoading);
+  
   return (
     <>
       <div className="container mt-5" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative" }}>
@@ -641,7 +640,7 @@ function Service() {
                     Loading services...
                   </td>
                 </tr>
-              ) : services.length > 0 ? (
+              ) : services && services.length > 0 ? (
                 services.map((s) => (
                   <tr key={s.id}>
                     <td>{s.name}</td>
@@ -651,6 +650,7 @@ function Service() {
                     <td className="text-center">
                       {canViewServices && (
                         <Button 
+                          type="button"
                           size="sm" 
                           style={viewButtonStyle} 
                           onClick={() => handleView(s)} 
@@ -662,6 +662,7 @@ function Service() {
                       )}
                       {canUpdateServices && (
                         <Button 
+                          type="button"
                           size="sm" 
                           style={editButtonStyle} 
                           onClick={() => handleEdit(s)} 
@@ -673,6 +674,7 @@ function Service() {
                       )}
                       {canDeleteServices && (
                         <Button 
+                          type="button"
                           size="sm" 
                           style={deleteButtonStyle} 
                           onClick={() => handleDeleteClick(s.id)} 
@@ -703,15 +705,13 @@ function Service() {
           onExited={handleMainModalExited}
           centered 
           enforceFocus={false}
-          backdrop="static"
           dir={isRTL ? "rtl" : "ltr"}
         >
-          <Modal.Header closeButton>
-            <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
-          </Modal.Header>
-          <Modal.Body style={{ position: "relative" }}>
-            {show && (
-              <Form>
+            <Modal.Header closeButton>
+              <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <Form onSubmit={(e) => { e.preventDefault(); handleSave(e); }}>
                 <Form.Group className="mb-3">
                   <Form.Label>Service Name</Form.Label>
                   <Form.Control 
@@ -823,16 +823,15 @@ function Service() {
                 </Form.Text>
               </Form.Group>
               </Form>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button style={customButtonStyle} onClick={handleSave} disabled={loading}>
-              {loading ? 'Saving...' : (editMode ? "Update" : "Save") + " Service"}
-            </Button>
-          </Modal.Footer>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleClose} type="button">
+                Cancel
+              </Button>
+              <Button style={customButtonStyle} onClick={handleSave} disabled={loading} type="button">
+                {loading ? 'Saving...' : (editMode ? "Update" : "Save") + " Service"}
+              </Button>
+            </Modal.Footer>
         </Modal>
 
         {/* View Modal */}
@@ -843,16 +842,15 @@ function Service() {
           onExited={handleViewModalExited}
           centered 
           enforceFocus={false}
-          backdrop="static"
           dir={isRTL ? "rtl" : "ltr"}
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Service Details</Modal.Title>
-          </Modal.Header>
-          <Modal.Body style={{ position: "relative" }}>
-            {showView && viewData && (
-              <div className="p-3">
-                <h5 className="text-primary mb-3">{viewData.name}</h5>
+            <Modal.Header closeButton>
+              <Modal.Title>Service Details</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {viewData && (
+                <div className="p-3">
+                  <h5 className="text-primary mb-3">{viewData.name}</h5>
                 <p className="mb-2"><strong>SKU:</strong> {viewData.sku || 'N/A'}</p>
                 <p className="mb-2"><strong>Service Description:</strong> {viewData.serviceDescription || 'N/A'}</p>
                 <p className="mb-2"><strong>Unit of Measure:</strong> {viewData.unit || 'N/A'}</p>
@@ -865,15 +863,15 @@ function Service() {
                     <span className="badge bg-secondary">No</span>
                   )}
                 </p>
-                <p className="mb-2"><strong>Remarks:</strong> {viewData.remarks || 'N/A'}</p>
-              </div>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleViewClose}>
-              Close
-            </Button>
-          </Modal.Footer>
+                  <p className="mb-2"><strong>Remarks:</strong> {viewData.remarks || 'N/A'}</p>
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleViewClose} type="button">
+                Close
+              </Button>
+            </Modal.Footer>
         </Modal>
         
         {/* Delete Confirmation Modal */}
@@ -884,46 +882,41 @@ function Service() {
           onExited={handleDeleteModalExited}
           centered 
           enforceFocus={false}
-          backdrop="static"
           dir={isRTL ? "rtl" : "ltr"}
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Confirm Deletion</Modal.Title>
-          </Modal.Header>
-          <Modal.Body style={{ position: "relative" }}>
-            {showDeleteConfirm && (
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Deletion</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
               <p>Are you sure you want to delete this service? This action cannot be undone.</p>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleDeleteConfirmClose}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleDeleteConfirm} disabled={loading}>
-              {loading ? 'Deleting...' : 'Delete'}
-            </Button>
-          </Modal.Footer>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={handleDeleteConfirmClose} type="button">
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDeleteConfirm} disabled={loading} type="button">
+                {loading ? 'Deleting...' : 'Delete'}
+              </Button>
+            </Modal.Footer>
         </Modal>
       </div>
       
-      {/* Toast Container - Outside the main container to prevent unmounting issues */}
-      {isMountedRef.current && (
-        <ToastContainer
-          key={`toast-container-${isRTL ? 'rtl' : 'ltr'}`}
-          position={isRTL ? "top-left" : "top-right"}
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={true}
-          closeOnClick
-          rtl={isRTL}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          limit={3}
-          enableMultiContainer
-          containerId={"service-management"}
-        />
-      )}
+      {/* Toast Container - Always render but with stable key */}
+      <ToastContainer
+        key={`toast-${isRTL ? 'rtl' : 'ltr'}`}
+        position={isRTL ? "top-left" : "top-right"}
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={isRTL}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        limit={3}
+        enableMultiContainer
+        containerId={"service-management"}
+      />
     </>
   );
 }
