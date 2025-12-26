@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { MdOutlineDashboard, MdOutlineShoppingBag, MdPersonSearch, MdContactSupport, MdOutlineScreenShare } from "react-icons/md";
+import { FaSignal } from "react-icons/fa";
+import { LuCircleDollarSign } from "react-icons/lu";
+import { BsBank } from "react-icons/bs";
+import { TbUserDollar } from "react-icons/tb";
+import { RiBarcodeLine } from "react-icons/ri";
+import { HiUsers } from "react-icons/hi";
+import { GrIntegration } from "react-icons/gr";
+import { CiSettings } from "react-icons/ci";
+import { IoTicket } from "react-icons/io5";
 import "./Sidebar.css";
 
 const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
@@ -160,7 +170,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
    * Renders a section with a clickable header to expand/collapse sub-items.
    * @param {string} title - The title of section (e.g., "Accounting").
    * @param {Array} items - An array of sub-items, each with `to` and `label`.
-   * @param {string} icon - The FontAwesome icon class for header.
+   * @param {string|Component} icon - The FontAwesome icon class or React Icon component for header.
    */
   const renderExpandableSection = (title, items, icon) => {
     // Create a unique key for section to manage its expanded state
@@ -169,6 +179,9 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
 
     // Check if any child item is currently active path
     const hasActiveChild = items.some((item) => item.to === activePath);
+
+    const IconComponent = typeof icon === 'string' ? null : icon;
+    const iconClass = typeof icon === 'string' ? icon : null;
 
     return (
       <div className="mb-3" key={menuKey}>
@@ -181,7 +194,11 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           onClick={() => toggleMenu(menuKey)}
           title={isCollapsed ? title : ""}
         >
-          <i className={`me-3 ${icon}`} style={iconStyle}></i>
+          {IconComponent ? (
+            <IconComponent className="me-3" style={iconStyle} />
+          ) : (
+            <i className={`me-3 ${iconClass}`} style={iconStyle}></i>
+          )}
           {!isCollapsed && <span>{title}</span>}
           {!isCollapsed && (
             <i
@@ -222,22 +239,31 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
   /**
    * Renders a single, non-expandable navigation item.
    */
-  const navItem = (to, icon, label) => (
-    <div className="nav-item ps-2" key={to}>
-      <Link
-        to={to}
-        onClick={() => handleMenuClick(to)}
-        className={`nav-link d-flex align-items-center sidebar-link px-3 py-2${
-          activePath === to ? "active-link" : ""
-        }`}
-        style={linkStyle}
-        title={isCollapsed ? label : ""}
-      >
-        <i className={`me-3 ${icon}`} style={iconStyle}></i>
-        {!isCollapsed && <span>{label}</span>}
-      </Link>
-    </div>
-  );
+  const navItem = (to, icon, label) => {
+    const IconComponent = typeof icon === 'string' ? null : icon;
+    const iconClass = typeof icon === 'string' ? icon : null;
+    
+    return (
+      <div className="nav-item ps-2" key={to}>
+        <Link
+          to={to}
+          onClick={() => handleMenuClick(to)}
+          className={`nav-link d-flex align-items-center sidebar-link px-3 py-2${
+            activePath === to ? "active-link" : ""
+          }`}
+          style={linkStyle}
+          title={isCollapsed ? label : ""}
+        >
+          {IconComponent ? (
+            <IconComponent className="me-3" style={iconStyle} />
+          ) : (
+            <i className={`me-3 ${iconClass}`} style={iconStyle}></i>
+          )}
+          {!isCollapsed && <span>{label}</span>}
+        </Link>
+      </div>
+    );
+  };
 
   /**
    * Generates menu structure based on user's role and permissions.
@@ -246,7 +272,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
     // For SUPERADMIN role, show all admin menu items
     if (role === "SUPERADMIN") {
       return [
-        navItem("/dashboard", "fa-solid fa-house-chimney", "Dashboard"),
+        navItem("/dashboard", MdOutlineDashboard, "Dashboard"),
         navItem("/superadmin/company", "fas fa-building", "Company"),
         navItem("/superadmin/planpricing", "fas fa-tags", "Plans & Pricing"),
         navItem(
@@ -266,7 +292,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
     // For COMPANY role, show all company menu items
     if (role === "COMPANY") {
       const menuItems = [
-        navItem("/company/dashboard", "fa-solid fa-house-chimney", "Dashboard"),
+        navItem("/company/dashboard", MdOutlineDashboard, "Dashboard"),
       ];
 
       // User Management section
@@ -277,7 +303,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/users", label: "Users" },
             { to: "/company/rolespermissions", label: "Roles & Permissions" },
           ],
-          "fas fa-users"
+          HiUsers
         )
       );
 
@@ -289,7 +315,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/Invoice", label: "Sales Order" },
             { to: "/company/salesreturn", label: "Sales Return" },
           ],
-          "fas fa-chart-line"
+          LuCircleDollarSign
         )
       );
 
@@ -301,7 +327,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/purchasorderr", label: "Purchase Orders" },
             { to: "/company/purchasereturn", label: "Purchase Return" },
           ],
-          "fas fa-shopping-cart"
+          MdOutlineShoppingBag
         )
       );
 
@@ -320,7 +346,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             // { to: "/company/vatreport", label: "Vat Report" },
             { to: "/company/taxreport", label: "Tax Report" },
           ],
-          "fa-solid fa-dollar-sign"
+          BsBank
         )
       );
 
@@ -339,7 +365,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
               label: "Inventory Adjustment",
             },
           ],
-          "fa-solid fa-list-ul"
+          RiBarcodeLine
         )
       );
 
@@ -364,7 +390,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/payrollreports", label: "Payroll Report" },
             { to: "/company/payrollsettings", label: "Payroll Setting" },
           ],
-          "fa-solid fa-money-bill-1"
+          TbUserDollar
         )
       );
 
@@ -392,12 +418,12 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
               label: "Compliance Integration",
             },
           ],
-          "fas fa-certificate"
+          GrIntegration
         )
       );
 
-      menuItems.push(navItem("/company/audit-logs", "fas fa-list-alt", "Audit Logs"));
-      menuItems.push(navItem("/company/support-tickets", "fas fa-life-ring", "Support Tickets"));
+      menuItems.push(navItem("/company/audit-logs", MdPersonSearch, "Audit Logs"));
+      menuItems.push(navItem("/company/support-tickets", MdContactSupport, "Support Tickets"));
 
       // Settings section
       menuItems.push(
@@ -407,11 +433,11 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/companyinfo", label: "Company Info" },
             { to: "/company/password-request", label: "Password Requests" },
           ],
-          "fa-solid fa-wrench"
+          CiSettings
         )
       );
 
-      menuItems.push(navItem("/company/ponitofsale", "fas fa-desktop", "POS Screen"));
+      menuItems.push(navItem("/company/ponitofsale", MdOutlineScreenShare, "POS Screen"));
 
       // Voucher section
       menuItems.push(
@@ -423,7 +449,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/income", label: "Income" },
             { to: "/company/contravoucher", label: "Contra Voucher" },
           ],
-          "fas fa-file-invoice-dollar"
+          IoTicket
         )
       );
 
@@ -449,7 +475,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
               label: "Account Statement Report",
             },
           ],
-          "fas fa-chart-bar"
+          FaSignal
         )
       );
 
@@ -463,7 +489,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
       // Dashboard section
       if (hasViewPermission("Dashboard")) {
         menuItems.push(
-          navItem("/company/dashboard", "fa-solid fa-house-chimney", "Dashboard")
+          navItem("/company/dashboard", MdOutlineDashboard, "Dashboard")
         );
       }
       
@@ -486,7 +512,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "User Management",
             userManagementItems,
-            "fas fa-users"
+            HiUsers
           )
         );
       }
@@ -510,7 +536,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Sales",
             salesItems,
-            "fas fa-chart-line"
+            LuCircleDollarSign
           )
         );
       }
@@ -534,7 +560,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Purchases",
             purchasesItems,
-            "fas fa-shopping-cart"
+            MdOutlineShoppingBag
           )
         );
       }
@@ -600,7 +626,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Accounting",
             accountingItems,
-            "fa-solid fa-dollar-sign"
+            BsBank
           )
         );
       }
@@ -648,7 +674,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Inventory",
             inventoryItems,
-            "fa-solid fa-list-ul"
+            RiBarcodeLine
           )
         );
       }
@@ -656,7 +682,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
       // POS section
       if (hasViewPermission("POS_Screen")) {
         menuItems.push(
-          navItem("/company/ponitofsale", "fas fa-desktop", "POS Screen")
+          navItem("/company/ponitofsale", MdOutlineScreenShare, "POS Screen")
         );
       }
       
@@ -691,7 +717,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Voucher",
             voucherItems,
-            "fas fa-file-invoice-dollar"
+            IoTicket
           )
         );
       }
@@ -751,7 +777,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Reports",
             reportsItems,
-            "fas fa-chart-bar"
+            FaSignal
           )
         );
       }
@@ -775,7 +801,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           renderExpandableSection(
             "Settings",
             settingsItems,
-            "fa-solid fa-wrench"
+            CiSettings
           )
         );
       }
