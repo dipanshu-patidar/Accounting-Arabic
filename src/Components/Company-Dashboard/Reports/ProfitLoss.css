@@ -1,0 +1,334 @@
+/* Profit Loss Page Container */
+.profit-loss-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.profit-loss-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.profit-loss-title i {
+  color: #505ece;
+}
+
+.profit-loss-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+.profit-loss-date {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Filter Card */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.filter-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.btn-toggle-details {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-toggle-details:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+/* Table Card */
+.profit-loss-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.profit-loss-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.profit-loss-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.profit-loss-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+.profit-loss-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Row Types */
+.row-header {
+  background-color: #f8f9fa;
+  font-weight: 700;
+  color: #505ece;
+  font-size: 1.1rem;
+}
+
+.row-summary {
+  background-color: #e3f2fd;
+  font-weight: 700;
+  color: #1976d2;
+  border-top: 2px solid #90caf9;
+  border-bottom: 2px solid #90caf9;
+}
+
+.row-summary:hover {
+  background-color: #bbdefb !important;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background-color: rgba(80, 94, 206, 0.1) !important;
+}
+
+.clickable-row a {
+  color: #505ece;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.clickable-row a:hover {
+  color: #3d47b8;
+  text-decoration: underline;
+}
+
+/* Footer Info */
+.profit-loss-footer-info {
+  color: #6c757d;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+/* Detailed View Card */
+.detailed-view-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+  margin-top: 1.5rem;
+}
+
+.detailed-view-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+}
+
+.detailed-view-header h5 {
+  color: white;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Modal Styling */
+.profit-loss-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.profit-loss-modal .modal-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.profit-loss-modal .modal-header .close {
+  color: white;
+  opacity: 1;
+  text-shadow: none;
+  font-size: 1.5rem;
+}
+
+.profit-loss-modal .modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.profit-loss-modal .modal-title a {
+  color: white;
+}
+
+.profit-loss-modal .modal-body {
+  padding: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 75vh;
+}
+
+/* Custom Scrollbar for Modal Body */
+.profit-loss-modal .modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.profit-loss-modal .modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.profit-loss-modal .modal-body::-webkit-scrollbar-thumb {
+  background-color: #505ece;
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+.profit-loss-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: #3d47b8;
+}
+
+.profit-loss-modal .modal-footer {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+/* Modal Buttons */
+.profit-loss-modal .btn-modal-close {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.profit-loss-modal .btn-modal-close:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-clear-filter {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-clear-filter:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Summary Card in Modal */
+.modal-summary-card {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-left: 4px solid #505ece;
+  border-radius: 8px;
+}
+
+.modal-summary-card h6 {
+  color: #505ece;
+  font-weight: 700;
+}
+
+/* Form Controls in Modal */
+.modal-form-control {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.modal-form-control:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .profit-loss-title {
+    font-size: 1.5rem;
+  }
+
+  .filter-card {
+    padding: 1rem;
+  }
+
+  .profit-loss-table {
+    font-size: 14px;
+  }
+}
+

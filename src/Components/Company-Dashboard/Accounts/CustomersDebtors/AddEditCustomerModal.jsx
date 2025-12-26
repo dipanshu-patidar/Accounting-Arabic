@@ -282,11 +282,11 @@ const AddEditCustomerModal = ({
   };
 
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited} size="xl" centered backdrop="static">
-      <Modal.Header closeButton className="bg-light">
-        <Modal.Title>{editMode ? "Edit Customer" : "Add Customer"}</Modal.Title>
+    <Modal show={show} onHide={onHide} onExited={onExited} size="xl" centered backdrop="static" className="customer-modal">
+      <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+        <Modal.Title style={{ color: "white" }}>{editMode ? "Edit Customer" : "Add Customer"}</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="modal-body-custom">
         {error && <Alert variant="danger">{error}</Alert>}
         {isLoading && <Alert variant="info">Loading customer data...</Alert>}
 
@@ -755,14 +755,59 @@ const AddEditCustomerModal = ({
           </Row>
         </Form>
       </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide} disabled={isLoading}>
+      <Modal.Footer className="modal-footer-custom">
+        <Button 
+          variant="secondary" 
+          onClick={onHide} 
+          disabled={isLoading}
+          style={{
+            backgroundColor: "#6c757d",
+            borderColor: "#6c757d",
+            color: "white",
+            padding: "8px 18px",
+            borderRadius: "8px",
+            fontWeight: "600",
+            transition: "all 0.3s ease"
+          }}
+          onMouseEnter={(e) => {
+            if (isLoading) return;
+            e.currentTarget.style.backgroundColor = "#5a6268";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#6c757d";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
           Cancel
         </Button>
         <Button
-          style={{ backgroundColor: "#53b2a5", border: "none" }}
+          style={{ 
+            backgroundColor: "#505ece", 
+            borderColor: "#505ece",
+            border: "none",
+            color: "white",
+            padding: "8px 18px",
+            borderRadius: "8px",
+            fontWeight: "600",
+            transition: "all 0.3s ease",
+            opacity: (isSubmitting || isLoading) ? 0.6 : 1
+          }}
           onClick={handleSaveCustomer}
           disabled={isSubmitting || isLoading}
+          onMouseEnter={(e) => {
+            if (isSubmitting || isLoading) return;
+            e.currentTarget.style.backgroundColor = "#3d47b8";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#505ece";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           {isSubmitting
             ? "Saving..."

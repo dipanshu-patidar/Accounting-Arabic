@@ -1,5 +1,5 @@
 .sidebar {
-  background-color: #023347;
+  background: linear-gradient(180deg, #023347 0%, #012a38 100%);
   color: #ffffff;
   width: 250px;
   border-right: none;
@@ -7,17 +7,60 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
 .submenu {
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  padding-left: 0;
+  margin-left: 8px;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  margin-top: 4px;
+}
+
+.active-sublink {
+  background-color: #505ece !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(80, 94, 206, 0.3) !important;
+  position: relative;
+}
+
+.active-sublink::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 2px 0 0 2px;
+}
+
+.active-sublink:hover {
+  background-color: #505ece !important;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4) !important;
+}
+
+.submenu .sidebar-link {
+  margin-left: 8px;
+  padding-left: 1.5rem !important;
+  position: relative;
+}
+
+.submenu .sidebar-link:hover {
+  color: #ffffff !important;
+  background-color: rgba(80, 94, 206, 0.1) !important;
 }
 .sidebar-menu-container {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 20px;
   -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: #505ece transparent;
 }
 
 .sidebar-footer {
@@ -51,7 +94,7 @@
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background-color: #2a8e9c;
+  background-color: #505ece;
   border-radius: 6px;
 }
 
@@ -67,29 +110,39 @@
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background-color: #2a8e9c; /* Scrollbar ka color */
+  background-color: #505ece; /* Scrollbar ka color */
   border-radius: 10px; /* Rounded corners */
   border: 2px solid transparent; /* Thoda padding lagane ke liye */
   background-clip: content-box;
 }
 
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(80, 94, 206, 0.8);
+}
+
 .sidebar-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.sidebar-link:hover {
   color: #ffffff !important;
-  border-radius: 0;
-  transition: background-color 0.2s;
 }
 
 /* Only apply hover/active effects to dropdown menu items */
 .list-unstyled .sidebar-link:hover,
 .list-unstyled .active-link {
-  background-color: #2a8e9c !important;
+  background-color: rgba(80, 94, 206, 0.15) !important;
   color: #ffffff !important;
-  transform: translateX(3px);
+  transform: translateX(-3px);
 }
 
 .list-unstyled .active-link {
+  background-color: #505ece !important;
   font-weight: 600;
-  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
 }
 
 .section-header {
@@ -100,12 +153,15 @@
   justify-content: space-between;
   align-items: center;
   font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  margin: 4px 8px;
 }
 
 .section-header:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(80, 94, 206, 0.15);
+  transform: translateX(-2px);
 }
 
 @media (max-width: 768px) {
@@ -180,17 +236,36 @@
 }
 
 .nav-item {
-  margin-bottom: 5px;
+  margin-bottom: 4px;
+  position: relative;
 }
 
 .sidebar-link {
   color: #ffffff !important;
-  border-radius: 6px !important;
-  transition: all 0.25s ease;
+  border-radius: 8px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 12px 15px !important;
   display: flex;
   align-items: center;
-  margin: 5px 0;
+  margin: 4px 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-link::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: #505ece;
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.sidebar-link:hover::before {
+  transform: scaleY(1);
 }
 
 .sidebar-link i {
@@ -198,18 +273,35 @@
   text-align: center;
   margin-right: 12px;
   font-size: 16px;
+  transition: transform 0.3s ease;
 }
- .sidebar-link:hover {
-  background-color: #53b2a5 !important;
-  transform: translateX(3px);
+
+.sidebar-link:hover {
+  background-color: rgba(80, 94, 206, 0.15) !important;
+  transform: translateX(-3px);
+  color: #ffffff !important;
+}
+
+.sidebar-link:hover i {
+  transform: scale(1.1);
 }
 
 .active-link {
-  background-color: #53b2a5 !important;
-  /* Yellow highlight */
+  background-color: #505ece !important;
   color: #ffffff !important;
   font-weight: 600;
-  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+  transform: translateX(-3px);
+  position: relative;
+}
+
+.active-link::before {
+  transform: scaleY(1);
+}
+
+.active-link i {
+  transform: scale(1.1);
+  color: #ffffff;
 }
 
 /* Close Button */
@@ -258,15 +350,18 @@
 
 /* Logout button styling */
 .logout-btn {
-  border-color: #53b2a5 !important;
-  color: #53b2a5 !important;
+  border-color: #505ece !important;
+  color: #505ece !important;
   padding: 8px 16px !important;
   font-size: 15px !important;
+  transition: all 0.3s ease;
 }
 
 .logout-btn:hover {
-  background-color: #53b2a5 !important;
+  background-color: #505ece !important;
   color: white !important;
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+  transform: translateY(-1px);
 }
 
 /* jfdsjfks */

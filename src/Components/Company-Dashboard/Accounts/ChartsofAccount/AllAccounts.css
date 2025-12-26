@@ -1,0 +1,258 @@
+/* All Accounts Page Container */
+.all-accounts-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.all-accounts-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.all-accounts-title i {
+  color: #505ece;
+}
+
+.all-accounts-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Search Wrapper */
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 45px !important;
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.search-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Add Account Button */
+.btn-add-account {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.btn-add-account:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-add-account:active {
+  transform: translateY(0);
+}
+
+/* Table Styling */
+.all-accounts-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.all-accounts-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.all-accounts-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.all-accounts-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.all-accounts-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+.all-accounts-table tbody tr.group-header {
+  background-color: rgba(80, 94, 206, 0.1);
+  font-weight: 700;
+}
+
+.all-accounts-table tbody tr.total-row {
+  background-color: rgba(80, 94, 206, 0.05);
+  font-weight: 700;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border-width: 2px;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-view {
+  color: #17a2b8;
+  border-color: #17a2b8;
+}
+
+.btn-view:hover {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-edit {
+  color: #ffc107;
+  border-color: #ffc107;
+}
+
+.btn-edit:hover {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-delete {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-delete:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-ledger {
+  color: #505ece;
+  border-color: #505ece;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.btn-ledger:hover {
+  background-color: #505ece;
+  color: white;
+}
+
+/* Filter Section */
+.filter-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.filter-section .form-control {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.filter-section .form-control:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.filter-section .btn-clear {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.filter-section .btn-clear:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .all-accounts-title {
+    font-size: 1.5rem;
+  }
+
+  .search-wrapper {
+    margin-bottom: 1rem;
+  }
+
+  .btn-add-account {
+    width: 100%;
+  }
+
+  .all-accounts-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+
+  .btn-ledger {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+}
+

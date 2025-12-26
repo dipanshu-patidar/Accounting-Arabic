@@ -190,7 +190,10 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           className={`nav-item ps-2 d-flex align-items-center sidebar-link px-3 py-2 cursor-pointer ${
             hasActiveChild ? "active-link" : ""
           }`}
-          style={linkStyle}
+          style={{
+            ...linkStyle,
+            cursor: 'pointer',
+          }}
           onClick={() => toggleMenu(menuKey)}
           title={isCollapsed ? title : ""}
         >
@@ -203,7 +206,11 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           {!isCollapsed && (
             <i
               className={`ms-auto fas ${isExpanded ? "fa-minus" : "fa-plus"}`}
-              style={{ fontSize: "0.8rem", opacity: 0.7 }}
+              style={{ 
+                fontSize: "0.8rem", 
+                opacity: 0.7,
+                transition: "transform 0.3s ease, opacity 0.3s ease"
+              }}
             ></i>
           )}
         </div>
@@ -223,7 +230,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
                     ...linkStyle,
                     paddingRight: "3.5rem", // More indent for sub-items
                     fontSize: "14px",
-                    color: "#ccc",
+                    color: activePath === item.to ? "#ffffff" : "rgba(255, 255, 255, 0.7)",
                   }}
                 >
                   <span>{item.label}</span>
@@ -862,17 +869,19 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
               zIndex: 1001,
               fontSize: "18px",
               padding: "8px 12px",
-              borderRadius: "6px",
-              transition: "all 0.6s ease",
-              // backgroundColor: "rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              transition: "all 0.3s ease",
+              backgroundColor: "rgba(80, 94, 206, 0.1)",
               border: "none",
-              
+              color: "#ffffff",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+              e.currentTarget.style.backgroundColor = "rgba(80, 94, 206, 0.3)";
+              e.currentTarget.style.transform = "scale(1.05)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+              e.currentTarget.style.backgroundColor = "rgba(80, 94, 206, 0.1)";
+              e.currentTarget.style.transform = "scale(1)";
             }}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >

@@ -1,0 +1,532 @@
+/* Purchase Return Page Container */
+.purchase-return-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.purchase-return-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.purchase-return-title i {
+  color: #505ece;
+}
+
+.purchase-return-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Search Wrapper */
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 45px !important;
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.search-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Export Button */
+.btn-export {
+  background-color: #fd7e14 !important;
+  border-color: #fd7e14 !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.btn-export:hover {
+  background-color: #e66a00 !important;
+  border-color: #e66a00 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(253, 126, 20, 0.4);
+}
+
+/* Add Return Button */
+.btn-add-return {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.btn-add-return:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-add-return:active {
+  transform: translateY(0);
+}
+
+/* Filter Card */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.filter-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.filter-title {
+  color: #505ece;
+  display: flex;
+  align-items: center;
+}
+
+.btn-toggle-filters,
+.btn-clear-filters {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-toggle-filters:hover,
+.btn-clear-filters:hover {
+  background-color: #f8f9fa;
+  border-color: #505ece;
+  color: #505ece;
+}
+
+/* Form Controls in Filter */
+.filter-card .form-control,
+.filter-card .form-select,
+.filter-input,
+.filter-date,
+.filter-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.filter-card .form-control:focus,
+.filter-card .form-select:focus,
+.filter-input:focus,
+.filter-date:focus,
+.filter-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Summary Cards */
+.summary-card-1 {
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%) !important;
+  border-left: 4px solid #00bcd4 !important;
+}
+.summary-card-1 .summary-value { color: #00838f !important; }
+.summary-card-1 .summary-icon-wrapper { background: rgba(0, 188, 212, 0.2) !important; color: #00bcd4 !important; }
+
+.summary-card-2 {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%) !important;
+  border-left: 4px solid #4caf50 !important;
+}
+.summary-card-2 .summary-value { color: #2e7d32 !important; }
+.summary-card-2 .summary-icon-wrapper { background: rgba(76, 175, 80, 0.2) !important; color: #4caf50 !important; }
+
+.summary-card-3 {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+  border-left: 4px solid #ff9800 !important;
+}
+.summary-card-3 .summary-value { color: #ef6c00 !important; }
+.summary-card-3 .summary-icon-wrapper { background: rgba(255, 152, 0, 0.2) !important; color: #ff9800 !important; }
+
+.summary-card-4 {
+  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%) !important;
+  border-left: 4px solid #f44336 !important;
+}
+.summary-card-4 .summary-value { color: #c62828 !important; }
+.summary-card-4 .summary-icon-wrapper { background: rgba(244, 67, 54, 0.2) !important; color: #f44336 !important; }
+
+.summary-card-1:hover, .summary-card-2:hover, .summary-card-3:hover, .summary-card-4:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+.summary-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+/* Table Styling */
+.purchase-return-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.purchase-return-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.purchase-return-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.purchase-return-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.purchase-return-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Status Badges */
+.status-badge {
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+  transition: all 0.3s ease;
+}
+
+.status-badge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  display: inline-block;
+}
+
+.status-badge-approved {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+.status-badge-pending {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+.status-badge-rejected {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.status-badge-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border-width: 2px;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-view {
+  color: #17a2b8;
+  border-color: #17a2b8;
+}
+
+.btn-view:hover {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-edit {
+  color: #ffc107;
+  border-color: #ffc107;
+}
+
+.btn-edit:hover {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-delete {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-delete:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Modal Styling */
+.purchase-return-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.purchase-return-modal .modal-dialog {
+  max-width: 90vw;
+  margin: 1.75rem auto;
+}
+
+.purchase-return-modal.modal-lg .modal-dialog {
+  max-width: 800px;
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 75vh;
+}
+
+/* Custom Scrollbar for Modal Body */
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background-color: #505ece;
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background-color: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+/* Modal Form Controls */
+.form-label-custom {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Modal Buttons */
+.btn-modal-save {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-save:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-modal-delete {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-delete:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Dropdown for search inputs in modals */
+.purchase-return-modal .position-relative .position-absolute {
+  z-index: 1050; /* Ensure dropdown is above other modal content */
+  border: 1px solid #505ece;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.3);
+  margin-top: 4px;
+}
+
+.purchase-return-modal .position-relative .position-absolute .p-2:hover {
+  background-color: #f0f0f0;
+}
+
+/* Add Item Button in Modals */
+.btn-add-item {
+  color: #505ece !important;
+  border-color: #505ece !important;
+  background-color: transparent !important;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 8px 15px;
+  font-weight: 600;
+}
+
+.btn-add-item:hover {
+  background-color: rgba(80, 94, 206, 0.1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(80, 94, 206, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .purchase-return-title {
+    font-size: 1.5rem;
+  }
+
+  .search-wrapper {
+    margin-bottom: 1rem;
+  }
+
+  .btn-add-return, .btn-export {
+    width: 100%;
+  }
+
+  .purchase-return-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+
+  .filter-card .card-body {
+    padding: 1.5rem !important;
+  }
+}
+

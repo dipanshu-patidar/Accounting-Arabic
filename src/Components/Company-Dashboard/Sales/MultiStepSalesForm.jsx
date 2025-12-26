@@ -2081,11 +2081,25 @@ const handleSaveDraft = async () => {
               size="sm"
               onClick={addItem}
               style={{
-                backgroundColor: "#53b2a5",
+                backgroundColor: "#505ece",
+                borderColor: "#505ece",
                 border: "none",
-                padding: "6px 12px",
-                fontWeight: "500",
+                color: "white",
+                padding: "8px 16px",
+                fontWeight: "600",
+                borderRadius: "8px",
                 marginRight: "5px",
+                transition: "all 0.3s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#3d47b8";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#505ece";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
@@ -2096,8 +2110,8 @@ const handleSaveDraft = async () => {
 
     
 
-        <div style={{ position: "relative", overflow: "visible" }}>
-          <Table bordered hover size="sm" className="dark-bordered-table">
+        <div style={{ position: "relative", overflow: "visible", zIndex: 1 }}>
+          <Table bordered hover size="sm" className="dark-bordered-table" style={{ position: "relative" }}>
             <thead className="bg-light">
               <tr>
                 <th>Item Name</th>
@@ -2160,12 +2174,13 @@ const handleSaveDraft = async () => {
                             top: "100%",
                             left: 0,
                             right: 0,
-                            zIndex: 1050,
+                            zIndex: 9999,
                             backgroundColor: "white",
-                            border: "1px solid #ccc",
-                            borderRadius: "4px",
-                            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                            marginTop: "2px",
+                            border: "2px solid #505ece",
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 12px rgba(80, 94, 206, 0.3)",
+                            marginTop: "4px",
+                            minWidth: "100%",
                           }}
                         >
                         <InputGroup size="sm">
@@ -2193,7 +2208,11 @@ const handleSaveDraft = async () => {
                           </div>
                         ) : filteredItems.length > 0 ? (
                           <div
-                            style={{ maxHeight: "200px", overflowY: "auto" }}
+                            style={{ 
+                              maxHeight: "250px", 
+                              overflowY: "auto",
+                              overflowX: "hidden"
+                            }}
                           >
                             {filteredItems.map((filteredItem, itemIdx) => (
                               <div
@@ -2299,12 +2318,13 @@ const handleSaveDraft = async () => {
                             top: "100%",
                             left: 0,
                             right: 0,
-                            zIndex: 1049,
+                            zIndex: 9999,
                             backgroundColor: "white",
-                            border: "1px solid #ccc",
-                            borderRadius: "4px",
-                            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                            marginTop: "2px",
+                            border: "2px solid #505ece",
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 12px rgba(80, 94, 206, 0.3)",
+                            marginTop: "4px",
+                            minWidth: "100%",
                           }}
                         >
                         <InputGroup size="sm">
@@ -2336,7 +2356,11 @@ const handleSaveDraft = async () => {
                           </div>
                         ) : filteredWarehouses.length > 0 ? (
                           <div
-                            style={{ maxHeight: "200px", overflowY: "auto" }}
+                            style={{ 
+                              maxHeight: "250px", 
+                              overflowY: "auto",
+                              overflowX: "hidden"
+                            }}
                           >
                             {filteredWarehouses.map((wh, whIdx) => (
                               <div
@@ -3173,17 +3197,61 @@ const handleSaveDraft = async () => {
           </Col>
         </Row>
         {/* Navigation */}
-        <div className="d-flex justify-content-between mt-5">
-          <Button variant="secondary" onClick={handleSkip}>
+        <div className="d-flex justify-content-between mt-5 border-top pt-3">
+          <Button 
+            variant="secondary" 
+            onClick={handleSkip}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Skip
           </Button>
-          <Button variant="warning" onClick={handleSaveDraft}>
+          <Button 
+            variant="warning" 
+            onClick={handleSaveDraft}
+            style={{
+              backgroundColor: "#ffc107",
+              borderColor: "#ffc107",
+              color: "#000",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save
           </Button>
-          <Button variant="primary" onClick={handleSaveNext}>
+          <Button 
+            variant="info" 
+            onClick={handleSaveNext}
+            style={{
+              backgroundColor: "#17a2b8",
+              borderColor: "#17a2b8",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save & Next
           </Button>
-          <Button variant="success" onClick={handleNext}>
+          <Button 
+            variant="success" 
+            onClick={handleNext}
+            style={{
+              backgroundColor: "#28a745",
+              borderColor: "#28a745",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Next
           </Button>
         </div>
@@ -3789,17 +3857,61 @@ const handleSaveDraft = async () => {
         {/* Attachment Fields */}
         {renderAttachmentFields("salesOrder")}
         {/* Navigation Buttons */}
-        <div className="d-flex justify-content-between mt-4">
-          <Button variant="secondary" onClick={handleSkip}>
+        <div className="d-flex justify-content-between mt-4 border-top pt-3">
+          <Button 
+            variant="secondary" 
+            onClick={handleSkip}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Skip
           </Button>
-          <Button variant="warning" onClick={handleSaveDraft}>
+          <Button 
+            variant="warning" 
+            onClick={handleSaveDraft}
+            style={{
+              backgroundColor: "#ffc107",
+              borderColor: "#ffc107",
+              color: "#000",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save
           </Button>
-          <Button variant="primary" onClick={handleSaveNext}>
+          <Button 
+            variant="info" 
+            onClick={handleSaveNext}
+            style={{
+              backgroundColor: "#17a2b8",
+              borderColor: "#17a2b8",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save & Next
           </Button>
-          <Button variant="success" onClick={handleNext}>
+          <Button 
+            variant="success" 
+            onClick={handleNext}
+            style={{
+              backgroundColor: "#28a745",
+              borderColor: "#28a745",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Next
           </Button>
         </div>
@@ -4472,17 +4584,61 @@ const handleSaveDraft = async () => {
           </Col>
         </Row>
         {/* Navigation Buttons */}
-        <div className="d-flex justify-content-between mt-4">
-          <Button variant="secondary" onClick={handleSkip}>
+        <div className="d-flex justify-content-between mt-4 border-top pt-3">
+          <Button 
+            variant="secondary" 
+            onClick={handleSkip}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Skip
           </Button>
-          <Button variant="warning" onClick={handleSaveDraft}>
+          <Button 
+            variant="warning" 
+            onClick={handleSaveDraft}
+            style={{
+              backgroundColor: "#ffc107",
+              borderColor: "#ffc107",
+              color: "#000",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save
           </Button>
-          <Button variant="primary" onClick={handleSaveNext}>
+          <Button 
+            variant="info" 
+            onClick={handleSaveNext}
+            style={{
+              backgroundColor: "#17a2b8",
+              borderColor: "#17a2b8",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save & Next
           </Button>
-          <Button variant="success" onClick={handleNext}>
+          <Button 
+            variant="success" 
+            onClick={handleNext}
+            style={{
+              backgroundColor: "#28a745",
+              borderColor: "#28a745",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Next
           </Button>
         </div>
@@ -5092,16 +5248,60 @@ const handleSaveDraft = async () => {
         </Row>
         {/* Navigation */}
         <div className="d-flex justify-content-between mt-4 border-top pt-3">
-          <Button variant="secondary" onClick={handleSkip}>
+          <Button 
+            variant="secondary" 
+            onClick={handleSkip}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Skip
           </Button>
-          <Button variant="warning" onClick={handleSaveDraft}>
+          <Button 
+            variant="warning" 
+            onClick={handleSaveDraft}
+            style={{
+              backgroundColor: "#ffc107",
+              borderColor: "#ffc107",
+              color: "#000",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save
           </Button>
-          <Button variant="primary" onClick={handleSaveNext}>
+          <Button 
+            variant="info" 
+            onClick={handleSaveNext}
+            style={{
+              backgroundColor: "#17a2b8",
+              borderColor: "#17a2b8",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save & Next
           </Button>
-          <Button variant="success" onClick={handleNext}>
+          <Button 
+            variant="success" 
+            onClick={handleNext}
+            style={{
+              backgroundColor: "#28a745",
+              borderColor: "#28a745",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Next
           </Button>
         </div>
@@ -5655,14 +5855,48 @@ const handleSaveDraft = async () => {
           </Col>
         </Row>
         <div className="d-flex justify-content-between mt-4 border-top pt-3">
-          <Button variant="secondary" onClick={handleSkip}>
+          <Button 
+            variant="secondary" 
+            onClick={handleSkip}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Skip
           </Button>
-          <Button variant="warning" onClick={handleSaveDraft}>
+          <Button 
+            variant="warning" 
+            onClick={handleSaveDraft}
+            style={{
+              backgroundColor: "#ffc107",
+              borderColor: "#ffc107",
+              color: "#000",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
             Save
           </Button>
-          <Button variant="primary" onClick={handleFinalSubmit}>
-            Submit
+          <Button 
+            variant="success" 
+            onClick={handleFinalSubmit}
+            disabled={submittingFinal}
+            style={{
+              backgroundColor: "#28a745",
+              borderColor: "#28a745",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "600"
+            }}
+          >
+            {submittingFinal ? "Submitting..." : "Submit"}
           </Button>
         </div>
       </Form>

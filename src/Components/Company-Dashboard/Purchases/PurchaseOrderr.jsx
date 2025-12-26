@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Table, Button, Badge, Modal, Form, Row, Col, Alert, Card } from "react-bootstrap";
+import { Table, Button, Badge, Modal, Form, Row, Col, Alert, Card, Spinner } from "react-bootstrap";
 import MultiStepPurchaseForm from "./MultiStepPurchaseForms";
-import { FaArrowRight, FaTrash, FaEye } from "react-icons/fa";
-import BaseUrl from "../../../Api/BaseUrl";
+import { FaTrash, FaEye, FaPlus, FaSearch, FaFilter, FaTimes } from "react-icons/fa";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import "./PurchaseOrderr.css";
 
 // ✅ FIXED: Correctly map API status to UI
 const mapApiStatusToUiStatus = (apiStatus) => {
@@ -103,6 +103,7 @@ const PurchaseOrderr = () => {
   const [goodsReceiptStatusFilter, setGoodsReceiptStatusFilter] = useState("");
   const [billStatusFilter, setBillStatusFilter] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(true);
 
   // ✅ FETCH ALL ORDERS
   const fetchPurchaseOrders = async () => {
@@ -345,31 +346,43 @@ const PurchaseOrderr = () => {
   ]);
 
   const statusBadge = (status) => {
-    let variant;
-    switch (status) {
-      case "Done":
-        variant = "success";
-        break;
-      case "Pending":
-        variant = "secondary";
-        break;
-      case "Cancelled":
-        variant = "danger";
-        break;
-      default:
-        variant = "warning";
+    const normalized = status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase() || '';
+    let badgeClass = 'status-badge';
+    
+    if (normalized === 'Done' || normalized === 'Completed') {
+      badgeClass = 'status-badge-done';
+    } else if (normalized === 'Pending') {
+      badgeClass = 'status-badge-pending';
+    } else if (normalized === 'Cancelled') {
+      badgeClass = 'status-badge-cancelled';
     }
-    return <Badge bg={variant}>{status}</Badge>;
+    
+    return (
+      <Badge className={badgeClass}>
+        {normalized}
+      </Badge>
+    );
+  };
+
+  const clearFilters = () => {
+    setFromDate("");
+    setToDate("");
+    setSearchOrderNo("");
+    setPurchaseQuotationStatusFilter("");
+    setPurchaseOrderStatusFilter("");
+    setGoodsReceiptStatusFilter("");
+    setBillStatusFilter("");
+    setPaymentStatusFilter("");
   };
 
   // If user doesn't have view permission, show access denied message
   if (!purchaseOrderPermissions.can_view) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-50">
-        <div className="text-center">
-          <h3 className="text-danger">Access Denied</h3>
+        <Alert variant="danger" className="m-4">
+          <h3>Access Denied</h3>
           <p>You don't have permission to view Purchase Order module.</p>
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -377,9 +390,7 @@ const PurchaseOrderr = () => {
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-50">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <Spinner animation="border" variant="primary" />
         <span className="ms-2">Loading purchase orders...</span>
       </div>
     );
@@ -387,142 +398,171 @@ const PurchaseOrderr = () => {
 
   if (error) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-50">
-        <div className="text-center">
-          <h3 className="text-danger">Error</h3>
-          <p>{error}</p>
-        </div>
-      </div>
+      <Alert variant="danger" className="m-4">
+        {error}
+      </Alert>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="d-flex justify-content-between">
-        <div className="d-flex align-items-center gap-2 mb-4">
-          <FaArrowRight size={20} color="red" />
-          <h5 className="mb-0">Purchase Workflow</h5>
-        </div>
-        {purchaseOrderPermissions.can_create && (
-          <Button
-            variant="primary"
-            onClick={() => handleCreateNewPurchase()}
-            style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
-          >
-            + Create New Purchase
-          </Button>
-        )}
+    <div className="p-4 purchase-order-container">
+      {/* Header */}
+      <div className="mb-4">
+        <h3 className="purchase-order-title">
+          <i className="fas fa-shopping-cart me-2"></i>
+          Purchase Order Management
+        </h3>
+        <p className="purchase-order-subtitle">Manage your purchase orders and workflows</p>
       </div>
 
-      {/* Filters */}
-      <Row className="mb-4 g-3">
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Purchase No</Form.Label>
+      {/* Search and Actions */}
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
             <Form.Control
-              type="text"
-              placeholder="Search by No"
+              className="search-input"
+              placeholder="Search by purchase number, vendor name..."
               value={searchOrderNo}
               onChange={(e) => setSearchOrderNo(e.target.value)}
             />
-          </Form.Group>
+          </div>
         </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>From Date</Form.Label>
-            <Form.Control
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>To Date</Form.Label>
-            <Form.Control
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Purchase Quotation</Form.Label>
-            <Form.Select
-              value={purchaseQuotationStatusFilter}
-              onChange={(e) => setPurchaseQuotationStatusFilter(e.target.value)}
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
+          {purchaseOrderPermissions.can_create && (
+            <Button
+              className="d-flex align-items-center btn-add-purchase-order"
+              onClick={() => handleCreateNewPurchase()}
             >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Done">Done</option>
-              <option value="Cancelled">Cancelled</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Purchase Order</Form.Label>
-            <Form.Select
-              value={purchaseOrderStatusFilter}
-              onChange={(e) => setPurchaseOrderStatusFilter(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Done">Done</option>
-              <option value="Cancelled">Cancelled</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Goods Receipt</Form.Label>
-            <Form.Select
-              value={goodsReceiptStatusFilter}
-              onChange={(e) => setGoodsReceiptStatusFilter(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Done">Done</option>
-              <option value="Cancelled">Cancelled</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Bill</Form.Label>
-            <Form.Select
-              value={billStatusFilter}
-              onChange={(e) => setBillStatusFilter(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Done">Done</option>
-              <option value="Cancelled">Cancelled</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Payment</Form.Label>
-            <Form.Select
-              value={paymentStatusFilter}
-              onChange={(e) => setPaymentStatusFilter(e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Done">Done</option>
-              <option value="Cancelled">Cancelled</option>
-            </Form.Select>
-          </Form.Group>
+              <FaPlus className="me-2" />
+              Create Purchase Order
+            </Button>
+          )}
         </Col>
       </Row>
 
+      {/* Filter Toggle */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          className="btn-toggle-filters"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <FaFilter className="me-2" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
+      </div>
+
+      {/* Advanced Filters */}
+      {showFilters && (
+        <Card className="mb-4 filter-card border-0 shadow-lg">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold filter-title">
+                <FaFilter className="me-2" />
+                Filter Purchase Orders
+              </h5>
+              <Button variant="outline-secondary" size="sm" className="btn-clear-filters" onClick={clearFilters}>
+                <FaTimes className="me-1" /> Clear All
+              </Button>
+            </div>
+            <Row className="g-3">
+              <Col md={3}>
+                <Form.Label className="filter-label">From Date</Form.Label>
+                <Form.Control
+                  className="filter-date"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">To Date</Form.Label>
+                <Form.Control
+                  className="filter-date"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Purchase Quotation</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={purchaseQuotationStatusFilter}
+                  onChange={(e) => setPurchaseQuotationStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Purchase Order</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={purchaseOrderStatusFilter}
+                  onChange={(e) => setPurchaseOrderStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Goods Receipt</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={goodsReceiptStatusFilter}
+                  onChange={(e) => setGoodsReceiptStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Bill</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={billStatusFilter}
+                  onChange={(e) => setBillStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Payment</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={paymentStatusFilter}
+                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
+
       {/* Table */}
-      <Table bordered hover responsive className="text-center align-middle">
-        <thead>
-          <tr>
+      <Card className="purchase-order-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive className="purchase-order-table align-middle" style={{ fontSize: 16 }}>
+              <thead className="table-header">
+                <tr>
             <th>#</th>
             <th>Purchase No</th>
             <th>Vendor</th>
@@ -545,7 +585,8 @@ const PurchaseOrderr = () => {
             filteredOrders.map((order, idx) => (
               <tr key={order.id}>
                 <td>{idx + 1}</td>
-                <td>{order.orderNo}</td>
+                <td><strong>{order.orderNo}</strong></td>
+                <td>{order.vendor || "-"}</td>
                 <td>{order.date}</td>
                 <td>{order.amount}</td>
                 <td>{statusBadge(order.purchaseQuotationStatus)}</td>
@@ -553,47 +594,55 @@ const PurchaseOrderr = () => {
                 <td>{statusBadge(order.goodsReceiptStatus)}</td>
                 <td>{statusBadge(order.billStatus)}</td>
                 <td>{statusBadge(order.paymentStatus)}</td>
-                <td className="d-flex justify-content-center gap-2">
-                  {purchaseOrderPermissions.can_view && (
-                    <Button
-                      size="sm"
-                      variant="outline-info"
-                      onClick={() => handleViewOrder(order)}
-                      title="View Details"
-                    >
-                      <FaEye />
-                    </Button>
-                  )}
-                  {purchaseOrderPermissions.can_update && (
-                    <Button
-                      size="sm"
-                      variant="outline-primary"
-                      onClick={() => handleCreateNewPurchase(order)}
-                      title="Continue Workflow"
-                    >
-                      Continue
-                    </Button>
-                  )}
-                  {purchaseOrderPermissions.can_delete && (
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      onClick={() => {
-                        isCleaningUpRef.current = false;
-                        modalKeyRef.current.delete += 1;
-                        setDeleteConfirm({ id: order.id, name: order.orderNo });
-                      }}
-                      title="Delete Order"
-                    >
-                      <FaTrash />
-                    </Button>
-                  )}
+                <td className="text-center">
+                  <div className="d-flex justify-content-center gap-2">
+                    {purchaseOrderPermissions.can_view && (
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        className="btn-action btn-view"
+                        onClick={() => handleViewOrder(order)}
+                        title="View Details"
+                      >
+                        <FaEye size={14} />
+                      </Button>
+                    )}
+                    {purchaseOrderPermissions.can_update && (
+                      <Button
+                        variant="outline-success"
+                        size="sm"
+                        className="btn-action btn-continue"
+                        onClick={() => handleCreateNewPurchase(order)}
+                        title="Continue Workflow"
+                      >
+                        Continue
+                      </Button>
+                    )}
+                    {purchaseOrderPermissions.can_delete && (
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        className="btn-action btn-delete"
+                        onClick={() => {
+                          isCleaningUpRef.current = false;
+                          modalKeyRef.current.delete += 1;
+                          setDeleteConfirm({ id: order.id, name: order.orderNo });
+                        }}
+                        title="Delete Order"
+                      >
+                        <FaTrash size={14} />
+                      </Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))
           )}
         </tbody>
-      </Table>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* Create/Edit Modal */}
       <Modal 
@@ -603,13 +652,14 @@ const PurchaseOrderr = () => {
         onExited={handleStepModalExited}
         size="xl" 
         centered
+        className="purchase-order-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>
-            {selectedOrder?.id ? "Continue Purchase" : "Create Purchase"}
+            {selectedOrder?.id ? "Continue Purchase Workflow" : "Create Purchase Order"}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body style={{ position: "relative", overflowX: "visible", maxHeight: "75vh", overflowY: "auto" }}>
           <MultiStepPurchaseForm
             initialData={selectedOrder}
             initialStep={selectedOrder?.initialStep || "purchaseQuotation"}
@@ -627,13 +677,13 @@ const PurchaseOrderr = () => {
         onHide={handleCloseViewModal}
         onExited={handleViewModalExited}
         size="xl" 
-        centered 
-        scrollable
+        centered
+        className="purchase-order-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Purchase Order Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body style={{ maxHeight: "75vh", overflowY: "auto", overflowX: "hidden" }}>
           {viewOrder && (
             <>
               {/* Company Info */}
@@ -784,8 +834,8 @@ const PurchaseOrderr = () => {
             </>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseViewModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseViewModal} className="btn-modal-cancel">
             Close
           </Button>
           {purchaseOrderPermissions.can_update && (
@@ -795,6 +845,7 @@ const PurchaseOrderr = () => {
                 handleCloseViewModal();
                 handleCreateNewPurchase(viewOrder);
               }}
+              className="btn-modal-save"
             >
               Continue Workflow
             </Button>
@@ -809,8 +860,9 @@ const PurchaseOrderr = () => {
         onHide={handleCloseDeleteModal}
         onExited={handleDeleteModalExited}
         centered
+        className="purchase-order-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -819,11 +871,11 @@ const PurchaseOrderr = () => {
             <strong>{deleteConfirm?.name}</strong>? This action cannot be undone.
           </Alert>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseDeleteModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseDeleteModal} className="btn-modal-cancel">
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete}>
+          <Button variant="danger" onClick={handleDelete} className="btn-modal-delete">
             Delete
           </Button>
         </Modal.Footer>

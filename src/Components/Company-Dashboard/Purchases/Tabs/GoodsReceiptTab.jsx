@@ -268,11 +268,25 @@ const GoodsReceiptTab = ({
               size="sm"
               onClick={addItem}
               style={{
-                backgroundColor: "#53b2a5",
+                backgroundColor: "#505ece",
+                borderColor: "#505ece",
                 border: "none",
-                padding: "6px 12px",
-                fontWeight: "500",
+                color: "white",
+                padding: "8px 16px",
+                fontWeight: "600",
+                borderRadius: "8px",
                 marginRight: "5px",
+                transition: "all 0.3s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#3d47b8";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#505ece";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
               <FontAwesomeIcon icon={faPlus} /> Add Row
@@ -281,10 +295,24 @@ const GoodsReceiptTab = ({
               size="sm"
               onClick={() => setShowAdd(true)}
               style={{
-                backgroundColor: "#53b2a5",
+                backgroundColor: "#505ece",
+                borderColor: "#505ece",
                 border: "none",
-                padding: "6px 12px",
-                fontWeight: "500",
+                color: "white",
+                padding: "8px 16px",
+                fontWeight: "600",
+                borderRadius: "8px",
+                transition: "all 0.3s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#3d47b8";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#505ece";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
               + Add Product

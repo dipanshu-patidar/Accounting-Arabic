@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card, Button, Spinner } from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Spinner, Alert } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
 import BaseUrl from "../../../Api/BaseUrl";
+import "./BalanceSheet.css";
 
 const BalanceSheet = () => {
   const companyId = GetCompanyId();
@@ -38,16 +39,20 @@ const BalanceSheet = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
-        <Spinner animation="border" variant="primary" />
+      <div className="p-4 balance-sheet-container">
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <Spinner animation="border" style={{ color: "#505ece" }} />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-danger py-5">
-        <h5>{error}</h5>
+      <div className="p-4 balance-sheet-container">
+        <Alert variant="danger" className="text-center">
+          <h5>{error}</h5>
+        </Alert>
       </div>
     );
   }
@@ -60,38 +65,33 @@ const BalanceSheet = () => {
   } = balanceData;
 
   return (
-    <div >
-      <Container fluid className="py-4">
-        <div className="text-center mb-2" style={{ fontSize: 36, color: "#002d4d", fontWeight: 500 }}>
-          Balance Sheet
-        </div>
-        <div className="text-center mb-4" style={{ color: "#6c757d", fontSize: 18 }}>
-          As on {new Date().toLocaleDateString()}
+    <div className="p-4 balance-sheet-container">
+      <Container fluid>
+        {/* Header Section */}
+        <div className="mb-4">
+          <h3 className="balance-sheet-title">
+            <i className="fas fa-balance-scale me-2"></i>
+            Balance Sheet
+          </h3>
+          <p className="balance-sheet-date">
+            As on {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
         </div>
 
         <Row className="g-4 justify-content-center">
           {/* Assets */}
           <Col xs={12} md={6}>
-            <Card style={{ borderRadius: 12, backgroundColor: "#fff", border: "1px solid #dee2e6" }}>
+            <Card className="balance-sheet-card">
               <Card.Body>
                 <Row className="align-items-center mb-3">
-                  <Col xs={6} style={{ fontWeight: 500, fontSize: 24, color: "#000" }}>
-                    ASSETS
+                  <Col xs={12} md={6}>
+                    <div className="balance-sheet-card-header">ASSETS</div>
                   </Col>
-                  <Col xs={6} className="text-end">
+                  <Col xs={12} md={6} className="text-md-end mt-2 mt-md-0">
                     <Link to="/company/balancesheet/asstedetails" style={{ textDecoration: "none" }}>
                       <Button
-                        variant="primary"
+                        className="btn-view-details"
                         size="sm"
-                        style={{
-                          backgroundColor: "#53b2a5",
-                          borderColor: "#53b2a5",
-                          padding: "6px 12px",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          borderRadius: "8px",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }}
                       >
                         View All Asset Details
                       </Button>
@@ -99,9 +99,7 @@ const BalanceSheet = () => {
                   </Col>
                 </Row>
 
-                <div style={{ color: "#002d4d", fontWeight: 400, fontSize: 16, marginBottom: 8 }}>
-                  Current Assets
-                </div>
+                <div className="section-header">Current Assets</div>
                 {[
                   ["Cash", assets.cash],
                   ["Bank", assets.bank],
@@ -109,39 +107,37 @@ const BalanceSheet = () => {
                   ["Accounts Receivable", assets.accountsReceivable],
                   ["Total Current Assets", assets.totalCurrentAssets, true],
                 ].map(([label, value, isTotal], idx) => (
-                  <Row className="mb-2" key={idx}>
-                    <Col xs={7} style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500, color: isTotal ? "#000" : "#6c757d" }}>
+                  <Row className={`balance-row ${isTotal ? 'balance-total-row' : ''}`} key={idx}>
+                    <Col xs={7} className={isTotal ? "balance-total-label" : "balance-label"}>
                       {label}
                     </Col>
-                    <Col xs={5} className="text-end" style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500 }}>
+                    <Col xs={5} className={`text-end ${isTotal ? "balance-total-value" : "balance-value"}`}>
                       {value.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                     </Col>
                   </Row>
                 ))}
 
-                <div style={{ color: "#002d4d", fontWeight: 500, fontSize: 16, marginTop: 24, marginBottom: 8 }}>
-                  Fixed Assets
-                </div>
+                <div className="section-header">Fixed Assets</div>
                 {[
                   ["Land & Building", assets.landBuilding],
                   ["Plant & Machinery", assets.plantMachinery],
                   ["Furniture & Fixtures", assets.furnitureFixtures],
                   ["Total Fixed Assets", assets.totalFixedAssets, true],
                 ].map(([label, value, isTotal], idx) => (
-                  <Row className="mb-2" key={idx}>
-                    <Col xs={7} style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500, color: isTotal ? "#000" : "#6c757d" }}>
+                  <Row className={`balance-row ${isTotal ? 'balance-total-row' : ''}`} key={idx}>
+                    <Col xs={7} className={isTotal ? "balance-total-label" : "balance-label"}>
                       {label}
                     </Col>
-                    <Col xs={5} className="text-end" style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500 }}>
+                    <Col xs={5} className={`text-end ${isTotal ? "balance-total-value" : "balance-value"}`}>
                       {value.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                     </Col>
                   </Row>
                 ))}
 
-                <hr className="my-3" />
-                <Row>
-                  <Col xs={7} style={{ fontWeight: 600, fontSize: 18 }}>Total Assets</Col>
-                  <Col xs={5} className="text-end" style={{ fontWeight: 600, fontSize: 18 }}>
+                <hr className="balance-divider" />
+                <Row className="balance-row">
+                  <Col xs={7} className="balance-total-label">Total Assets</Col>
+                  <Col xs={5} className="text-end balance-total-value">
                     {assets.totalAssets.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                   </Col>
                 </Row>
@@ -151,26 +147,17 @@ const BalanceSheet = () => {
 
           {/* Liabilities & Capital */}
           <Col xs={12} md={6}>
-            <Card style={{ borderRadius: 12, backgroundColor: "#fff", border: "1px solid #dee2e6" }}>
+            <Card className="balance-sheet-card">
               <Card.Body>
                 <Row className="align-items-center mb-3">
-                  <Col xs={6} style={{ fontWeight: 500, fontSize: 24, color: "#000" }}>
-                    LIABILITIES & CAPITAL
+                  <Col xs={12} md={6}>
+                    <div className="balance-sheet-card-header">LIABILITIES & CAPITAL</div>
                   </Col>
-                  <Col xs={6} className="text-end">
+                  <Col xs={12} md={6} className="text-md-end mt-2 mt-md-0">
                     <Link to="/company/balancesheet/liabilitydetails" style={{ textDecoration: "none" }}>
                       <Button
-                        variant="primary"
+                        className="btn-view-details"
                         size="sm"
-                        style={{
-                          backgroundColor: "#53b2a5",
-                          borderColor: "#53b2a5",
-                          padding: "6px 12px",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          borderRadius: "8px",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }}
                       >
                         View All Liability Details
                       </Button>
@@ -178,59 +165,53 @@ const BalanceSheet = () => {
                   </Col>
                 </Row>
 
-                <div style={{ color: "#002d4d", fontWeight: 500, fontSize: 16, marginBottom: 8 }}>
-                  Current Liabilities
-                </div>
+                <div className="section-header">Current Liabilities</div>
                 {[
                   ["Accounts Payable", liabilities.accountsPayable],
                   ["Short-term Loans", liabilities.shortTermLoans],
                   ["Outstanding Expenses", liabilities.outstandingExpenses],
                   ["Total Current Liabilities", liabilities.totalCurrentLiabilities, true],
                 ].map(([label, value, isTotal], idx) => (
-                  <Row className="mb-2" key={idx}>
-                    <Col xs={7} style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500, color: isTotal ? "#000" : "#6c757d" }}>{label}</Col>
-                    <Col xs={5} className="text-end" style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500 }}>
+                  <Row className={`balance-row ${isTotal ? 'balance-total-row' : ''}`} key={idx}>
+                    <Col xs={7} className={isTotal ? "balance-total-label" : "balance-label"}>{label}</Col>
+                    <Col xs={5} className={`text-end ${isTotal ? "balance-total-value" : "balance-value"}`}>
                       {value.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                     </Col>
                   </Row>
                 ))}
 
-                <div style={{ color: "#002d4d", fontWeight: 600, fontSize: 16, marginTop: 24, marginBottom: 8 }}>
-                  Long-term Liabilities
-                </div>
+                <div className="section-header">Long-term Liabilities</div>
                 {[
                   ["Term Loan", liabilities.termLoan],
                   ["Mortgage Loan", liabilities.mortgageLoan],
                   ["Total Long-term Liabilities", liabilities.totalLongTermLiabilities, true],
                 ].map(([label, value, isTotal], idx) => (
-                  <Row className="mb-2" key={idx}>
-                    <Col xs={7} style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500, color: isTotal ? "#000" : "#6c757d" }}>{label}</Col>
-                    <Col xs={5} className="text-end" style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500 }}>
+                  <Row className={`balance-row ${isTotal ? 'balance-total-row' : ''}`} key={idx}>
+                    <Col xs={7} className={isTotal ? "balance-total-label" : "balance-label"}>{label}</Col>
+                    <Col xs={5} className={`text-end ${isTotal ? "balance-total-value" : "balance-value"}`}>
                       {value.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                     </Col>
                   </Row>
                 ))}
 
-                <div style={{ color: "#002d4d", fontWeight: 500, fontSize: 16, marginTop: 24, marginBottom: 8 }}>
-                  Owner’s Capital
-                </div>
+                <div className="section-header">Owner's Capital</div>
                 {[
                   ["Capital", capital.capital],
                   ["Retained Earnings", capital.retainedEarnings],
-                  ["Total Owner’s Capital", capital.totalOwnerCapital, true],
+                  ["Total Owner's Capital", capital.totalOwnerCapital, true],
                 ].map(([label, value, isTotal], idx) => (
-                  <Row className="mb-2" key={idx}>
-                    <Col xs={7} style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500, color: isTotal ? "#000" : "#6c757d" }}>{label}</Col>
-                    <Col xs={5} className="text-end" style={{ fontSize: 16, fontWeight: isTotal ? 600 : 500 }}>
+                  <Row className={`balance-row ${isTotal ? 'balance-total-row' : ''}`} key={idx}>
+                    <Col xs={7} className={isTotal ? "balance-total-label" : "balance-label"}>{label}</Col>
+                    <Col xs={5} className={`text-end ${isTotal ? "balance-total-value" : "balance-value"}`}>
                       {value.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                     </Col>
                   </Row>
                 ))}
 
-                <hr className="my-3" />
-                <Row>
-                  <Col xs={7} style={{ fontWeight: 500, fontSize: 18 }}>Total Liabilities & Capital</Col>
-                  <Col xs={5} className="text-end" style={{ fontWeight: 600, fontSize: 18 }}>
+                <hr className="balance-divider" />
+                <Row className="balance-row">
+                  <Col xs={7} className="balance-total-label">Total Liabilities & Capital</Col>
+                  <Col xs={5} className="text-end balance-total-value">
                     {totalLiabilitiesAndCapital.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
                   </Col>
                 </Row>
@@ -239,9 +220,9 @@ const BalanceSheet = () => {
           </Col>
         </Row>
       </Container>
-      <small className="text-dark px-3">
-        Balance Sheet shows your business’s financial position on a specific date by listing all assets, liabilities, and owner’s capital, ensuring that Assets = Liabilities + Capital.
-      </small>
+      <div className="balance-sheet-info mt-4">
+        Balance Sheet shows your business's financial position on a specific date by listing all assets, liabilities, and owner's capital, ensuring that Assets = Liabilities + Capital.
+      </div>
     </div>
   );
 };

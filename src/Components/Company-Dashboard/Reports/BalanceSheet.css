@@ -1,0 +1,170 @@
+/* Balance Sheet Page Container */
+.balance-sheet-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.balance-sheet-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.balance-sheet-title i {
+  color: #505ece;
+}
+
+.balance-sheet-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.balance-sheet-date {
+  color: #6c757d;
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Card Styling */
+.balance-sheet-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.balance-sheet-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.balance-sheet-card-header {
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: #505ece;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Section Headers */
+.section-header {
+  color: #505ece;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.section-header:first-of-type {
+  margin-top: 0;
+}
+
+/* Row Items */
+.balance-row {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+  transition: all 0.2s ease;
+}
+
+.balance-row:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  border-radius: 6px;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.balance-label {
+  font-size: 1rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.balance-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #212529;
+  text-align: right;
+}
+
+.balance-total-label {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.balance-total-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #505ece;
+  text-align: right;
+}
+
+/* Buttons */
+.btn-view-details {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+}
+
+.btn-view-details:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-view-details:active {
+  transform: translateY(0);
+}
+
+/* Dividers */
+.balance-divider {
+  border-top: 2px solid #e9ecef;
+  margin: 1rem 0;
+}
+
+/* Info Text */
+.balance-sheet-info {
+  color: #6c757d;
+  font-size: 0.875rem;
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .balance-sheet-title {
+    font-size: 1.5rem;
+  }
+
+  .balance-sheet-card-header {
+    font-size: 1.25rem;
+  }
+
+  .balance-label,
+  .balance-value {
+    font-size: 0.9rem;
+  }
+
+  .btn-view-details {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}
+

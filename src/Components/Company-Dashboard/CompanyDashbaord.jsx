@@ -239,7 +239,8 @@ const CompanyDashboard = () => {
     <div className="container-fluid mt-3 mt-sm-3">
       {/* Company Name at Top */}
       <div className="mb-4">
-        <h3 className="semi-bold text-left" style={{ color: "#53b2a5" }}>
+        <h3 className="semi-bold text-left dashboard-title">
+          <i className="fas fa-chart-line me-2"></i>
           ZirakBook Dashboard
         </h3>
       </div>
@@ -247,53 +248,53 @@ const CompanyDashboard = () => {
       {/* Summary Cards */}
       <Row className="g-4">
         <Col md={3}>
-          <Card className="shadow-sm rounded-3 border" style={{ backgroundColor: "#fff3cd" }}>
-            <Card.Body className="d-flex justify-content-between align-items-center">
+          <Card className="shadow-lg rounded-4 border-0 summary-card summary-card-1">
+            <Card.Body className="d-flex justify-content-between align-items-center p-4">
               <div>
-                <h5 className="fw-semibold mb-1">{formatNumber(cards.totalPurchaseDue)}</h5>
-                <div className=" small">Total Purchase Due</div>
+                <h4 className="fw-bold mb-2 card-value">{formatNumber(cards.totalPurchaseDue)}</h4>
+                <div className="card-label">Total Purchase Due</div>
               </div>
-              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
-                <BagIcon size={30} className="text-warning" />
+              <div className="card-icon-wrapper">
+                <BagIcon size={32} />
               </div>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm  rounded-3 border" style={{ backgroundColor: "#d4edda" }}>
-            <Card.Body className="d-flex justify-content-between align-items-center">
+          <Card className="shadow-lg rounded-4 border-0 summary-card summary-card-2">
+            <Card.Body className="d-flex justify-content-between align-items-center p-4">
               <div>
-                <h5 className="fw-semibold mb-1 ">{formatNumber(cards.totalSalesDue)}</h5>
-                <div className=" small">Total Sales Due</div>
+                <h4 className="fw-bold mb-2 card-value">{formatNumber(cards.totalSalesDue)}</h4>
+                <div className="card-label">Total Sales Due</div>
               </div>
-              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
-                <FaFileInvoiceDollar size={30} className="text-success" />
+              <div className="card-icon-wrapper">
+                <FaFileInvoiceDollar size={32} />
               </div>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm rounded-3 border" style={{ backgroundColor: "#cce5ff" }}>
-            <Card.Body className="d-flex justify-content-between align-items-center">
+          <Card className="shadow-lg rounded-4 border-0 summary-card summary-card-3">
+            <Card.Body className="d-flex justify-content-between align-items-center p-4">
               <div>
-                <h5 className="fw-semibold mb-1">{formatNumber(cards.totalSaleAmount)}</h5>
-                <div className=" small">Total Sale Amount</div>
+                <h4 className="fw-bold mb-2 card-value">{formatNumber(cards.totalSaleAmount)}</h4>
+                <div className="card-label">Total Sale Amount</div>
               </div>
-              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
-                <FaFileInvoice size={30} className="text-info" />
+              <div className="card-icon-wrapper">
+                <FaFileInvoice size={32} />
               </div>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm rounded-3 border" style={{ backgroundColor: "#f8d7da" }}>
-            <Card.Body className="d-flex justify-content-between align-items-center">
+          <Card className="shadow-lg rounded-4 border-0 summary-card summary-card-4">
+            <Card.Body className="d-flex justify-content-between align-items-center p-4">
               <div>
-                <h5 className="fw-semibold mb-1 ">{formatNumber(cards.totalExpense)}</h5>
-                <div className=" small">Total Expense</div>
+                <h4 className="fw-bold mb-2 card-value">{formatNumber(cards.totalExpense)}</h4>
+                <div className="card-label">Total Expense</div>
               </div>
-              <div className=" rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm">
-                <FaFileInvoiceDollar size={30} className="text-danger" />
+              <div className="card-icon-wrapper">
+                <FaFileInvoiceDollar size={32} />
               </div>
             </Card.Body>
           </Card>
@@ -303,46 +304,46 @@ const CompanyDashboard = () => {
       {/* Stats Cards */}
       <Row className="my-4 g-4">
         <Col md={3}>
-          <Card className="shadow-sm  p-3 rounded-3 border" style={{ backgroundColor: "#FFE8CC" }}>
+          <Card className="shadow-lg p-4 rounded-4 border-0 stats-card stats-card-1">
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <h4 className="fw-bold mb-0">{cards.customers}</h4>
-                <div className="small">Customers</div>
+                <h3 className="fw-bold mb-1 stats-value">{cards.customers}</h3>
+                <div className="stats-label">Customers</div>
               </div>
-              <div className="fs-3"><FaUser size={28} className="text-warning" /></div>
+              <div className="stats-icon"><FaUser size={32} /></div>
             </div>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm p-3 rounded-3 border" style={{ backgroundColor: "#D0EBFF" }}>
+          <Card className="shadow-lg p-4 rounded-4 border-0 stats-card stats-card-2">
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <h4 className="fw-bold mb-0">{cards.vendors}</h4>
-                <div className="small">Vendors</div>
+                <h3 className="fw-bold mb-1 stats-value">{cards.vendors}</h3>
+                <div className="stats-label">Vendors</div>
               </div>
-              <div className="fs-3"><FaUserCheck size={28} className="text-info" /></div>
+              <div className="stats-icon"><FaUserCheck size={32} /></div>
             </div>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm  p-3 rounded-3 border" style={{ backgroundColor: "#E3D7FF" }}>
+          <Card className="shadow-lg p-4 rounded-4 border-0 stats-card stats-card-3">
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <h4 className="fw-bold mb-0">{cards.purchaseInvoiceCount}</h4>
-                <div className="small">Purchase Invoice</div>
+                <h3 className="fw-bold mb-1 stats-value">{cards.purchaseInvoiceCount}</h3>
+                <div className="stats-label">Purchase Invoice</div>
               </div>
-              <div className="fs-3"><FaFileInvoice size={28} className="text-primary" /></div>
+              <div className="stats-icon"><FaFileInvoice size={32} /></div>
             </div>
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="shadow-sm  p-3 rounded-3 border" style={{ backgroundColor: "#D8F5E8" }}>
+          <Card className="shadow-lg p-4 rounded-4 border-0 stats-card stats-card-4">
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <h4 className="fw-bold mb-0">{cards.salesInvoiceCount}</h4>
-                <div className="small">Sales Invoice</div>
+                <h3 className="fw-bold mb-1 stats-value">{cards.salesInvoiceCount}</h3>
+                <div className="stats-label">Sales Invoice</div>
               </div>
-              <div className="fs-3"><FaFileInvoiceDollar size={28} className="text-success" /></div>
+              <div className="stats-icon"><FaFileInvoiceDollar size={32} /></div>
             </div>
           </Card>
         </Col>
@@ -351,13 +352,13 @@ const CompanyDashboard = () => {
       {/* Sales & Purchase Chart */}
       <Row className="g-4 align-items-stretch">
         <Col md={12}>
-          <Card className="h-100 border-0 shadow-sm rounded-4 p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-              <h6 className="fw-semibold mb-0">
-                <i className="fa fa-chart-bar"></i> Sales & Purchase Report
-              </h6>
+          <Card className="h-100 border-0 shadow-lg rounded-4 p-4 chart-card">
+            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+              <h5 className="fw-bold mb-0 chart-title">
+                <i className="fa fa-chart-bar me-2"></i> Sales & Purchase Report
+              </h5>
               <Dropdown>
-                <Dropdown.Toggle variant="light" className="border rounded-3 shadow-sm" size="sm">
+                <Dropdown.Toggle variant="light" className="border-0 rounded-3 shadow-sm dropdown-toggle-custom" size="sm">
                   {selectedYear}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
@@ -372,8 +373,8 @@ const CompanyDashboard = () => {
                 <YAxis />
                 <RechartTooltip formatter={(value) => formatNumber(value)} />
                 <Legend />
-                <Bar dataKey="Sales" fill="#1a237e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Purchase" fill="#53b2a5" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Sales" fill="#505ece" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="Purchase" fill="#023347" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -383,8 +384,8 @@ const CompanyDashboard = () => {
       <Row className="g-4 mt-3">
         {/* Top Selling Products */}
         <Col md={4}>
-          <Card className="border shadow-sm rounded-4 h-100">
-            <Card.Header className=" border d-flex justify-content-between align-items-center p-3">
+          <Card className="border-0 shadow-lg rounded-4 h-100 widget-card">
+            <Card.Header className="border-0 bg-white d-flex justify-content-between align-items-center p-3 rounded-top">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-pink-100 text-pink-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -394,7 +395,7 @@ const CompanyDashboard = () => {
                 <Card.Title className="mb-0 fw-semibold">Top Selling Products</Card.Title>
               </div>
               <Dropdown size="sm" className="me-2">
-                <Dropdown.Toggle variant="light" className="border rounded-3 shadow-sm">
+                <Dropdown.Toggle variant="light" className="border-0 rounded-3 shadow-sm dropdown-toggle-custom">
                   {timePeriod}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
@@ -435,8 +436,8 @@ const CompanyDashboard = () => {
 
         {/* Low Stock Products */}
         <Col md={4}>
-          <Card className="border shadow-sm rounded-3 h-100">
-            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border-0 shadow-lg rounded-4 h-100 widget-card">
+            <Card.Header className="border-0 bg-white d-flex justify-content-between align-items-center p-3 rounded-top">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-orange-100 text-orange-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -482,8 +483,8 @@ const CompanyDashboard = () => {
 
         {/* Recent Sales */}
         <Col md={4}>
-          <Card className="border shadow-sm rounded-3 h-100">
-            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border-0 shadow-lg rounded-4 h-100 widget-card">
+            <Card.Header className="border-0 bg-white d-flex justify-content-between align-items-center p-3 rounded-top">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-pink-100 text-pink-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -493,7 +494,7 @@ const CompanyDashboard = () => {
                 <Card.Title className="mb-0 fw-semibold">Recent Sales</Card.Title>
               </div>
               <Dropdown size="sm" className="me-2">
-                <Dropdown.Toggle variant="light" className="border rounded-3 shadow-sm">
+                <Dropdown.Toggle variant="light" className="border-0 rounded-3 shadow-sm dropdown-toggle-custom">
                   {selectedPeriod}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
@@ -544,8 +545,8 @@ const CompanyDashboard = () => {
       <Row className="g-4 mt-4">
         {/* Sales Statics */}
         <Col md={6}>
-          <Card className="border shadow-sm rounded-3 h-100">
-            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border-0 shadow-lg rounded-4 h-100 widget-card">
+            <Card.Header className="border-0 bg-white d-flex justify-content-between align-items-center p-3 rounded-top">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-red-100 text-red-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -555,7 +556,7 @@ const CompanyDashboard = () => {
                 <Card.Title className="mb-0 fw-semibold">Sales Statistics</Card.Title>
               </div>
               <Dropdown size="sm" className="me-2">
-                <Dropdown.Toggle variant="light" className="border rounded-3 shadow-sm"> {selectedSalesYear}</Dropdown.Toggle>
+                <Dropdown.Toggle variant="light" className="border-0 rounded-3 shadow-sm dropdown-toggle-custom"> {selectedSalesYear}</Dropdown.Toggle>
                 <Dropdown.Menu className="w-10">
                   <Dropdown.Item onClick={() => setSelectedSalesYear("2024")}>2024</Dropdown.Item>
                   <Dropdown.Item onClick={() => setSelectedSalesYear("2025")}>2025</Dropdown.Item>
@@ -584,8 +585,8 @@ const CompanyDashboard = () => {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <RechartTooltip formatter={(value) => formatNumber(value)} />
-                  <Bar dataKey="revenue" fill="#00b469ff" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" fill="#3a474bff" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" fill="#505ece" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="expense" fill="#ff6b6b" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card.Body>
@@ -594,8 +595,8 @@ const CompanyDashboard = () => {
 
         {/* Top Customers */}
         <Col md={6}>
-          <Card className="border shadow-sm rounded-3 h-100">
-            <Card.Header className=" border-bottom d-flex justify-content-between align-items-center p-3">
+          <Card className="border-0 shadow-lg rounded-4 h-100 widget-card">
+            <Card.Header className="border-0 bg-white d-flex justify-content-between align-items-center p-3 rounded-top">
               <div className="d-flex align-items-center gap-2">
                 <span className="bg-pink-100 text-pink-600 rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">

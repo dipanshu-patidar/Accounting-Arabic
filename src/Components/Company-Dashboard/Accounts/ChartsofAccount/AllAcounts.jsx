@@ -14,9 +14,10 @@ import {
   Col,
   Form,
 } from "react-bootstrap";
-import { FaUserPlus, FaUserFriends } from "react-icons/fa";
+import { FaUserPlus, FaUserFriends, FaSearch, FaPlus } from "react-icons/fa";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import "./AllAccounts.css";
 import AddCustomerModal from "./AddCustomerModal";
 import AddVendorModal from "./AddVendorModal";
 import AddNewAccountModal from "./AddNewAccountModal";
@@ -685,91 +686,58 @@ const AllAccounts = () => {
   }
 
   return (
-    <Container fluid className="p-3">
-      {/* Header Row */}
-      <Row className="align-items-center justify-content-between flex-wrap gap-2 mb-3">
-        <Col xs={12} md="auto">
-          <h4
-            className="fw-bold text-start mb-2 mb-md-0"
-            style={{ marginTop: "1rem" }}
-          >
-            All Accounts
-          </h4>
+    <Container fluid className="p-4 all-accounts-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="all-accounts-title">
+          <i className="fas fa-chart-line me-2"></i>
+          Charts of Accounts
+        </h3>
+        <p className="all-accounts-subtitle">Manage all your financial accounts</p>
+      </div>
+
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder="Search account name or type..."
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+            />
+          </div>
         </Col>
-        <Col
-          xs={12}
-          md="auto"
-          className="d-flex flex-wrap gap-2 justify-content-end"
-        >
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
           {canCreate && (
             <Button
-              style={{
-                backgroundColor: "#53b2a5",
-                border: "none",
-                padding: "8px 16px",
-              }}
-              className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
+              className="d-flex align-items-center btn-add-account"
               onClick={() => {
                 isCleaningUpRef.current = false;
                 modalKeyRef.current.newAccount += 1;
                 setShowNewAccountModal(true);
               }}
             >
-              + Add New Account
+              <FaPlus className="me-2" />
+              Add New Account
             </Button>
           )}
-          {/* Commented out buttons - can be uncommented if needed with permission checks */}
-          {/* {canCreate && (
-            <Button
-              style={{
-                backgroundColor: "#53b2a5",
-                border: "none",
-                padding: "8px 16px",
-              }}
-              className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
-              onClick={() => setShowVendorModal(true)}
-            >
-              <FaUserPlus size={18} /> Add Vendor
-            </Button>
-          )}
-          {canCreate && (
-            <Button
-              style={{
-                backgroundColor: "#53b2a5",
-                border: "none",
-                padding: "8px 16px",
-              }}
-              className="d-flex align-items-center gap-2 text-white fw-semibold flex-shrink-0"
-              onClick={() => setShowCustomerModal(true)}
-            >
-              <FaUserFriends /> Add Customer
-            </Button>
-          )} */}
         </Col>
       </Row>
 
-      {/* Filters */}
-      <div className="d-flex flex-wrap gap-3 mb-3 align-items-end">
-        <Form.Group>
-          <Form.Label>Filter by Name</Form.Label>
-          <Form.Control
-            type="text"
-            placeholder="Search account name"
-            value={filterName}
-            onChange={(e) => setFilterName(e.target.value)}
-            style={{ minWidth: "200px" }}
-          />
-        </Form.Group>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setFilterName("");
-          }}
-          className="mt-auto"
-        >
-          Clear
-        </Button>
-      </div>
+      {/* Clear Filter Button */}
+      {filterName && (
+        <div className="mb-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setFilterName("")}
+            className="btn-clear"
+          >
+            Clear Filter
+          </Button>
+        </div>
+      )}
 
       {/* Loading and Error States */}
       {loading && (
@@ -788,136 +756,140 @@ const AllAccounts = () => {
 
       {/* Table */}
       {!loading && !error && (
-        <div className="table-responsive border rounded-3" style={{ minWidth: "100%" }}>
-          <Table className="align-middle text-center mb-0">
-            <thead
-              className=""
-              style={{ position: "sticky", top: 0, zIndex: 1 }}
-            >
-              <tr>
-                <th>Account Type</th>
-                <th>Account Name</th>
-                <th>Account Balance</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAccountData?.length > 0 ? (
-                filteredAccountData?.map((accountGroup) => {
-                  const totalBalance = calculateTotalBalance(accountGroup);
-                  return (
-                    <React.Fragment key={accountGroup.type}>
-                      <tr className="">
-                        <td colSpan="4" className="text-start fw-bold">
-                          {accountGroup.type}
-                        </td>
-                      </tr>
-                      {accountGroup.rows
-                        .filter((row) => row.name && row.name.trim() !== "")
-                        .map((row, index) => (
-                          <tr key={`${accountGroup.type}-${index}`}>
-                            <td className="text-start">{accountGroup.type}</td>
-                            <td className="text-start">{row?.name || ""}</td>
-                            {/* FIX: Display the balance using the correct `bal` property */}
-                            <td>
-                              {symbol} {convertPrice(row.bal)}
-                            </td>
-                            <td>
-                              <div className="d-flex justify-content-center gap-2">
-                                {canView && (
-                                  <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    title="View"
-                                    onClick={() =>
-                                      handleViewAccount(
-                                        accountGroup.type,
-                                        row.name
-                                      )
-                                    }
-                                  >
-                                    <FaEye />
-                                  </Button>
-                                )}
-                                {canUpdate && (
-                                  <Button
-                                    variant="outline-warning"
-                                    size="sm"
-                                    title="Edit"
-                                    onClick={() =>
-                                      handleEditAccount(
-                                        accountGroup.type,
-                                        row.name
-                                      )
-                                    }
-                                    disabled={isEditing}
-                                  >
-                                    <FaEdit />
-                                  </Button>
-                                )}
-                                {canDelete && (
-                                  <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    title="Delete"
-                                    onClick={() =>
-                                      handleDeleteAccount(
-                                        accountGroup.type,
-                                        row.name
-                                      )
-                                    }
-                                    disabled={isDeleting}
-                                  >
-                                    <FaTrash />
-                                  </Button>
-                                )}
-                                {canView && (
-                                  <Button
-                                    variant="outline-info"
-                                    size="sm"
-                                    title="View Ledger"
-                                    onClick={() =>
-                                      handleViewLedger(
-                                        accountGroup.type,
-                                        row.name
-                                      )
-                                    }
-                                  >
-                                    View Ledger
-                                  </Button>
-                                )}
-                              </div>
+        <Card className="all-accounts-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="all-accounts-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
+                  <tr>
+                    <th className="py-3">Account Type</th>
+                    <th className="py-3">Account Name</th>
+                    <th className="py-3">Account Balance</th>
+                    <th className="py-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAccountData?.length > 0 ? (
+                    filteredAccountData?.map((accountGroup) => {
+                      const totalBalance = calculateTotalBalance(accountGroup);
+                      return (
+                        <React.Fragment key={accountGroup.type}>
+                          <tr className="group-header">
+                            <td colSpan="4" className="text-start fw-bold py-3">
+                              {accountGroup.type}
                             </td>
                           </tr>
-                        ))}
-                      {totalBalance !== 0 && (
-                        <tr className=" font-weight-bold">
-                          <td colSpan="2" className="text-end">
-                            Total Balance
-                          </td>
-                          <td className="text-end">
-                            {totalBalance >= 0
-                              ? `${symbol} ${convertPrice(totalBalance)}`
-                              : `(${symbol} ${convertPrice(
-                                Math.abs(totalBalance)
-                              )})`}
-                          </td>
-                          <td></td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center py-4">
-                    No accounts found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-        </div>
+                          {accountGroup.rows
+                            .filter((row) => row.name && row.name.trim() !== "")
+                            .map((row, index) => (
+                              <tr key={`${accountGroup.type}-${index}`}>
+                                <td className="text-start">{accountGroup.type}</td>
+                                <td className="text-start fw-medium">{row?.name || ""}</td>
+                                <td className="fw-bold">
+                                  {symbol} {convertPrice(row.bal)}
+                                </td>
+                                <td className="text-center">
+                                  <div className="d-flex justify-content-center gap-2 flex-wrap">
+                                    {canView && (
+                                      <Button
+                                        variant="outline-info"
+                                        size="sm"
+                                        title="View"
+                                        className="btn-action btn-view"
+                                        onClick={() =>
+                                          handleViewAccount(
+                                            accountGroup.type,
+                                            row.name
+                                          )
+                                        }
+                                      >
+                                        <FaEye size={14} />
+                                      </Button>
+                                    )}
+                                    {canUpdate && (
+                                      <Button
+                                        variant="outline-warning"
+                                        size="sm"
+                                        title="Edit"
+                                        className="btn-action btn-edit"
+                                        onClick={() =>
+                                          handleEditAccount(
+                                            accountGroup.type,
+                                            row.name
+                                          )
+                                        }
+                                        disabled={isEditing}
+                                      >
+                                        <FaEdit size={14} />
+                                      </Button>
+                                    )}
+                                    {canDelete && (
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        title="Delete"
+                                        className="btn-action btn-delete"
+                                        onClick={() =>
+                                          handleDeleteAccount(
+                                            accountGroup.type,
+                                            row.name
+                                          )
+                                        }
+                                        disabled={isDeleting}
+                                      >
+                                        <FaTrash size={14} />
+                                      </Button>
+                                    )}
+                                    {canView && (
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        title="View Ledger"
+                                        className="btn-ledger"
+                                        onClick={() =>
+                                          handleViewLedger(
+                                            accountGroup.type,
+                                            row.name
+                                          )
+                                        }
+                                      >
+                                        View Ledger
+                                      </Button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          {totalBalance !== 0 && (
+                            <tr className="total-row">
+                              <td colSpan="2" className="text-end fw-bold">
+                                Total Balance
+                              </td>
+                              <td className="fw-bold">
+                                {totalBalance >= 0
+                                  ? `${symbol} ${convertPrice(totalBalance)}`
+                                  : `(${symbol} ${convertPrice(
+                                    Math.abs(totalBalance)
+                                  )})`}
+                              </td>
+                              <td></td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="text-center py-4 text-muted">
+                        No accounts found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </Card.Body>
+        </Card>
       )}
 
       {/* Modals */}
@@ -975,22 +947,6 @@ const AllAccounts = () => {
         canDelete={canDelete}
       />
 
-      {/* Page Description */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">
-            Page Info
-          </h5>
-          <ul
-            className=" fs-6 mb-0"
-            style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
-          >
-            <li>Displays all financial accounts.</li>
-            <li>Accounts are categorized by type.</li>
-            <li>Helps in easy management and tracking.</li>
-          </ul>
-        </Card.Body>
-      </Card>
     </Container>
   );
 };

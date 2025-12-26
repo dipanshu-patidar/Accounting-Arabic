@@ -1,0 +1,474 @@
+/* Roles Permissions Container */
+.roles-permissions-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.roles-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.roles-title i {
+  color: #505ece;
+}
+
+.roles-subtitle {
+  color: #6c757d;
+  margin-bottom: 0;
+  font-size: 0.95rem;
+}
+
+/* Add Role Button */
+.btn-add-role {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-add-role:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-add-role:active {
+  transform: translateY(0);
+}
+
+/* Roles Card */
+.roles-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.roles-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Filter Section */
+.filter-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+}
+
+.filter-title {
+  color: #505ece;
+  display: flex;
+  align-items: center;
+}
+
+.filter-icon {
+  color: #505ece;
+  font-size: 1.1rem;
+}
+
+/* Search Wrapper */
+.search-wrapper {
+  position: relative;
+  min-width: 250px;
+}
+
+.search-icon-input {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 40px !important;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.search-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Filter Controls */
+.filter-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.filter-select,
+.filter-date {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  padding: 6px 12px;
+  min-width: 150px;
+}
+
+.filter-select:focus,
+.filter-date:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.btn-clear-filters {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-clear-filters:hover {
+  background-color: #f8f9fa;
+  border-color: #505ece;
+  color: #505ece;
+}
+
+/* Table Styling */
+.roles-table {
+  margin: 0;
+}
+
+.table-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.roles-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.roles-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.roles-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Status Badge */
+.status-badge {
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-badge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  display: inline-block;
+}
+
+.status-badge-active {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+}
+
+.status-badge-active:hover {
+  background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+  transform: scale(1.05);
+}
+
+.status-badge-inactive {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.status-badge-inactive:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: scale(1.05);
+}
+
+/* Action Buttons */
+.btn-action {
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.3s ease;
+  border-width: 2px;
+}
+
+.btn-view {
+  color: #505ece;
+  border-color: #505ece;
+}
+
+.btn-view:hover {
+  background-color: #505ece;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(80, 94, 206, 0.3);
+}
+
+.btn-edit {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-edit:hover {
+  background-color: #28a745;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-delete {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.btn-delete:hover {
+  background-color: #dc3545;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Modal Styling */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+/* Form Controls in Modal */
+.modal-body .form-control,
+.modal-body .form-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.modal-body .form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+/* Save Button */
+.btn-save-role {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-save-role:hover:not(:disabled) {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-save-role:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Module Permissions Table */
+.modal-body .table {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-body .table thead {
+  background: #f8f9fa;
+}
+
+.modal-body .table th {
+  border: none;
+  font-weight: 600;
+  color: #495057;
+  padding: 10px 12px;
+}
+
+.modal-body .table td {
+  border: none;
+  padding: 10px 12px;
+}
+
+.modal-body .table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.modal-body .table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+/* Checkbox Styling */
+.form-check-input {
+  cursor: pointer;
+  border: 2px solid #505ece;
+}
+
+.form-check-input:checked {
+  background-color: #505ece;
+  border-color: #505ece;
+}
+
+.form-check-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.25);
+}
+
+.form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Category Header in Permissions Table */
+.modal-body .table tbody tr:has(td[colspan="3"]) {
+  background: #e9ecef;
+  font-weight: 600;
+}
+
+.modal-body .table tbody tr:has(td[colspan="3"]) td {
+  color: #495057;
+  padding: 8px 12px;
+}
+
+/* Full Access Label */
+.modal-body .form-check-label[for*="full-access"] {
+  font-weight: 600;
+  color: #505ece;
+}
+
+/* Delete Modal Button */
+.modal-footer .btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  transition: all 0.3s ease;
+}
+
+.modal-footer .btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Empty State */
+.roles-table tbody td.text-center {
+  padding: 3rem 1rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Badge in View Modal */
+.badge.bg-primary {
+  background-color: #505ece !important;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .roles-title {
+    font-size: 1.5rem;
+  }
+  
+  .search-wrapper {
+    min-width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .btn-add-role {
+    width: 100%;
+    margin-top: 1rem;
+  }
+  
+  .roles-table {
+    font-size: 14px;
+  }
+  
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .filter-section {
+    padding: 1rem;
+  }
+}
+

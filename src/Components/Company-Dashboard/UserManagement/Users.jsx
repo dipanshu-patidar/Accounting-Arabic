@@ -15,6 +15,7 @@ import "jspdf-autotable";
 import { FaFilePdf, FaEdit, FaTrash, FaPlus, FaFilter, FaTimes, FaKey } from "react-icons/fa";
 import axiosInstance from "../../../Api/axiosInstance";
 import GetCompanyId from "../../../Api/GetCompanyId";
+import "./Users.css";
 
 const emptyUser = {
   id: null,
@@ -33,29 +34,7 @@ const emptyUser = {
 const statusBadge = (status) => {
   const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   return (
-    <Badge
-      style={{
-        background: normalized === "Active" ? "#27ae60" : "#e74c3c",
-        color: "#fff",
-        fontWeight: 500,
-        fontSize: 15,
-        borderRadius: 8,
-        padding: "5px 18px",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-      }}
-    >
-      <span
-        style={{
-          display: "inline-block",
-          width: 10,
-          height: 10,
-          borderRadius: "50%",
-          background: "#fff",
-          marginRight: 6,
-        }}
-      ></span>
+    <Badge className={normalized === "Active" ? "status-badge-active" : "status-badge-inactive"}>
       {normalized}
     </Badge>
   );
@@ -453,23 +432,31 @@ const Users = () => {
   };
 
   return (
-    <div className="p-3">
+    <div className="p-4 users-container">
       <div className="">
-        <h3 className="fw-bold">Users</h3>
-        <p className="text-muted mb-4">Manage your users</p>
+        <div className="mb-4">
+          <h3 className="fw-bold users-title">
+            <i className="fas fa-users me-2"></i>
+            Users Management
+          </h3>
+          <p className="text-muted mb-0">Manage your users efficiently</p>
+        </div>
 
-        <Row className="g-2 mb-3 align-items-center">
+        <Row className="g-3 mb-4 align-items-center">
           <Col xs={12} md={6}>
-            <Form.Control
-              placeholder="Search by name, email, phone, or role"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="search-wrapper">
+              <i className="fas fa-search search-icon"></i>
+              <Form.Control
+                className="search-input"
+                placeholder="Search by name, email, phone, or role"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </Col>
           <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
             <Button
-              className="d-flex align-items-center"
-              style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
+              className="d-flex align-items-center btn-add-user"
               onClick={handleAdd}
             >
               <FaPlus className="me-2" />
@@ -479,11 +466,14 @@ const Users = () => {
         </Row>
 
         {showFilters && (
-          <Card className="mb-4 border">
-            <Card.Body>
+          <Card className="mb-4 filter-card border-0 shadow-lg">
+            <Card.Body className="p-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="mb-0">Filter Users</h5>
-                <Button variant="outline-secondary" size="sm" onClick={clearFilters}>
+                <h5 className="mb-0 fw-bold filter-title">
+                  <FaFilter className="me-2" />
+                  Filter Users
+                </h5>
+                <Button variant="outline-secondary" size="sm" className="btn-clear-filters" onClick={clearFilters}>
                   <FaTimes className="me-1" /> Clear All
                 </Button>
               </div>
@@ -554,11 +544,11 @@ const Users = () => {
           </Card>
         )}
 
-        <Card className="mb-4">
+        <Card className="mb-4 users-table-card border-0 shadow-lg">
           <Card.Body style={{ padding: 0 }}>
             <div style={{ overflowX: "auto" }}>
-              <Table responsive className="align-middle mb-0" style={{ fontSize: 16 }}>
-                <thead className="">
+              <Table responsive className="align-middle mb-0 users-table" style={{ fontSize: 16 }}>
+                <thead className="table-header">
                   <tr>
                     <th className="py-3">#</th>
                     <th className="py-3">User Name</th>
@@ -566,7 +556,7 @@ const Users = () => {
                     <th className="py-3">Email</th>
                     <th className="py-3">Role</th>
                     <th className="py-3">Status</th>
-                    <th className="py-3" style={{ minWidth: 180 }}></th>
+                    <th className="py-3 text-center" style={{ minWidth: 180 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -609,18 +599,32 @@ const Users = () => {
                         <td>{user.role}</td>
                         <td>{statusBadge(user.status)}</td>
                         <td>
-                          <div className="d-flex gap-2">
-                            <Button variant="outline-secondary" size="sm" onClick={() => handleEdit(user)}>
+                          <div className="d-flex gap-2 justify-content-center">
+                            <Button 
+                              variant="outline-primary" 
+                              size="sm" 
+                              className="btn-action btn-edit"
+                              onClick={() => handleEdit(user)}
+                              title="Edit User"
+                            >
                               <FaEdit />
                             </Button>
                             <Button
-                              variant="outline-secondary" size="sm"
+                              variant="outline-warning" 
+                              size="sm"
+                              className="btn-action btn-reset"
                               onClick={() => openResetModal(user)}
                               title="Reset Password"
                             >
                               <FaKey />
                             </Button>
-                            <Button variant="outline-secondary" size="sm" onClick={() => confirmDelete(user)}>
+                            <Button 
+                              variant="outline-danger" 
+                              size="sm" 
+                              className="btn-action btn-delete"
+                              onClick={() => confirmDelete(user)}
+                              title="Delete User"
+                            >
                               <FaTrash />
                             </Button>
                           </div>
@@ -756,6 +760,7 @@ const Users = () => {
           <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
           <Button
             variant="primary"
+            className="btn-save-user"
             onClick={handleSave}
             disabled={
               !form.name ||
@@ -764,7 +769,6 @@ const Users = () => {
               !form.user_role ||
               (modalType === "add" && (!form.password || !form.confirmPassword))
             }
-            style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
           >
             Save
           </Button>
@@ -821,18 +825,15 @@ const Users = () => {
           </Button>
           <Button
             variant="primary"
+            className="btn-reset-password"
             onClick={handleResetPassword}
             disabled={!newPassword || !confirmNewPassword}
-            style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
           >
             Reset Password
           </Button>
         </Modal.Footer>
       </Modal>
 
-      <p className="text-muted text-center mt-2">
-        This page allows you to manage user records with add, edit, delete, search, filters, and PDF export functionality.
-      </p>
     </div>
   );
 };

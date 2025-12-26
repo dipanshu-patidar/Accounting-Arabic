@@ -1101,7 +1101,7 @@
 // export default PurchaseReturn;
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Modal,
   Button,
@@ -1111,25 +1111,26 @@ import {
   Row,
   Col,
   Card,
-  Spinner
+  Spinner,
+  Alert
 } from 'react-bootstrap';
 import {
-  FaEye, FaEdit, FaTrash, FaSearch
+  FaEye, FaEdit, FaTrash, FaSearch, FaPlus, FaFilter, FaTimes, FaFile
 } from "react-icons/fa";
-import { BiPlus } from 'react-icons/bi';
 import axiosInstance from "../../../Api/axiosInstance";
 import GetCompanyId from "../../../Api/GetCompanyId";
+import "./PurchaseReturn.css";
 
 const STATUS_OPTIONS = ['pending', 'approved', 'rejected'];
 
 const formatStatus = (status) => status?.charAt(0).toUpperCase() + status?.slice(1) || '—';
-const getStatusVariant = (status) => {
-  switch (status?.toLowerCase()) {
-    case 'approved': return 'success';
-    case 'pending': return 'warning';
-    case 'rejected': return 'danger';
-    default: return 'secondary';
-  }
+
+const getStatusBadge = (status) => {
+  const lower = status?.toLowerCase();
+  if (lower === 'approved') return <Badge className="status-badge-approved">Approved</Badge>;
+  if (lower === 'pending') return <Badge className="status-badge-pending">Pending</Badge>;
+  if (lower === 'rejected') return <Badge className="status-badge-rejected">Rejected</Badge>;
+  return <Badge className='status-badge-secondary'>{formatStatus(status)}</Badge>;
 };
 
 const PurchaseReturn = () => {
@@ -1148,6 +1149,7 @@ const PurchaseReturn = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [warehouseFilter, setWarehouseFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [vendors, setVendors] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [products, setProducts] = useState([]);
@@ -1231,38 +1233,49 @@ const PurchaseReturn = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  const filteredReturns = (Array.isArray(returns) ? returns : []).filter((item) => {
-    // Search term filter
-    const matchesSearch =
-      searchTerm === '' ||
-      (item.vendor_name && item.vendor_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.return_no && item.return_no.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.invoice_no && item.invoice_no.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredReturns = useMemo(() => {
+    return (Array.isArray(returns) ? returns : []).filter((item) => {
+      // Search term filter
+      const matchesSearch =
+        searchTerm === '' ||
+        (item.vendor_name && item.vendor_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.return_no && item.return_no.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.invoice_no && item.invoice_no.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.reference_id && item.reference_id.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    // Status filter
-    const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+      // Status filter
+      const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
 
-    // Warehouse filter
-    const matchesWarehouse = warehouseFilter === 'All' || String(item.warehouse_id) === String(warehouseFilter);
+      // Warehouse filter
+      const matchesWarehouse = warehouseFilter === 'All' || String(item.warehouse_id) === String(warehouseFilter);
 
-    // Date range filter
-    let matchesDate = true;
-    if (item.return_date) {
-      const itemDate = new Date(item.return_date.split('T')[0]); // ISO date part only
-      if (fromDate) {
-        const from = new Date(fromDate);
-        if (itemDate < from) matchesDate = false;
+      // Date range filter
+      let matchesDate = true;
+      if (item.return_date) {
+        const itemDate = new Date(item.return_date.split('T')[0]); // ISO date part only
+        if (fromDate) {
+          const from = new Date(fromDate);
+          if (itemDate < from) matchesDate = false;
+        }
+        if (toDate) {
+          const to = new Date(toDate);
+          if (itemDate > to) matchesDate = false;
+        }
+      } else {
+        if (fromDate || toDate) matchesDate = false;
       }
-      if (toDate) {
-        const to = new Date(toDate);
-        if (itemDate > to) matchesDate = false;
-      }
-    } else {
-      matchesDate = false;
-    }
 
-    return matchesSearch && matchesStatus && matchesWarehouse && matchesDate;
-  });
+      return matchesSearch && matchesStatus && matchesWarehouse && matchesDate;
+    });
+  }, [returns, searchTerm, statusFilter, warehouseFilter, fromDate, toDate]);
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('All');
+    setWarehouseFilter('All');
+    setFromDate('');
+    setToDate('');
+  };
 
   const initialFormData = {
     vendor_id: '',
@@ -1750,24 +1763,52 @@ const PurchaseReturn = () => {
   }
 
   return (
-    <div className="p-3">
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <h2 className="mb-0 fw-bold">Purchase Returns</h2>
-        <div className="d-flex gap-2 flex-wrap">
-          <Button variant="success" size="sm" className="rounded-pill p-2 text-nowrap" disabled>
-            <i className="fas fa-file-import me-1" /> Import
-          </Button>
-          <Button variant="warning" size="sm" className="rounded-pill px-2 py-0 text-nowrap" disabled>
-            <i className="fas fa-file-export me-1" /> Export
-          </Button>
-          <Button variant="info" size="sm" className="rounded-pill px-2 py-0 text-nowrap" disabled>
-            <i className="fas fa-download me-1" /> Download
-          </Button>
+    <div className="p-4 purchase-return-container">
+      <div className="mb-4">
+        <h3 className="purchase-return-title">
+          <i className="fas fa-undo me-2"></i>
+          Purchase Return Management
+        </h3>
+        <p className="purchase-return-subtitle">Manage vendor returns and credit notes</p>
+      </div>
+
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder="Search by return number, vendor name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
+          {purchaseReturnPermissions.can_view && (
+            <Button
+              className="d-flex align-items-center btn-export"
+              onClick={() => {
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                csvContent += "Reference ID,Return No,Invoice No,Vendor,Date,Amount,Status,Warehouse\n";
+                returns.forEach(r => {
+                  csvContent += `"${r.reference_id}","${r.return_no}","${r.invoice_no}","${getVendorName(r.vendor_id)}","${r.return_date?.split('T')[0]}",${r.grand_total},"${r.status}","${getWarehouseName(r.warehouse_id)}"\n`;
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "Purchase-Returns.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              <FaFile className="me-2" /> Export
+            </Button>
+          )}
           {purchaseReturnPermissions.can_create && (
             <Button
-              variant="primary"
-              size="sm"
-              className="rounded-pill py-0 text-nowrap"
+              className="d-flex align-items-center btn-add-return"
               onClick={() => {
                 isCleaningUpRef.current = false;
                 modalKeyRef.current.main += 1;
@@ -1780,138 +1821,225 @@ const PurchaseReturn = () => {
                 setShowModal(true);
               }}
             >
-              <i className="fas fa-plus me-1" /> New Return
+              <FaPlus className="me-2" />
+              Add Return
             </Button>
           )}
-        </div>
-      </div>
-      <Row className="mb-4 g-3">
-        {/* Search */}
-        <Col lg={3} md={6}>
-          <div className="input-group">
-            <span className="input-group-text bg-light"><FaSearch /></span>
-            <Form.Control
-              type="text"
-              placeholder="Search returns..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </Col>
-
-        {/* Status Filter */}
-        <Col lg={2} md={6}>
-          <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="All">Status: All</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {formatStatus(s)}
-              </option>
-            ))}
-          </Form.Select>
-        </Col>
-
-        {/* Warehouse Filter */}
-        <Col lg={2} md={6}>
-          <Form.Select value={warehouseFilter} onChange={(e) => setWarehouseFilter(e.target.value)}>
-            <option value="All">Warehouse: All</option>
-            {warehouses.map((wh) => (
-              <option key={wh.id} value={wh.id}>
-                {wh.warehouse_name}
-              </option>
-            ))}
-          </Form.Select>
-        </Col>
-
-        {/* Date From */}
-        <Col lg={2} md={6}>
-          <Form.Control
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            placeholder="From Date"
-          />
-        </Col>
-
-        {/* Date To */}
-        <Col lg={2} md={6}>
-          <Form.Control
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            placeholder="To Date"
-          />
         </Col>
       </Row>
-      <Card className="border rounded-3 overflow-hidden">
-        <div className="table-responsive">
-          <Table hover className="mb-0 text-center align-middle">
-            <thead className="">
-              <tr>
-                <th>REF ID</th>
-                <th>RETURN #</th>
-                <th>INVOICE #</th>
-                <th>VENDOR</th>
-                <th>WAREHOUSE</th>
-                <th>DATE</th>
-                <th>AMOUNT</th>
-                <th>STATUS</th>
-                <th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredReturns.length === 0 ? (
+
+      {/* Filter Toggle */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          className="btn-toggle-filters"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <FaFilter className="me-2" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
+      </div>
+
+      {/* Advanced Filters */}
+      {showFilters && (
+        <Card className="mb-4 filter-card border-0 shadow-lg">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold filter-title">
+                <FaFilter className="me-2" />
+                Filter Purchase Returns
+              </h5>
+              <Button variant="outline-secondary" size="sm" className="btn-clear-filters" onClick={clearFilters}>
+                <FaTimes className="me-1" /> Clear All
+              </Button>
+            </div>
+            <Row className="g-3">
+              <Col md={3}>
+                <Form.Label className="filter-label">Vendor</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={''}
+                  onChange={() => {}}
+                  disabled
+                >
+                  <option value="">All Vendors</option>
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Status</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="All">All Status</option>
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {formatStatus(s)}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Warehouse</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={warehouseFilter}
+                  onChange={(e) => setWarehouseFilter(e.target.value)}
+                >
+                  <option value="All">All Warehouses</option>
+                  {warehouses.map((wh) => (
+                    <option key={wh.id} value={wh.id}>
+                      {wh.warehouse_name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Date From</Form.Label>
+                <Form.Control
+                  className="filter-date"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Date To</Form.Label>
+                <Form.Control
+                  className="filter-date"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
+
+      {/* Summary Cards */}
+      <Row className="mb-4 g-3">
+        <Col md={3}>
+          <Card className="summary-card-1 border-0 shadow-sm">
+            <Card.Body className="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="text-muted mb-2">Total Returns</h6>
+                <h4 className="fw-bold summary-value">{returns.length}</h4>
+              </div>
+              <div className="summary-icon-wrapper">
+                <i className="fas fa-list-alt summary-icon"></i>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3}>
+          <Card className="summary-card-2 border-0 shadow-sm">
+            <Card.Body className="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="text-muted mb-2">Approved</h6>
+                <h4 className="fw-bold summary-value">{returns.filter(r => r.status === 'approved').length}</h4>
+              </div>
+              <div className="summary-icon-wrapper">
+                <i className="fas fa-check-circle summary-icon"></i>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3}>
+          <Card className="summary-card-3 border-0 shadow-sm">
+            <Card.Body className="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="text-muted mb-2">Pending</h6>
+                <h4 className="fw-bold summary-value">{returns.filter(r => r.status === 'pending').length}</h4>
+              </div>
+              <div className="summary-icon-wrapper">
+                <i className="fas fa-hourglass-half summary-icon"></i>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3}>
+          <Card className="summary-card-4 border-0 shadow-sm">
+            <Card.Body className="d-flex align-items-center justify-content-between">
+              <div>
+                <h6 className="text-muted mb-2">Total Value</h6>
+                <h4 className="fw-bold summary-value">₹ {returns.reduce((sum, r) => sum + (parseFloat(r.grand_total) || 0), 0).toLocaleString('en-IN')}</h4>
+              </div>
+              <div className="summary-icon-wrapper">
+                <i className="fas fa-rupee-sign summary-icon"></i>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+      {/* Table */}
+      <Card className="purchase-return-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive className="purchase-return-table align-middle" style={{ fontSize: 16 }}>
+              <thead className="table-header">
                 <tr>
-                  <td colSpan="9" className="text-muted py-4">No purchase returns found.</td>
+                  <th className="py-3">#</th>
+                  <th className="py-3">Reference ID</th>
+                  <th className="py-3">Return No</th>
+                  <th className="py-3">Invoice No</th>
+                  <th className="py-3">Vendor</th>
+                  <th className="py-3">Warehouse</th>
+                  <th className="py-3">Date</th>
+                  <th className="py-3">Amount (₹)</th>
+                  <th className="py-3">Status</th>
+                  <th className="py-3 text-center">Action</th>
                 </tr>
-              ) : (
-                filteredReturns.map((item) => (
-                  <tr key={item.id}>
-                    <td className="text-primary fw-medium">{item.reference_id}</td>
-                    <td className="text-primary fw-medium">{item.return_no}</td>
-                    <td className="text-muted">{item.invoice_no}</td>
-                    <td>{getVendorName(item.vendor_id)}</td>
-                    <td>{getWarehouseName(item.warehouse_id)}</td>
-                    <td className="text-muted">
-                      {item.return_date ? item.return_date.split('T')[0] : ''}
-                    </td>
-                    <td className="fw-bold">₹{Number(item.grand_total).toLocaleString()}</td>
-                    <td>
-                      <Badge bg={getStatusVariant(item.status)}>{formatStatus(item.status)}</Badge>
-                    </td>
-                    <td>
-                      <div className="d-flex gap-2 justify-content-center">
-                        {purchaseReturnPermissions.can_view && (
-                          <Button size="sm" variant="outline-info" onClick={() => handleViewClick(item)}>
-                            <FaEye />
-                          </Button>
-                        )}
-                        {purchaseReturnPermissions.can_update && (
-                          <Button size="sm" variant="outline-warning" onClick={() => handleEditClick(item)}>
-                            <FaEdit />
-                          </Button>
-                        )}
-                        {purchaseReturnPermissions.can_delete && (
-                          <Button size="sm" variant="outline-danger" onClick={() => handleDeleteClick(item.id)}>
-                            <FaTrash />
-                          </Button>
-                        )}
-                      </div>
+              </thead>
+              <tbody>
+                {filteredReturns.length > 0 ? (
+                  filteredReturns.map((item, idx) => (
+                    <tr key={item.id}>
+                      <td className="text-center">{idx + 1}</td>
+                      <td><strong>{item.reference_id}</strong></td>
+                      <td><strong>{item.return_no}</strong></td>
+                      <td>{item.invoice_no}</td>
+                      <td>{getVendorName(item.vendor_id)}</td>
+                      <td>{getWarehouseName(item.warehouse_id)}</td>
+                      <td>{item.return_date ? item.return_date.split('T')[0] : ''}</td>
+                      <td className="fw-bold text-danger">
+                        ₹{Number(item.grand_total || 0).toLocaleString("en-IN")}
+                      </td>
+                      <td>{getStatusBadge(item.status)}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          {purchaseReturnPermissions.can_view && (
+                            <Button variant="outline-info" size="sm" className="btn-action btn-view" onClick={() => handleViewClick(item)}>
+                              <FaEye size={14} />
+                            </Button>
+                          )}
+                          {purchaseReturnPermissions.can_update && (
+                            <Button variant="outline-warning" size="sm" className="btn-action btn-edit" onClick={() => handleEditClick(item)}>
+                              <FaEdit size={14} />
+                            </Button>
+                          )}
+                          {purchaseReturnPermissions.can_delete && (
+                            <Button variant="outline-danger" size="sm" className="btn-action btn-delete" onClick={() => handleDeleteClick(item.id)}>
+                              <FaTrash size={14} />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="10" className="text-center py-4 text-muted">
+                      No purchase returns found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </Table>
-        </div>
-        <div className="d-flex justify-content-between align-items-center p-3">
-          <small className="">Showing {filteredReturns.length} of {returns.length} entries</small>
-          <div className="btn-group btn-group-sm">
-            <button className="btn btn-outline-secondary disabled">&laquo;</button>
-            <button className="btn btn-primary">1</button>
-            <button className="btn btn-outline-secondary">&raquo;</button>
+                )}
+              </tbody>
+            </Table>
           </div>
-        </div>
+        </Card.Body>
       </Card>
 
       {/* Add/Edit Modal */}
@@ -1922,11 +2050,12 @@ const PurchaseReturn = () => {
         onExited={handleModalExited}
         size="lg" 
         centered
+        className="purchase-return-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{isEditMode ? 'Edit Purchase Return' : 'Add New Purchase Return'}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Row className="mb-3">
               <Col md={6}>
@@ -2308,14 +2437,14 @@ const PurchaseReturn = () => {
             </div>
           </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseModal} className="btn-modal-cancel">
             Cancel
           </Button>
           {(purchaseReturnPermissions.can_create && !isEditMode) || (purchaseReturnPermissions.can_update && isEditMode) ? (
             <Button
               variant="primary"
-              style={{ backgroundColor: '#3daaaa', borderColor: '#3daaaa' }}
+              className="btn-modal-save"
               onClick={handleSubmit}
             >
               {isEditMode ? 'Update Return' : 'Create Return'}
@@ -2331,11 +2460,13 @@ const PurchaseReturn = () => {
         onHide={handleCloseViewModal}
         onExited={handleViewModalExited}
         size="lg"
+        centered
+        className="purchase-return-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Purchase Return Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           {selectedReturn && (
             <div>
               <Row className="mb-3">
@@ -2354,9 +2485,7 @@ const PurchaseReturn = () => {
                 <Col md={6}><strong>Amount:</strong> ₹{Number(selectedReturn.grand_total).toLocaleString()}</Col>
                 <Col md={6}>
                   <strong>Status:</strong>
-                  <Badge bg={getStatusVariant(selectedReturn.status)} className="ms-2">
-                    {formatStatus(selectedReturn.status)}
-                  </Badge>
+                  <span className="ms-2">{getStatusBadge(selectedReturn.status)}</span>
                 </Col>
               </Row>
               <Row className="mb-3">
@@ -2417,8 +2546,8 @@ const PurchaseReturn = () => {
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={handleCloseViewModal}>Close</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseViewModal} className="btn-modal-cancel">Close</Button>
         </Modal.Footer>
       </Modal>
 
@@ -2429,31 +2558,19 @@ const PurchaseReturn = () => {
         onHide={handleCloseDeleteModal}
         onExited={handleDeleteModalExited}
         centered
+        className="purchase-return-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <p>Are you sure you want to delete this purchase return? This action cannot be undone.</p>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseDeleteModal}>Cancel</Button>
-          <Button variant="danger" onClick={handleConfirmDelete}>Delete</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseDeleteModal} className="btn-modal-cancel">Cancel</Button>
+          <Button variant="danger" onClick={handleConfirmDelete} className="btn-modal-delete">Delete</Button>
         </Modal.Footer>
       </Modal>
-
-      {/* Info Card */}
-      <Card className="mt-4 rounded-4 border">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3">Page Info</h5>
-          <ul className="d" style={{ listStyle: 'disc', paddingLeft: '1.5rem' }}>
-            <li>Manage goods returned to vendors due to damage, overstock, or wrong items.</li>
-            <li>Track return ID, invoice, vendor, warehouse, amount, and status.</li>
-            <li>Auto-generated <strong>Reference ID</strong> and <strong>Voucher Numbers</strong> for accounting.</li>
-            <li>Supports item-level details with quantity, rate, tax, discount, and total.</li>
-          </ul>
-        </Card.Body>
-      </Card>
     </div>
   );
 };

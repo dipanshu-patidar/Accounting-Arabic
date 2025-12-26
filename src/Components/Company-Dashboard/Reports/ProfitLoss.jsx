@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { Card, Row, Col, Form, Button, Modal, Table, Alert, Spinner } from 'react-bootstrap';
 import axiosInstance from '../../../Api/axiosInstance';
-import { toast } from 'react-toastify';
+import GetCompanyId from '../../../Api/GetCompanyId';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './ProfitLoss.css';
 
-const ProfitLoss = ({ companyId = 3 }) => {
+const ProfitLoss = () => {
+  const companyId = GetCompanyId();
   const [detailedView, setDetailedView] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [selectedYear, setSelectedYear] = useState('2025');
@@ -379,11 +383,10 @@ const ProfitLoss = ({ companyId = 3 }) => {
   
   if (loading) {
     return (
-      <div className="container mt-4 text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="p-4 profit-loss-container">
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <Spinner animation="border" style={{ color: "#505ece" }} />
         </div>
-        <p className="mt-2">Loading Profit & Loss Statement...</p>
       </div>
     );
   }
@@ -486,126 +489,158 @@ const ProfitLoss = ({ companyId = 3 }) => {
   };
   
   return (
-    <div className="container mt-4 profit-loss-container">
-      <div className="card">
-        <div className="card-header text-dark">
-          <div className="d-flex flex-wrap justify-content-between align-items-center">
-            <div className="mb-2 mb-md-0">
-              <h4 className="mb-0">Profit & Loss Statement</h4>
-              <p className="mb-0">{dateRange.from} - {dateRange.to}</p>
-            </div>
-            <div className="d-flex flex-wrap align-items-center gap-2">
-              <div className="mr-3">
-                <label className="mr-2 mb-0">Year:</label>
-                <select 
-                  className="form-control form-control-sm d-inline-block" 
-                  style={{width: 'auto'}}
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                >
-                  <option value="2024">2024</option>
-                  <option value="2025">2025</option>
-                  <option value="2026">2026</option>
-                </select>
-              </div>
-              <div className="mr-3">
-                <label className="mr-2 mb-0">Month:</label>
-                <select 
-                  className="form-control form-control-sm d-inline-block" 
-                  style={{width: 'auto'}}
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                >
-                  <option value="01">January</option>
-                  <option value="02">February</option>
-                  <option value="03">March</option>
-                  <option value="04">April</option>
-                  <option value="05">May</option>
-                  <option value="06">June</option>
-                  <option value="07">July</option>
-                  <option value="08">August</option>
-                  <option value="09">September</option>
-                  <option value="10">October</option>
-                  <option value="11">November</option>
-                  <option value="12">December</option>
-                </select>
-              </div>
-              <div className="mt-2 mt-md-0">
-                <button className="btn btn-light w-100 w-md-auto" onClick={toggleDetailedView}>
-                  {detailedView ? 'Hide Details' : 'Show Details'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card-body p-0">
-          {noDataFound && (
-            <div className="alert alert-info m-3" role="alert">
-              No data found for the selected period. Please try a different date range.
-            </div>
-          )}
-          
-          <div className="table-responsive">
-            <table className="table table-bordered mb-0">
-              <thead className="thead-light">
+    <div className="p-4 profit-loss-container">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="profit-loss-title">
+          <i className="fas fa-chart-line me-2"></i>
+          Profit & Loss Statement
+        </h3>
+        <p className="profit-loss-date">
+          Period: {dateRange.from} - {dateRange.to}
+        </p>
+      </div>
+
+      {/* Filter Card */}
+      <Card className="filter-card border-0 shadow-lg mb-4">
+        <Card.Body>
+          <Row className="g-3 align-items-end">
+            <Col xs={12} md={3}>
+              <Form.Label className="filter-label">Year</Form.Label>
+              <Form.Select
+                className="filter-select"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+              </Form.Select>
+            </Col>
+            <Col xs={12} md={3}>
+              <Form.Label className="filter-label">Month</Form.Label>
+              <Form.Select
+                className="filter-select"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </Form.Select>
+            </Col>
+            <Col xs={12} md={3} className="d-flex align-items-end">
+              <Button
+                className="btn-toggle-details w-100"
+                onClick={toggleDetailedView}
+              >
+                {detailedView ? 'Hide Details' : 'Show Details'}
+              </Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {/* Table Card */}
+      {noDataFound && (
+        <Alert variant="info" className="mb-3">
+          No data found for the selected period. Please try a different date range.
+        </Alert>
+      )}
+
+      <Card className="profit-loss-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive className="profit-loss-table align-middle" style={{ fontSize: 16 }}>
+              <thead className="table-header">
                 <tr>
-                  <th className="particulars-col">ACCOUNT</th>
-                  <th className="amount-col">DEBIT</th>
-                  <th className="amount-col">CREDIT</th>
+                  <th className="py-3">ACCOUNT</th>
+                  <th className="py-3 text-end">DEBIT</th>
+                  <th className="py-3 text-end">CREDIT</th>
                 </tr>
               </thead>
               <tbody>
                 {(noDataFound ? getEmptyDataStructure() : profitLossData).map((item) => (
-                  <tr 
-                    key={item.id} 
-                    className={`${item.type === 'header' ? 'table-header' : ''} ${item.type === 'summary' ? 'summary-row fw-bold bg-light' : ''} ${item.type !== 'header' && item.type !== 'summary' ? 'clickable-row' : ''}`}
+                  <tr
+                    key={item.id}
+                    className={`${item.type === 'header' ? 'row-header' : ''} ${item.type === 'summary' ? 'row-summary' : ''} ${item.type !== 'header' && item.type !== 'summary' ? 'clickable-row' : ''}`}
                     onClick={() => handleAccountClick(item)}
                   >
-                    <td className={item.type === 'header' ? 'fw-bold' : ''}>
-                      {item.type !== 'header' && item.type !== 'summary' ? (
-                        <a href="#" className="text-primary text-decoration-none" onClick={(e) => {
-                          e.preventDefault();
-                          handleAccountClick(item);
-                        }}>
+                    <td>
+                      {item.type === 'header' ? (
+                        <strong>{item.particulars}</strong>
+                      ) : item.type === 'summary' ? (
+                        <strong>{item.particulars}</strong>
+                      ) : (
+                        <a
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAccountClick(item);
+                          }}
+                        >
                           {item.particulars}
                         </a>
-                      ) : item.particulars}
+                      )}
                     </td>
-                    <td className="text-right">{item.debit > 0 ? item.debit.toFixed(2) : ''}</td>
-                    <td className="text-right">{item.credit > 0 ? item.credit.toFixed(2) : ''}</td>
+                    <td className="text-end fw-bold">
+                      {item.debit > 0 ? item.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                    </td>
+                    <td className="text-end fw-bold">
+                      {item.credit > 0 ? item.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                    </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
-        </div>
-        
-        <div className="card-footer text-center">
-          <div className="mt-3 text-info">
-            <p className="mb-0">Click on any account to view detailed transactions</p>
-          </div>
-        </div>
+        </Card.Body>
+      </Card>
+
+      <div className="profit-loss-footer-info">
+        <p className="mb-0">Click on any account to view detailed transactions</p>
       </div>
       
       {detailedView && (
-        <div className="card mt-4">
-          <div className="card-header bg-info text-white">
+        <Card className="detailed-view-card border-0 shadow-lg mt-4">
+          <Card.Header className="detailed-view-header">
             <h5 className="mb-0">Detailed Transactions for {getMonthName(selectedMonth)} {selectedYear}</h5>
-          </div>
-          <div className="card-body">
+          </Card.Header>
+          <Card.Body>
             {noDataFound ? (
-              <div className="alert alert-info" role="alert">
+              <Alert variant="info">
                 No transactions available for the selected period.
-              </div>
+              </Alert>
             ) : (
-              <div className="table-responsive">
-                <table className="table table-bordered">
-                  <thead className="thead-light">
+              <div style={{ overflowX: "auto" }}>
+                <Table responsive className="profit-loss-table align-middle">
+                  <thead className="table-header">
                     <tr>
-                      <th>Date</th>
-                      <th>Description</th>
-                      <th>Amount</th>
+                      <th className="py-3">Date</th>
+                      <th className="py-3">Description</th>
+                      <th className="py-3 text-end">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -614,154 +649,178 @@ const ProfitLoss = ({ companyId = 3 }) => {
                         <tr key={`${item.id}-${index}`}>
                           <td>{detail.date}</td>
                           <td>{detail.description}</td>
-                          <td className="text-right">{detail.amount.toFixed(2)}</td>
+                          <td className="text-end fw-bold">{detail.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                       )) : []
                     )}
                   </tbody>
-                </table>
+                </Table>
               </div>
             )}
-          </div>
-        </div>
+          </Card.Body>
+        </Card>
       )}
       
       {/* Account Details Modal */}
-      {selectedAccount && (
-        <div className="modal d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header text-dark">
-                <h5 className="modal-title">
-                  <a href="#" className="text-dark text-decoration-none">
-                    {selectedAccount.particulars}
-                  </a> - Detailed Transactions
-                </h5>
-                <button type="button" className="close" onClick={closeModal}>
-                  <span>&times;</span>
-                </button>
-              </div>
-              <div className="modal-body">
-                {/* Account Summary Card */}
-                <div className="card mb-4 bg-light">
-                  <div className="card-body">
-                    <div className="row">
-                      <div className="col-md-4">
-                        <h6 className="fw-bold">Account Type</h6>
-                        <p className="mb-0">{selectedAccount.type}</p>
-                      </div>
-                      <div className="col-md-4">
-                        <h6 className="fw-bold">Total Amount</h6>
-                        <p className="mb-0 fs-5">
-                          {selectedAccount.type === 'income' ? '+' : '-'}
-                          {(selectedAccount.credit || selectedAccount.debit).toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="col-md-4">
-                        <h6 className="fw-bold">Transaction Count</h6>
-                        <p className="mb-0">{selectedAccount.details ? selectedAccount.details.length : 0}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Additional Account Information */}
-                    <div className="row mt-3">
-                      <div className="col-md-4">
-                        <h6 className="fw-bold">Debit Amount</h6>
-                        <p className="mb-0">{selectedAccount.debit > 0 ? selectedAccount.debit.toFixed(2) : '0.00'}</p>
-                      </div>
-                      <div className="col-md-4">
-                        <h6 className="fw-bold">Credit Amount</h6>
-                        <p className="mb-0">{selectedAccount.credit > 0 ? selectedAccount.credit.toFixed(2) : '0.00'}</p>
-                      </div>
-                      <div className="col-md-4">
-                        <h6 className="fw-bold">Account Balance</h6>
-                        <p className="mb-0">
-                          {selectedAccount.credit - selectedAccount.debit > 0 ? '+' : ''}
-                          {(selectedAccount.credit - selectedAccount.debit).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Date Filter */}
-                <div className="row mb-3">
-                  <div className="col-md-5">
-                    <label className="form-label">From Date</label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      value={filterFromDate}
-                      onChange={(e) => setFilterFromDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="col-md-5">
-                    <label className="form-label">To Date</label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      value={filterToDate}
-                      onChange={(e) => setFilterToDate(e.target.value)}
-                    />
-                  </div>
-                  <div className="col-md-2 d-flex align-items-end">
-                    <button 
-                      className="btn btn-sm btn-secondary w-100" 
-                      onClick={() => {
-                        setFilterFromDate('');
-                        setFilterToDate('');
-                      }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Transaction Details Table */}
-                <div className="table-responsive">
-                  <table className="table table-bordered">
-                    <thead className="thead-light">
+      <Modal
+        show={!!selectedAccount}
+        onHide={closeModal}
+        size="lg"
+        centered
+        className="profit-loss-modal"
+      >
+        {selectedAccount && (
+          <>
+            <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+              <Modal.Title style={{ color: "white" }}>
+                {selectedAccount.particulars} - Detailed Transactions
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="modal-body-custom">
+              {/* Account Summary Card */}
+              <Card className="modal-summary-card mb-4 border-0">
+                <Card.Body>
+                  <Row>
+                    <Col md={4}>
+                      <h6 className="fw-bold">Account Type</h6>
+                      <p className="mb-0">{selectedAccount.type}</p>
+                    </Col>
+                    <Col md={4}>
+                      <h6 className="fw-bold">Total Amount</h6>
+                      <p className="mb-0 fs-5">
+                        {selectedAccount.type === 'income' ? '+' : '-'}
+                        {(selectedAccount.credit || selectedAccount.debit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </Col>
+                    <Col md={4}>
+                      <h6 className="fw-bold">Transaction Count</h6>
+                      <p className="mb-0">{selectedAccount.details ? selectedAccount.details.length : 0}</p>
+                    </Col>
+                  </Row>
+                  
+                  {/* Additional Account Information */}
+                  <Row className="mt-3">
+                    <Col md={4}>
+                      <h6 className="fw-bold">Debit Amount</h6>
+                      <p className="mb-0">{selectedAccount.debit > 0 ? selectedAccount.debit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</p>
+                    </Col>
+                    <Col md={4}>
+                      <h6 className="fw-bold">Credit Amount</h6>
+                      <p className="mb-0">{selectedAccount.credit > 0 ? selectedAccount.credit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</p>
+                    </Col>
+                    <Col md={4}>
+                      <h6 className="fw-bold">Account Balance</h6>
+                      <p className="mb-0">
+                        {selectedAccount.credit - selectedAccount.debit > 0 ? '+' : ''}
+                        {(selectedAccount.credit - selectedAccount.debit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+              
+              {/* Date Filter */}
+              <Row className="mb-3">
+                <Col md={5}>
+                  <Form.Label className="filter-label">From Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="modal-form-control"
+                    value={filterFromDate}
+                    onChange={(e) => setFilterFromDate(e.target.value)}
+                  />
+                </Col>
+                <Col md={5}>
+                  <Form.Label className="filter-label">To Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="modal-form-control"
+                    value={filterToDate}
+                    onChange={(e) => setFilterToDate(e.target.value)}
+                  />
+                </Col>
+                <Col md={2} className="d-flex align-items-end">
+                  <Button
+                    className="btn-clear-filter w-100"
+                    onClick={() => {
+                      setFilterFromDate('');
+                      setFilterToDate('');
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </Col>
+              </Row>
+              
+              {/* Transaction Details Table */}
+              <div style={{ overflowX: "auto" }}>
+                <Table responsive className="profit-loss-table align-middle">
+                  <thead className="table-header">
+                    <tr>
+                      <th className="py-3">Date</th>
+                      <th className="py-3">Description</th>
+                      <th className="py-3 text-end">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedAccount.details && selectedAccount.details.length > 0 ? (
+                      filterDetailsByDateRange(selectedAccount.details).map((detail, index) => (
+                        <tr key={index}>
+                          <td>{detail.date}</td>
+                          <td>{detail.description}</td>
+                          <td className="text-end fw-bold">{detail.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))
+                    ) : (
                       <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th className="text-right">Amount</th>
+                        <td colSpan="3" className="text-center py-4 text-muted">No transactions available</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {selectedAccount.details && selectedAccount.details.length > 0 ? (
-                        filterDetailsByDateRange(selectedAccount.details).map((detail, index) => (
-                          <tr key={index}>
-                            <td>{detail.date}</td>
-                            <td>{detail.description}</td>
-                            <td className="text-right">{detail.amount.toFixed(2)}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="3" className="text-center">No transactions available</td>
-                        </tr>
-                      )}
-                    </tbody>
-                    {selectedAccount.details && selectedAccount.details.length > 0 && (
-                      <tfoot className="table-light fw-bold">
-                        <tr>
-                          <td colSpan="2" className="text-end">Total:</td>
-                          <td className="text-right">
-                            {calculateTotal(filterDetailsByDateRange(selectedAccount.details)).toFixed(2)}
-                          </td>
-                        </tr>
-                      </tfoot>
                     )}
-                  </table>
-                </div>
+                  </tbody>
+                  {selectedAccount.details && selectedAccount.details.length > 0 && (
+                    <tfoot className="row-summary">
+                      <tr>
+                        <td colSpan="2" className="text-end"><strong>Total:</strong></td>
+                        <td className="text-end">
+                          <strong>{calculateTotal(filterDetailsByDateRange(selectedAccount.details)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </Table>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </Modal.Body>
+            <Modal.Footer className="modal-footer-custom">
+              <Button
+                variant="secondary"
+                onClick={closeModal}
+                className="btn-modal-close"
+                style={{
+                  backgroundColor: "#6c757d",
+                  borderColor: "#6c757d",
+                  color: "white",
+                  padding: "8px 18px",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#5a6268";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#6c757d";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                Close
+              </Button>
+            </Modal.Footer>
+          </>
+        )}
+      </Modal>
     </div>
   );
 };

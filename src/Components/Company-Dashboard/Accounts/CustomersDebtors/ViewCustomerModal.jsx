@@ -12,9 +12,9 @@ const ViewCustomerModal = ({ show, onHide, onExited, customer }) => {
   const imageSrc = getImageSrc(customer?.idCardImage);
 
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited} size="lg" centered>
-      <Modal.Header closeButton className="bg-info text-white">
-        <Modal.Title>Customer Details</Modal.Title>
+    <Modal show={show} onHide={onHide} onExited={onExited} size="lg" centered className="customer-modal">
+      <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+        <Modal.Title style={{ color: "white" }}>Customer Details</Modal.Title>
       </Modal.Header>
       <Modal.Body className="text-start">
         {/* Circular Profile Image + Large Name — Left Aligned */}
@@ -250,8 +250,31 @@ const ViewCustomerModal = ({ show, onHide, onExited, customer }) => {
           </Card>
         )}
       </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
+      <Modal.Footer className="modal-footer-custom">
+        <Button 
+          variant="secondary" 
+          onClick={onHide}
+          className="btn-modal-cancel"
+          style={{
+            backgroundColor: "#6c757d",
+            borderColor: "#6c757d",
+            color: "white",
+            padding: "8px 18px",
+            borderRadius: "8px",
+            fontWeight: "600",
+            transition: "all 0.3s ease"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#5a6268";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#6c757d";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
           Close
         </Button>
       </Modal.Footer>

@@ -52,11 +52,11 @@ const DeleteCustomer = ({ show, onHide, onExited, onSuccess, customerId }) => {
   };
 
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited} centered backdrop="static">
-      <Modal.Header closeButton>
-        <Modal.Title>⚠️ Confirm Deletion</Modal.Title>
+    <Modal show={show} onHide={onHide} onExited={onExited} centered backdrop="static" className="customer-modal">
+      <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+        <Modal.Title style={{ color: "white" }}>⚠️ Confirm Deletion</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="modal-body-custom">
         {error && (
           <Alert variant="danger" className="mb-3">
             {error}
@@ -72,12 +72,32 @@ const DeleteCustomer = ({ show, onHide, onExited, onSuccess, customerId }) => {
           </p>
         )}
       </Modal.Body>
-      <Modal.Footer>
+      <Modal.Footer className="modal-footer-custom">
         <Button
           variant="secondary"
           onClick={onHide}
           disabled={isDeleting}
-          className="px-4"
+          className="btn-modal-cancel"
+          style={{
+            backgroundColor: "#6c757d",
+            borderColor: "#6c757d",
+            color: "white",
+            padding: "8px 18px",
+            borderRadius: "8px",
+            fontWeight: "600",
+            transition: "all 0.3s ease"
+          }}
+          onMouseEnter={(e) => {
+            if (isDeleting) return;
+            e.currentTarget.style.backgroundColor = "#5a6268";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#6c757d";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           Cancel
         </Button>
@@ -85,7 +105,28 @@ const DeleteCustomer = ({ show, onHide, onExited, onSuccess, customerId }) => {
           variant="danger"
           onClick={handleDelete}
           disabled={isDeleting}
-          className="px-4"
+          className="btn-modal-delete"
+          style={{
+            backgroundColor: "#dc3545",
+            borderColor: "#dc3545",
+            color: "white",
+            padding: "8px 18px",
+            borderRadius: "8px",
+            fontWeight: "600",
+            transition: "all 0.3s ease",
+            opacity: isDeleting ? 0.6 : 1
+          }}
+          onMouseEnter={(e) => {
+            if (isDeleting) return;
+            e.currentTarget.style.backgroundColor = "#c82333";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(220, 53, 69, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#dc3545";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           {isDeleting ? (
             <>

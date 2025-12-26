@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Table, Button, Badge, Modal, Form, Row, Col, Card, Spinner } from 'react-bootstrap';
-import { FaArrowLeft, FaTrash, FaEye } from "react-icons/fa";
+import { FaTrash, FaEye, FaPlus, FaSearch, FaFilter, FaTimes } from "react-icons/fa";
 import MultiStepSalesForm from './MultiStepSalesForm';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import "./Invoice.css";
 
 // Helper function to get step status
 const getStepStatus = (steps, stepName) => {
@@ -18,8 +19,22 @@ const getStepData = (steps, stepName) => {
 };
 
 const statusBadge = (status) => {
-  const variant = status === 'completed' ? 'success' : status === 'pending' ? 'secondary' : 'warning';
-  return <Badge bg={variant}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>;
+  const normalized = status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase() || '';
+  let badgeClass = 'status-badge';
+  
+  if (normalized === 'Completed') {
+    badgeClass = 'status-badge-completed';
+  } else if (normalized === 'Pending') {
+    badgeClass = 'status-badge-pending';
+  } else if (normalized === 'Cancelled') {
+    badgeClass = 'status-badge-cancelled';
+  }
+  
+  return (
+    <Badge className={badgeClass}>
+      {normalized}
+    </Badge>
+  );
 };
 
 const Invoice = () => {
@@ -397,175 +412,184 @@ const Invoice = () => {
   }
 
   return (
-    <div className="p-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div className="d-flex align-items-center gap-2">
-          <FaArrowLeft size={20} color="blue" />
-          <h5 className="mb-0">Sales Workflow</h5>
-        </div>
-        {invoicePermissions.can_create && (
-          <Button
-            variant="primary"
-            onClick={() => handleCreateNewInvoice()}
-            style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
-          >
-            + Create sales order
-          </Button>
-        )}
+    <div className="p-4 invoice-container">
+      <div className="mb-4">
+        <h3 className="invoice-title">
+          <i className="fas fa-file-invoice-dollar me-2"></i>
+          Sales Order Management
+        </h3>
+        <p className="invoice-subtitle">Manage your sales orders and workflows</p>
       </div>
 
-      {/* 🔥 Sales Steps Dropdown + Show Filters Button */}
-      <div className="d-flex justify-content-between align-items-end mb-3">
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder="Search by invoice number, customer name..."
+              value={invoiceNoFilter}
+              onChange={(e) => setInvoiceNoFilter(e.target.value)}
+            />
+          </div>
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
+          {invoicePermissions.can_create && (
+            <Button
+              className="d-flex align-items-center btn-add-invoice"
+              onClick={() => handleCreateNewInvoice()}
+            >
+              <FaPlus className="me-2" />
+              Create Sales Order
+            </Button>
+          )}
+        </Col>
+      </Row>
+
+      {/* Filters Section */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <Button
           variant="outline-secondary"
           size="sm"
+          className="btn-toggle-filters"
           onClick={() => setShowFilters(!showFilters)}
         >
+          <FaFilter className="me-2" />
           {showFilters ? 'Hide Filters' : 'Show Filters'}
         </Button>
       </div>
 
-      {/* 🔥 Advanced Filters (Collapsible) */}
+      {/* Advanced Filters */}
       {showFilters && (
-        <div className="mb-3 p-3 bg-light rounded border d-flex flex-wrap gap-3 align-items-end">
-          <div>
-            <label className="form-label text-secondary">From Date</label>
-            <input
-              type="date"
-              className="form-control"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-          </div>
+        <Card className="mb-4 filter-card border-0 shadow-lg">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h6 className="mb-0 fw-bold filter-title">
+                <FaFilter className="me-2" />
+                Filter Sales Orders
+              </h6>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="btn-clear-filters"
+                onClick={() => {
+                  setFromDate('');
+                  setToDate('');
+                  setInvoiceNoFilter('');
+                  setQuotationStatusFilter('');
+                  setSalesOrderStatusFilter('');
+                  setDeliveryChallanStatusFilter('');
+                  setInvoiceStatusFilter('');
+                  setPaymentStatusFilter('');
+                }}
+              >
+                <FaTimes className="me-1" /> Clear All
+              </Button>
+            </div>
+            <div className="d-flex flex-wrap gap-3 align-items-end">
+              <div>
+                <Form.Label className="filter-label">From Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  className="filter-control"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label className="form-label text-secondary">To Date</label>
-            <input
-              type="date"
-              className="form-control"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-          </div>
+              <div>
+                <Form.Label className="filter-label">To Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  className="filter-control"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label className="form-label text-secondary">Invoice No.</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="e.g. INV-123"
-              value={invoiceNoFilter}
-              onChange={(e) => setInvoiceNoFilter(e.target.value)}
-              style={{ minWidth: "150px" }}
-            />
-          </div>
+              <div>
+                <Form.Label className="filter-label">Invoice No.</Form.Label>
+                <Form.Control
+                  type="text"
+                  className="filter-control"
+                  placeholder="e.g. INV-123"
+                  value={invoiceNoFilter}
+                  onChange={(e) => setInvoiceNoFilter(e.target.value)}
+                />
+              </div>
 
-          {/* Quotation Status */}
-          <div>
-            <label className="form-label text-secondary">Quotation</label>
-            <select
-              className="form-select"
-              value={quotationStatusFilter}
-              onChange={(e) => setQuotationStatusFilter(e.target.value)}
-              style={{ minWidth: "130px" }}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
+              <div>
+                <Form.Label className="filter-label">Quotation</Form.Label>
+                <Form.Select
+                  className="filter-control"
+                  value={quotationStatusFilter}
+                  onChange={(e) => setQuotationStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </div>
 
-          {/* Sales Order Status */}
-          <div>
-            <label className="form-label text-secondary">Sales Order</label>
-            <select
-              className="form-select"
-              value={salesOrderStatusFilter}
-              onChange={(e) => setSalesOrderStatusFilter(e.target.value)}
-              style={{ minWidth: "130px" }}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
+              <div>
+                <Form.Label className="filter-label">Sales Order</Form.Label>
+                <Form.Select
+                  className="filter-control"
+                  value={salesOrderStatusFilter}
+                  onChange={(e) => setSalesOrderStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </div>
 
-          {/* Delivery Challan Status */}
-          <div>
-            <label className="form-label text-secondary">Delivery Challan</label>
-            <select
-              className="form-select"
-              value={deliveryChallanStatusFilter}
-              onChange={(e) => setDeliveryChallanStatusFilter(e.target.value)}
-              style={{ minWidth: "130px" }}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
+              <div>
+                <Form.Label className="filter-label">Delivery Challan</Form.Label>
+                <Form.Select
+                  className="filter-control"
+                  value={deliveryChallanStatusFilter}
+                  onChange={(e) => setDeliveryChallanStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </div>
 
-          {/* Invoice Status */}
-          <div>
-            <label className="form-label text-secondary">Invoice</label>
-            <select
-              className="form-select"
-              value={invoiceStatusFilter}
-              onChange={(e) => setInvoiceStatusFilter(e.target.value)}
-              style={{ minWidth: "130px" }}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
+              <div>
+                <Form.Label className="filter-label">Invoice</Form.Label>
+                <Form.Select
+                  className="filter-control"
+                  value={invoiceStatusFilter}
+                  onChange={(e) => setInvoiceStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </div>
 
-          {/* Payment Status */}
-          <div>
-            <label className="form-label text-secondary">Payment</label>
-            <select
-              className="form-select"
-              value={paymentStatusFilter}
-              onChange={(e) => setPaymentStatusFilter(e.target.value)}
-              style={{ minWidth: "130px" }}
-            >
-              <option value="">All</option>
-              <option value="Pending">Pending</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
-
-          <div className="d-flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setFromDate('');
-                setToDate('');
-                setInvoiceNoFilter('');
-                setQuotationStatusFilter('');
-                setSalesOrderStatusFilter('');
-                setDeliveryChallanStatusFilter('');
-                setInvoiceStatusFilter('');
-                setPaymentStatusFilter('');
-              }}
-            >
-              Clear
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setShowFilters(false)}
-            >
-              Apply Filters
-            </Button>
-          </div>
-        </div>
+              <div>
+                <Form.Label className="filter-label">Payment</Form.Label>
+                <Form.Select
+                  className="filter-control"
+                  value={paymentStatusFilter}
+                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                >
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </Form.Select>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
       )}
 
       {/* Error Message Display */}
@@ -584,22 +608,25 @@ const Invoice = () => {
         </div>
       ) : (
         /* Table */
-        <Table bordered hover responsive className="text-center align-middle">
-          <thead className="">
-            <tr>
-              <th>#</th>
-              <th>Invoice No</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Quotation</th>
-              <th>Sales Order</th>
-              <th>Delivery Challan</th>
-              <th>Invoice</th>
-              <th>Payment</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        <Card className="invoice-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="invoice-table align-middle mb-0" style={{ fontSize: 16 }}>
+                <thead className="table-header">
+                  <tr>
+                    <th className="py-3">#</th>
+                    <th className="py-3">Invoice No</th>
+                    <th className="py-3">Customer</th>
+                    <th className="py-3">Date</th>
+                    <th className="py-3">Amount</th>
+                    <th className="py-3">Quotation</th>
+                    <th className="py-3">Sales Order</th>
+                    <th className="py-3">Delivery Challan</th>
+                    <th className="py-3">Invoice</th>
+                    <th className="py-3">Payment</th>
+                    <th className="py-3 text-center">Actions</th>
+                  </tr>
+                </thead>
           <tbody>
             {filteredOrders?.length === 0 ? (
               <tr>
@@ -648,47 +675,52 @@ const Invoice = () => {
                     <td>{statusBadge(getStepStatus(order.steps, 'delivery_challan'))}</td>
                     <td>{statusBadge(getStepStatus(order.steps, 'invoice'))}</td>
                     <td>{statusBadge(getStepStatus(order.steps, 'payment'))}</td>
-                    <td className='d-flex'>
-                      {invoicePermissions.can_view && (
-                        <Button
-                          size="sm"
-                          className="me-1 mb-1"
-                          variant="outline-info"
-                          onClick={() => handleViewOrder(order)}
-                          title="View Details"
-                        >
-                          <FaEye />
-                        </Button>
-                      )}
-                      {invoicePermissions.can_update && (
-                        <Button
-                          size="sm"
-                          className="me-1 mb-1"
-                          variant="outline-primary"
-                          onClick={() => handleCreateNewInvoice(order)}
-                          title="Continue Workflow"
-                        >
-                          Continue
-                        </Button>
-                      )}
-                      {invoicePermissions.can_delete && (
-                        <Button
-                          size="sm"
-                          className="mb-1"
-                          variant="outline-danger"
-                          onClick={() => setDeleteConfirm({ show: true, id: order.company_info.id })}
-                          title="Delete Order"
-                        >
-                          <FaTrash />
-                        </Button>
-                      )}
+                    <td>
+                      <div className="d-flex gap-2 justify-content-center">
+                        {invoicePermissions.can_view && (
+                          <Button
+                            size="sm"
+                            className="btn-action btn-view"
+                            variant="outline-primary"
+                            onClick={() => handleViewOrder(order)}
+                            title="View Details"
+                          >
+                            <FaEye />
+                          </Button>
+                        )}
+                        {invoicePermissions.can_update && (
+                          <Button
+                            size="sm"
+                            className="btn-action btn-continue"
+                            variant="outline-success"
+                            onClick={() => handleCreateNewInvoice(order)}
+                            title="Continue Workflow"
+                          >
+                            Continue
+                          </Button>
+                        )}
+                        {invoicePermissions.can_delete && (
+                          <Button
+                            size="sm"
+                            className="btn-action btn-delete"
+                            variant="outline-danger"
+                            onClick={() => setDeleteConfirm({ show: true, id: order.company_info.id })}
+                            title="Delete Order"
+                          >
+                            <FaTrash />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
               })
             )}
           </tbody>
-        </Table>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
       )}
 
       {/* Modal for creating/editing sales order */}
@@ -699,8 +731,9 @@ const Invoice = () => {
         onExited={handleModalExited}
         size="xl" 
         centered
+        className="invoice-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>
             {selectedOrder && selectedOrder.id
               ? 'Continue Sales Workflow'
@@ -710,7 +743,7 @@ const Invoice = () => {
             }
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ position: "relative", overflow: "visible" }}>
+        <Modal.Body style={{ position: "relative", overflow: "auto", maxHeight: "75vh" }}>
           {stepModal && (
             <MultiStepSalesForm
               key={`form-${modalKeyRef.current.main}`}
@@ -730,8 +763,9 @@ const Invoice = () => {
         onExited={handleViewModalExited}
         size="xl" 
         centered
+        className="invoice-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Sales Order Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -927,8 +961,9 @@ const Invoice = () => {
         onHide={handleCloseDeleteModal}
         onExited={handleDeleteModalExited}
         centered
+        className="invoice-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Confirm Delete</Modal.Title>
         </Modal.Header>
         <Modal.Body>

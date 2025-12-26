@@ -392,9 +392,24 @@ const AddNewAccountModal = ({
                       setParentError('');
                     }}
                     style={{
-                      backgroundColor: "#53b2a5",
+                      backgroundColor: "#505ece",
+                      borderColor: "#505ece",
                       border: "none",
+                      color: "white",
                       padding: "8px 16px",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      transition: "all 0.3s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#3d47b8";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#505ece";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     + Add Parent
@@ -445,11 +460,28 @@ const AddNewAccountModal = ({
                       });
                     }}
                     style={{
-                      backgroundColor: "#53b2a5",
+                      backgroundColor: "#505ece",
+                      borderColor: "#505ece",
                       border: "none",
+                      color: "white",
                       padding: "8px 16px",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      transition: "all 0.3s ease",
+                      opacity: !newAccountData.subgroup ? 0.6 : 1
                     }}
                     disabled={!newAccountData.subgroup}
+                    onMouseEnter={(e) => {
+                      if (!newAccountData.subgroup) return;
+                      e.currentTarget.style.backgroundColor = "#3d47b8";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#505ece";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
                   >
                     + Add Sub of Subgroup
                   </Button>
@@ -581,17 +613,56 @@ const AddNewAccountModal = ({
             </Form>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={onHide}>
+            <Button 
+              variant="secondary" 
+              onClick={onHide}
+              style={{
+                backgroundColor: "#6c757d",
+                borderColor: "#6c757d",
+                color: "white",
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                transition: "all 0.3s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#5a6268";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#6c757d";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
               Cancel
             </Button>
             <Button
               style={{
-                backgroundColor: "#53b2a5",
+                backgroundColor: "#505ece",
+                borderColor: "#505ece",
                 border: "none",
-                padding: "8px 16px",
+                color: "white",
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                transition: "all 0.3s ease",
+                opacity: (isAccountSubmitting || !newAccountData.subgroup || !newAccountData.subOfSubgroupId) ? 0.6 : 1
               }}
               onClick={handleSaveAccount}
               disabled={isAccountSubmitting || !newAccountData.subgroup || !newAccountData.subOfSubgroupId}
+              onMouseEnter={(e) => {
+                if (isAccountSubmitting || !newAccountData.subgroup || !newAccountData.subOfSubgroupId) return;
+                e.currentTarget.style.backgroundColor = "#3d47b8";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#505ece";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
               {isAccountSubmitting ? 'Saving...' : 'Save'}
             </Button>
@@ -663,13 +734,54 @@ const AddNewAccountModal = ({
               setParentError('');
             }}
             disabled={isSubmitting}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              if (isSubmitting) return;
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             Cancel
           </Button>
           <Button
-            style={{ backgroundColor: "#53b2a5", border: "none" }}
+            style={{ 
+              backgroundColor: "#505ece", 
+              borderColor: "#505ece",
+              border: "none",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+              opacity: (isSubmitting || !parentAccountForm.mainCategory || !parentAccountForm.subgroupName) ? 0.6 : 1
+            }}
             onClick={handleSaveParentAccount}
             disabled={isSubmitting || !parentAccountForm.mainCategory || !parentAccountForm.subgroupName}
+            onMouseEnter={(e) => {
+              if (isSubmitting || !parentAccountForm.mainCategory || !parentAccountForm.subgroupName) return;
+              e.currentTarget.style.backgroundColor = "#3d47b8";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#505ece";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             {isSubmitting ? 'Adding...' : 'Add Subgroup'}
           </Button>
@@ -732,13 +844,54 @@ const AddNewAccountModal = ({
               setSubOfSubgroupError('');
             }}
             disabled={isSubOfSubgroupSubmitting}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              if (isSubOfSubgroupSubmitting) return;
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             Cancel
           </Button>
           <Button
-            style={{ backgroundColor: "#53b2a5", border: "none" }}
+            style={{ 
+              backgroundColor: "#505ece", 
+              borderColor: "#505ece",
+              border: "none",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+              opacity: (isSubOfSubgroupSubmitting || !subOfSubgroupForm.name) ? 0.6 : 1
+            }}
             onClick={handleSaveSubOfSubgroup}
             disabled={isSubOfSubgroupSubmitting || !subOfSubgroupForm.name}
+            onMouseEnter={(e) => {
+              if (isSubOfSubgroupSubmitting || !subOfSubgroupForm.name) return;
+              e.currentTarget.style.backgroundColor = "#3d47b8";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#505ece";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             {isSubOfSubgroupSubmitting ? 'Adding...' : 'Add Account'}
           </Button>

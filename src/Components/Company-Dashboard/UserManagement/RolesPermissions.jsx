@@ -16,10 +16,14 @@ import {
   FaTrash,
   FaUsers,
   FaEye,
+  FaPlus,
+  FaSearch,
+  FaFilter,
 } from "react-icons/fa";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axios from "axios";
 import BaseUrl from "../../../Api/BaseUrl";
+import "./RolesPermissions.css";
 
 // Updated tallyModules with categories (Dashboard removed)
 const tallyModules = [
@@ -617,7 +621,7 @@ const RolesPermissions = () => {
                                 fontSize: 13,
                                 fontWeight: 600,
                                 cursor: "pointer",
-                                color: form.modulePermissions[module.name]?.length === module.permissions.length ? "#53b2a5" : "inherit"
+                                    color: form.modulePermissions[module.name]?.length === module.permissions.length ? "#505ece" : "inherit"
                               }}
                             >
                               Full Access
@@ -649,7 +653,7 @@ const RolesPermissions = () => {
                                   htmlFor={`${isEdit ? 'edit' : 'add'}-${module.name}-${perm}`}
                                   style={{
                                     fontSize: 13,
-                                    color: isSelected || isFullAccess ? "#53b2a5" : "inherit",
+                                    color: isSelected || isFullAccess ? "#505ece" : "inherit",
                                     fontWeight: isSelected || isFullAccess ? 500 : 400,
                                     cursor: isFullAccess ? "not-allowed" : "pointer",
                                     opacity: isFullAccess ? 0.6 : 1
@@ -674,95 +678,105 @@ const RolesPermissions = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 roles-permissions-container">
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h4 style={{ fontWeight: "600" }}>Roles & Permission</h4>
-          <p style={{ marginBottom: 0, color: "#666" }}>Manage your roles</p>
+          <h3 className="roles-title">
+            <i className="fas fa-user-shield me-2"></i>
+            Roles & Permissions
+          </h3>
+          <p className="roles-subtitle">Manage your roles and permissions efficiently</p>
         </div>
         <div className="d-flex gap-2 align-items-center">
           <Button
-            style={{ whiteSpace: "nowrap", backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
+            className="btn-add-role"
             onClick={handleAdd}
           >
-            + Add Role
+            <FaPlus className="me-2" />
+            Add Role
           </Button>
         </div>
       </div>
 
       {/* Main Card */}
-      <Card className="">
-        <Card.Body>
+      <Card className="roles-card border-0 shadow-lg">
+        <Card.Body className="p-4">
           {/* Filters */}
-          <div className="d-flex flex-wrap gap-3 mb-3 align-items-end">
-            <div>
-              <Form.Label>Search Role</Form.Label>
-              <InputGroup style={{ maxWidth: 300 }}>
+          <div className="filter-section mb-4">
+            <div className="d-flex align-items-center mb-3">
+              <FaFilter className="me-2 filter-icon" />
+              <h6 className="mb-0 fw-bold filter-title">Filter Roles</h6>
+            </div>
+            <div className="d-flex flex-wrap gap-3 align-items-end">
+              <div className="search-wrapper">
+                <FaSearch className="search-icon-input" />
                 <Form.Control
-                  placeholder="Enter role name"
+                  className="search-input"
+                  placeholder="Search role name"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-              </InputGroup>
-            </div>
-            <div>
-              <Form.Label>Status</Form.Label>
-              <Form.Select
-                style={{ minWidth: 150 }}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="All">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </Form.Select>
-            </div>
-            <div>
-              <Form.Label>From Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                style={{ minWidth: 140 }}
-              />
-            </div>
-            <div>
-              <Form.Label>To Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                style={{ minWidth: 140 }}
-              />
-            </div>
-            <div>
-              <Form.Label>&nbsp;</Form.Label>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => {
-                  setSearch("");
-                  setStatusFilter("All");
-                  setFromDate("");
-                  setToDate("");
-                }}
-              >
-                Clear
-              </Button>
+              </div>
+              <div>
+                <Form.Label className="filter-label">Status</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="All">All Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </Form.Select>
+              </div>
+              <div>
+                <Form.Label className="filter-label">From Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  className="filter-date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Form.Label className="filter-label">To Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  className="filter-date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Form.Label className="filter-label">&nbsp;</Form.Label>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  className="btn-clear-filters"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("All");
+                    setFromDate("");
+                    setToDate("");
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Roles Table */}
           <div style={{ overflowX: "auto" }}>
-            <Table responsive style={{ minWidth: 800 }}>
-              <thead>
-                <tr style={{ background: "#f2f2f2" }}>
+            <Table responsive className="roles-table" style={{ minWidth: 800 }}>
+              <thead className="table-header">
+                <tr>
                   <th><Form.Check /></th>
                   <th>Role</th>
                   <th>Created Date</th>
                   <th>Status</th>
-                  <th style={{ minWidth: 150 }}>Actions</th>
+                  <th className="text-center" style={{ minWidth: 180 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -773,37 +787,19 @@ const RolesPermissions = () => {
                     <td>{role.lastModified}</td>
                     <td>
                       <span
-                        style={{
-                          background: role.status === "Active" ? "#27ae60" : "#e74c3c",
-                          color: "#fff",
-                          padding: "4px 14px",
-                          borderRadius: 20,
-                          fontSize: 14,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          cursor: "pointer",
-                          transition: "background-color 0.3s ease"
-                        }}
+                        className={`status-badge ${role.status === "Active" ? "status-badge-active" : "status-badge-inactive"}`}
                         onClick={() => toggleRoleStatus(role.id)}
                         title={`Click to mark as ${role.status === "Active" ? "Inactive" : "Active"}`}
                       >
-                        <span
-                          style={{
-                            width: 8,
-                            height: 8,
-                            background: "#fff",
-                            borderRadius: "50%",
-                          }}
-                        ></span>
                         {role.status}
                       </span>
                     </td>
                     <td>
-                      <div className="d-flex gap-2">
+                      <div className="d-flex gap-2 justify-content-center">
                         <Button
                           variant="outline-primary"
                           size="sm"
+                          className="btn-action btn-view"
                           title="View Details"
                           onClick={() => handleView(role)}
                         >
@@ -812,6 +808,7 @@ const RolesPermissions = () => {
                         <Button
                           variant="outline-success"
                           size="sm"
+                          className="btn-action btn-edit"
                           title="Edit"
                           onClick={() => handleEdit(role)}
                         >
@@ -820,6 +817,7 @@ const RolesPermissions = () => {
                         <Button
                           variant="outline-danger"
                           size="sm"
+                          className="btn-action btn-delete"
                           title="Delete"
                           onClick={() => handleDelete(role)}
                         >
@@ -965,30 +963,17 @@ const RolesPermissions = () => {
             {renderModulePermissions(false)}
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ borderTop: "1px solid #e9ecef", padding: "15px 20px" }}>
+        <Modal.Footer>
           <Button
             variant="secondary"
             onClick={handleCloseAdd}
-            style={{
-              background: "#6c757d",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 20px",
-              fontWeight: 500
-            }}
           >
             Cancel
           </Button>
           <Button
+            className="btn-save-role"
             onClick={handleAddSave}
             disabled={!form.name.trim()}
-            style={{
-              background: "#53b2a5",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 20px",
-              fontWeight: 500
-            }}
           >
             Add Role
           </Button>
@@ -1025,39 +1010,23 @@ const RolesPermissions = () => {
             {renderModulePermissions(true)}
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ borderTop: "1px solid #e9ecef", padding: "15px 20px" }}>
+        <Modal.Footer>
           <Button
             variant="secondary"
             onClick={handleCloseEdit}
-            style={{
-              background: "#6c757d",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 20px",
-              fontWeight: 500
-            }}
           >
             Cancel
           </Button>
           <Button
+            className="btn-save-role"
             onClick={handleEditSave}
             disabled={!form.name.trim()}
-            style={{
-              background: "#53b2a5",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 20px",
-              fontWeight: 500
-            }}
           >
             Update
           </Button>
         </Modal.Footer>
       </Modal>
 
-      <p className="text-muted text-center mt-3">
-        This page allows you to define and manage user roles with specific permissions such as create, read, update, and delete. Control access across the application.
-      </p>
 
       {/* TOAST CONTAINER */}
       <ToastContainer position="top-end" className="p-3">

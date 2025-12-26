@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Table, Button, Badge, Form, Row, Col, InputGroup, Modal, Spinner, Alert } from 'react-bootstrap';
-import { FaEye, FaDownload, FaTrash, FaUpload, FaFile, FaCalendarAlt, FaSearch, FaEdit } from 'react-icons/fa';
+import { Table, Button, Badge, Form, Row, Col, InputGroup, Modal, Spinner, Alert, Card } from 'react-bootstrap';
+import { FaEye, FaDownload, FaTrash, FaUpload, FaFile, FaCalendarAlt, FaSearch, FaEdit, FaPlus, FaFilter, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowRight } from "react-icons/fa";
-import { Card } from "react-bootstrap";
 import axiosInstance from '../../../Api/axiosInstance';
 import GetCompanyId from '../../../Api/GetCompanyId';
+import "./SalesReturn.css";
 
 const SalesReturn = () => {
   const [returns, setReturns] = useState([]);
@@ -91,6 +90,7 @@ const SalesReturn = () => {
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [voucherNo, setVoucherNo] = useState('');
+  const [showFilters, setShowFilters] = useState(true);
 
   const navigate = useNavigate();
   const fileInputRef = useRef();
@@ -666,12 +666,24 @@ const SalesReturn = () => {
   };
 
   const getStatusBadge = (status) => {
-    const lower = status?.toLowerCase();
-    if (lower === 'processed') return <Badge bg="success">Processed</Badge>;
-    if (lower === 'pending') return <Badge bg="warning" text="dark">Pending</Badge>;
-    if (lower === 'approved') return <Badge bg="info">Approved</Badge>;
-    if (lower === 'rejected') return <Badge bg="danger">Rejected</Badge>;
-    return <Badge className='bg-secondary'>{status}</Badge>;
+    const normalized = status?.charAt(0).toUpperCase() + status?.slice(1).toLowerCase() || '';
+    let badgeClass = 'status-badge';
+    
+    if (normalized === 'Processed') {
+      badgeClass = 'status-badge-processed';
+    } else if (normalized === 'Pending') {
+      badgeClass = 'status-badge-pending';
+    } else if (normalized === 'Approved') {
+      badgeClass = 'status-badge-approved';
+    } else if (normalized === 'Rejected') {
+      badgeClass = 'status-badge-rejected';
+    }
+    
+    return (
+      <Badge className={badgeClass}>
+        {normalized}
+      </Badge>
+    );
   };
 
   const getReturnTypeBadge = (returnType) => {
@@ -757,151 +769,200 @@ const SalesReturn = () => {
   }
 
   return (
-    <div className="p-4 my-4 px-4">
+    <div className="p-4 sales-return-container">
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-        <div className="d-flex align-items-center gap-2 mb-4">
-          <FaArrowRight size={20} color="red" />
-          <h5 className="mb-0">Sales Return</h5>
-          <p className="text-muted small mb-0">Customer Sends Back</p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
-          {salesReturnPermissions.can_create && (
-            <Button
-              className="rounded-pill px-4 d-flex align-items-center"
-              variant="success"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FaUpload className="me-2 text-white" /> Import
-            </Button>
-          )}
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".csv"
-            style={{ display: 'none' }}
-          />
+      <div className="mb-4">
+        <h3 className="sales-return-title">
+          <i className="fas fa-undo me-2"></i>
+          Sales Return Management
+        </h3>
+        <p className="sales-return-subtitle">Manage your sales returns and customer returns</p>
+      </div>
+
+      {/* Search and Actions */}
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder="Search by return number, invoice number, customer name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
           {salesReturnPermissions.can_view && (
             <Button
-              className="rounded-pill px-4 d-flex align-items-center"
-              style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
+              className="d-flex align-items-center"
+              variant="outline-primary"
               onClick={handleExportAll}
             >
               <FaFile className="me-2" /> Export
             </Button>
           )}
           {salesReturnPermissions.can_create && (
-            <Button
-              className="rounded-pill px-4 d-flex align-items-center"
-              style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
-              onClick={handleAddClick}
-            >
-              New Return
-            </Button>
+            <>
+              <Button
+                className="d-flex align-items-center"
+                variant="outline-secondary"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FaUpload className="me-2" /> Import
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".csv"
+                style={{ display: 'none' }}
+              />
+              <Button
+                className="d-flex align-items-center btn-add-return"
+                onClick={handleAddClick}
+              >
+                <FaPlus className="me-2" />
+                Add Return
+              </Button>
+            </>
           )}
-        </div>
+        </Col>
+      </Row>
+
+      {/* Filter Toggle */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          className="btn-toggle-filters"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <FaFilter className="me-2" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
       </div>
 
-      {/* Filters */}
-      <div className=" p-3 rounded mb-4">
-        <Row className="g-3">
-          <Col md={2}>
-            <InputGroup>
-              <InputGroup.Text><FaSearch /></InputGroup.Text>
-              <Form.Control
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </InputGroup>
-          </Col>
-          <Col md={2}>
-            <Form.Select value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)}>
-              <option value="">All Customers</option>
-              {uniqueCustomers.map((customer, idx) => (
-                <option key={idx} value={customer}>{customer}</option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md={2}>
-            <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="All">All Status</option>
-              <option value="Processed">Processed</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </Form.Select>
-          </Col>
-          <Col md={2}>
-            <Form.Select value={returnTypeFilter} onChange={(e) => setReturnTypeFilter(e.target.value)}>
-              <option value="All">All Types</option>
-              {uniqueReturnTypes.map((type, idx) => (
-                <option key={idx} value={type}>{type}</option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md={2}>
-            <Form.Select value={warehouseFilter} onChange={(e) => setWarehouseFilter(e.target.value)}>
-              <option value="All">All Warehouses</option>
-              {warehouses.map((w, idx) => (
-                <option key={w.id || idx} value={w.warehouse_name || w.name}>
-                  {w.warehouse_name || w.name}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col md={2}>
-            <InputGroup>
-              <InputGroup.Text><FaCalendarAlt /></InputGroup.Text>
-              <Form.Control
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                title="Date From"
-              />
-            </InputGroup>
-          </Col>
-          <Col md={2}>
-            <InputGroup>
-              <InputGroup.Text><FaCalendarAlt /></InputGroup.Text>
-              <Form.Control
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                title="Date To"
-              />
-            </InputGroup>
-          </Col>
-          <Col md={2}>
-            <Form.Control
-              type="number"
-              placeholder="Min Amount"
-              value={amountMin}
-              onChange={(e) => setAmountMin(e.target.value)}
-            />
-          </Col>
-          <Col md={2}>
-            <Form.Control
-              type="number"
-              placeholder="Max Amount"
-              value={amountMax}
-              onChange={(e) => setAmountMax(e.target.value)}
-            />
-          </Col>
-          <Col md={2}>
-            <Form.Control
-              type="text"
-              placeholder="Voucher No"
-              value={voucherNo}
-              onChange={(e) => setVoucherNo(e.target.value)}
-            />
-          </Col>
-          <Col md={1}>
-            <Button variant="outline-secondary" onClick={clearFilters} size="sm">Clear</Button>
-          </Col>
-        </Row>
-      </div>
+      {/* Advanced Filters */}
+      {showFilters && (
+        <Card className="mb-4 filter-card border-0 shadow-lg">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold filter-title">
+                <FaFilter className="me-2" />
+                Filter Sales Returns
+              </h5>
+              <Button variant="outline-secondary" size="sm" className="btn-clear-filters" onClick={clearFilters}>
+                <FaTimes className="me-1" /> Clear All
+              </Button>
+            </div>
+            <Row className="g-3">
+              <Col md={3}>
+                <Form.Label className="filter-label">Customer</Form.Label>
+                <Form.Select 
+                  className="filter-select"
+                  value={customerFilter} 
+                  onChange={(e) => setCustomerFilter(e.target.value)}
+                >
+                  <option value="">All Customers</option>
+                  {uniqueCustomers.map((customer, idx) => (
+                    <option key={idx} value={customer}>{customer}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Status</Form.Label>
+                <Form.Select 
+                  className="filter-select"
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="All">All Status</option>
+                  <option value="Processed">Processed</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Return Type</Form.Label>
+                <Form.Select 
+                  className="filter-select"
+                  value={returnTypeFilter} 
+                  onChange={(e) => setReturnTypeFilter(e.target.value)}
+                >
+                  <option value="All">All Types</option>
+                  {uniqueReturnTypes.map((type, idx) => (
+                    <option key={idx} value={type}>{type}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Warehouse</Form.Label>
+                <Form.Select 
+                  className="filter-select"
+                  value={warehouseFilter} 
+                  onChange={(e) => setWarehouseFilter(e.target.value)}
+                >
+                  <option value="All">All Warehouses</option>
+                  {warehouses.map((w, idx) => (
+                    <option key={w.id || idx} value={w.warehouse_name || w.name}>
+                      {w.warehouse_name || w.name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Date From</Form.Label>
+                <Form.Control
+                  className="filter-date"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Date To</Form.Label>
+                <Form.Control
+                  className="filter-date"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Min Amount</Form.Label>
+                <Form.Control
+                  className="filter-input"
+                  type="number"
+                  placeholder="Min Amount"
+                  value={amountMin}
+                  onChange={(e) => setAmountMin(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Max Amount</Form.Label>
+                <Form.Control
+                  className="filter-input"
+                  type="number"
+                  placeholder="Max Amount"
+                  value={amountMax}
+                  onChange={(e) => setAmountMax(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Voucher No</Form.Label>
+                <Form.Control
+                  className="filter-input"
+                  type="text"
+                  placeholder="Voucher No"
+                  value={voucherNo}
+                  onChange={(e) => setVoucherNo(e.target.value)}
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="row mb-4">
@@ -940,9 +1001,11 @@ const SalesReturn = () => {
       </div>
 
       {/* Table */}
-      <div className="table-responsive">
-        <Table bordered hover className="align-middle">
-          <thead className="">
+      <Card className="sales-return-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive className="sales-return-table align-middle" style={{ fontSize: 16 }}>
+              <thead className="table-header">
             <tr>
               <th className="text-center">#</th>
               <th>Return No</th>
@@ -984,22 +1047,37 @@ const SalesReturn = () => {
                   <td className="text-center">
                     <div className="d-flex justify-content-center gap-2">
                       {salesReturnPermissions.can_view && (
-                        <Button variant="outline-info" size="sm" onClick={() => {
-                          isCleaningUpRef.current = false;
-                          modalKeyRef.current.view += 1;
-                          setSelectedReturn(item);
-                          setShowViewModal(true);
-                        }}>
+                        <Button 
+                          variant="outline-info" 
+                          size="sm" 
+                          className="btn-action btn-view"
+                          onClick={() => {
+                            isCleaningUpRef.current = false;
+                            modalKeyRef.current.view += 1;
+                            setSelectedReturn(item);
+                            setShowViewModal(true);
+                          }}
+                        >
                           <FaEye size={14} />
                         </Button>
                       )}
                       {salesReturnPermissions.can_update && (
-                        <Button variant="outline-warning" size="sm" onClick={() => handleEditClick(item)}>
+                        <Button 
+                          variant="outline-warning" 
+                          size="sm" 
+                          className="btn-action btn-edit"
+                          onClick={() => handleEditClick(item)}
+                        >
                           <FaEdit size={14} />
                         </Button>
                       )}
                       {salesReturnPermissions.can_delete && (
-                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(item.id)}>
+                        <Button 
+                          variant="outline-danger" 
+                          size="sm" 
+                          className="btn-action btn-delete"
+                          onClick={() => handleDelete(item.id)}
+                        >
                           <FaTrash size={14} />
                         </Button>
                       )}
@@ -1016,7 +1094,9 @@ const SalesReturn = () => {
             )}
           </tbody>
         </Table>
-      </div>
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* View Modal */}
       <Modal 
@@ -1025,8 +1105,9 @@ const SalesReturn = () => {
         onHide={handleCloseViewModal} 
         onExited={handleViewModalExited}
         size="lg"
+        className="sales-return-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Sales Return Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -1079,8 +1160,8 @@ const SalesReturn = () => {
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseViewModal}>Close</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseViewModal} className="btn-modal-cancel">Close</Button>
         </Modal.Footer>
       </Modal>
 
@@ -1091,8 +1172,9 @@ const SalesReturn = () => {
         onHide={handleCloseEditModal}
         onExited={handleEditModalExited}
         size="lg"
+        className="sales-return-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Edit Sales Return</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -1336,10 +1418,10 @@ const SalesReturn = () => {
             {addItemError}
           </Alert>
         )}
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseEditModal}>Cancel</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseEditModal} className="btn-modal-cancel">Cancel</Button>
           {salesReturnPermissions.can_update && (
-            <Button variant="primary" onClick={handleEditSave} style={{ backgroundColor: '#3daaaa' }}>Save Changes</Button>
+            <Button variant="primary" onClick={handleEditSave} className="btn-modal-save">Save Changes</Button>
           )}
         </Modal.Footer>
       </Modal>
@@ -1351,8 +1433,9 @@ const SalesReturn = () => {
         onHide={handleCloseAddModal}
         onExited={handleAddModalExited}
         size="lg"
+        className="sales-return-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Add New Sales Return</Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -1569,29 +1652,16 @@ const SalesReturn = () => {
             {addItemError}
           </Alert>
         )}
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseAddModal}>Cancel</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button variant="secondary" onClick={handleCloseAddModal} className="btn-modal-cancel">Cancel</Button>
           {salesReturnPermissions.can_create && (
-            <Button variant="primary" onClick={handleAddReturn} style={{ backgroundColor: '#3daaaa' }}>
+            <Button variant="primary" onClick={handleAddReturn} className="btn-modal-save">
               Add Return
             </Button>
           )}
         </Modal.Footer>
       </Modal>
 
-      {/* Page Info Card */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">Page Info</h5>
-          <ul className=" fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-            <li> Products filtered by selected warehouse in both Add & Edit modals.</li>
-            <li> Stock validation uses warehouse-specific `stock_qty` from `warehouses` field.</li>
-            <li>Item narration is correctly updated and saved in both modals.</li>
-            <li> Only one dropdown opens at a time — clean UI behavior.</li>
-            <li> Warehouse info is always visible and used consistently.</li>
-          </ul>
-        </Card.Body>
-      </Card>
     </div>
   );
 };

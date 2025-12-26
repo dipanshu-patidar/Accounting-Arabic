@@ -25,6 +25,7 @@ import {
 import * as XLSX from "xlsx";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./CustomersDebtors.css";
 
 // Import API components
 import axiosInstance from "../../../../Api/axiosInstance";
@@ -688,7 +689,7 @@ const CustomersDebtors = () => {
   }
 
   return (
-    <div className="p-4 mt-2">
+    <div className="p-4 customers-debtors-container">
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -702,305 +703,246 @@ const CustomersDebtors = () => {
         theme="colored"
       />
 
-      {/* Header Buttons */}
-      <div className="mb-3">
-        <Row className="gy-2 align-items-center">
-          <Col xs={12} md="auto">
-            <h4 className="fw-bold mb-0">Customer Table</h4>
-          </Col>
-          <Col xs={12} md>
-            <div className="d-flex flex-wrap gap-2 justify-content-md-end">
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={handleImport}
-              />
-              {hasCreatePermission && (
-                <Button
-                  variant="success"
-                  className="rounded-pill d-flex align-items-center"
-                  style={{ fontWeight: 600 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Import Excel"
-                >
-                  <FaFileImport className="me-2" /> Import
-                </Button>
-              )}
-              {hasViewPermission && (
-                <Button
-                  variant="primary"
-                  className="rounded-pill d-flex align-items-center"
-                  style={{ fontWeight: 600 }}
-                  onClick={handleExport}
-                  title="Export Excel"
-                >
-                  <FaFileExport className="me-2" /> Export
-                </Button>
-              )}
-              {hasCreatePermission && (
-                <Button
-                  variant="warning"
-                  className="rounded-pill d-flex align-items-center"
-                  style={{ fontWeight: 600, color: "#fff" }}
-                  onClick={handleDownloadBlank}
-                  title="Download Blank Template"
-                >
-                  <FaDownload className="me-2" /> Download
-                </Button>
-              )}
-              {hasCreatePermission && (
-                <Button
-                  onClick={() => handleOpenAddEditModal("add")}
-                  size="sm"
-                  style={{
-                    backgroundColor: "#53b2a5",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  className="rounded-pill"
-                >
-                  <FaPlus className="me-1" />
-                  <span>Add Customer</span>
-                </Button>
-              )}
-            </div>
-          </Col>
-        </Row>
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="customers-debtors-title">
+          <i className="fas fa-users me-2"></i>
+          Customers / Debtors Management
+        </h3>
+        <p className="customers-debtors-subtitle">Manage customer records and account information</p>
       </div>
 
-      {/* Customer Table */}
-      <Card className="rounded-3 p-3">
-        <div className="mb-3">
-          <Row>
-            <Col md={6}>
-              <InputGroup>
-                <InputGroup.Text>
-                  <FaSearch />
-                </InputGroup.Text>
-                <Form.Control
-                  type="text"
-                  placeholder="Search by name, email, phone or Arabic name"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </InputGroup>
-            </Col>
-          </Row>
-        </div>
-
-        {error && (
-          <Alert variant="danger" className="mb-3">
-            {error}
-          </Alert>
-        )}
-
-        {loading ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </Spinner>
-            <p className="mt-2">Loading customers...</p>
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder="Search by name, email, phone or Arabic name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        ) : (
-          <>
-            <Table bordered hover responsive>
-              <thead className="">
-                <tr>
-                  <th>Voucher No</th>
-                  <th>Name (English)</th>
-                  <th>Name (Arabic)</th>
-                  <th>Contact</th>
-                  <th>Email</th>
-                  <th>Account Type</th>
-                  <th>Account Name</th>
-                  <th>Opening Balance</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((cust, idx) => (
-                    <tr key={cust.id || idx}>
-                      <td>{idx + 1}</td>
-                      <td>{cust.name}</td>
-                      <td>
-                        <span
-                          style={{
-                            direction: "rtl",
-                            fontFamily: "Arial, sans-serif",
-                            display: "block",
-                            textAlign: "right",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            minWidth: "100px",
-                            maxWidth: "200px",
-                          }}
-                        >
-                          {cust.nameArabic || "-"}
-                        </span>
-                      </td>
-                      <td>{cust.contact}</td>
-                      <td>{cust.email}</td>
-                      <td>
-                        <Badge bg="info" className="text-white">
-                          {cust.accountType || "Sundry Debtors"}
-                        </Badge>
-                      </td>
-                      <td>{cust.accountName || "Accounts Receivable"}</td>
-                      <td>${parseFloat(cust.balance || 0).toFixed(2)}</td>
-                      <td>
-                        <div className="d-flex gap-2 justify-content-center">
-                          {hasViewPermission && (
-                            <Button
-                              variant="link"
-                              className="p-0 text-info"
-                              onClick={() => handleOpenViewModal(cust)}
-                              title="View Details"
-                            >
-                              <FaEye size={16} />
-                            </Button>
-                          )}
-                          {hasUpdatePermission && (
-                            <Button
-                              variant="link"
-                              className="p-0 text-warning"
-                              onClick={() =>
-                                handleOpenAddEditModal("edit", cust, idx)
-                              }
-                              title="Edit Customer"
-                            >
-                              <FaEdit />
-                            </Button>
-                          )}
-                          {hasDeletePermission && (
-                            <Button
-                              variant="link"
-                              className="p-0 text-danger"
-                              onClick={() => {
-                                setCustomerIdToDelete(cust.id);
-                                setShowConfirmDelete(true);
-                              }}
-                              title="Delete Customer"
-                            >
-                              <FaTrash />
-                            </Button>
-                          )}
-                          <Button
-                            variant="none"
-                            className="p-0 text-primary text-decoration-none"
-                            onClick={() => {
-                              navigate(`/company/Ledgercustomer`, {
-                                state: {
-                                  customer: {
-                                    id: cust.id,
-                                    name: cust.name,
-                                    nameArabic: cust.nameArabic || "",
-                                    companyName: cust.companyName || "N/A",
-                                    email: cust.email,
-                                    phone: cust.contact,
-                                    altPhone: cust.altPhone || "",
-                                    address: `${cust.billing.address}, ${cust.billing.city}, ${cust.billing.state}`,
-                                    shippingAddress:
-                                      cust.shippingAddress || "Same as above",
-                                    country: cust.billing.country || "India",
-                                    state: cust.billing.state || "N/A",
-                                    pincode: cust.billing.pincode || "N/A",
-                                    gst: cust.taxNumber,
-                                    gstEnabled: !!cust.taxNumber,
-                                    pan: cust.pan || "",
-                                    stateCode: cust.stateCode || "",
-                                    openingBalance: parseFloat(cust.balance || 0),
-                                    accountName:
-                                      cust.accountName || "Sundry Debtors",
-                                    accountBalance: cust.accountBalance || "0.00",
-                                    creditPeriod: cust.creditPeriod || "30",
-                                    bankAccountNumber: cust.bankAccountNumber || "",
-                                    bankIFSC: cust.bankIFSC || "",
-                                    bankName: cust.bankName || "",
-                                    creationDate:
-                                      cust.creationDate ||
-                                      new Date().toISOString().split("T")[0],
-                                    companyLocation: cust.companyLocation || "",
-                                  },
-                                },
-                              });
-                            }}
-                            title="View Ledger"
-                            style={{
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                            }}
-                          >
-                            View Ledger
-                          </Button>
-                        </div>
-                      </td>
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleImport}
+          />
+          {hasCreatePermission && (
+            <Button
+              className="d-flex align-items-center btn-import"
+              onClick={() => fileInputRef.current?.click()}
+              title="Import Excel"
+            >
+              <FaFileImport className="me-2" /> Import
+            </Button>
+          )}
+          {hasViewPermission && (
+            <Button
+              className="d-flex align-items-center btn-export"
+              onClick={handleExport}
+              title="Export Excel"
+            >
+              <FaFileExport className="me-2" /> Export
+            </Button>
+          )}
+          {hasCreatePermission && (
+            <Button
+              className="d-flex align-items-center btn-download"
+              onClick={handleDownloadBlank}
+              title="Download Blank Template"
+            >
+              <FaDownload className="me-2" /> Download
+            </Button>
+          )}
+          {hasCreatePermission && (
+            <Button
+              className="d-flex align-items-center btn-add-customer"
+              onClick={() => handleOpenAddEditModal("add")}
+            >
+              <FaPlus className="me-2" />
+              Add Customer
+            </Button>
+          )}
+        </Col>
+      </Row>
+
+      {/* Customer Table */}
+      {error && (
+        <Alert variant="danger" className="mb-3">
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+          <p className="mt-2">Loading customers...</p>
+        </div>
+      ) : (
+        <Card className="customers-debtors-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="customers-debtors-table align-middle" style={{ fontSize: 16 }}>
+                  <thead className="table-header">
+                    <tr>
+                      <th className="py-3">#</th>
+                      <th className="py-3">Name (English)</th>
+                      <th className="py-3">Name (Arabic)</th>
+                      <th className="py-3">Contact</th>
+                      <th className="py-3">Email</th>
+                      <th className="py-3">Account Type</th>
+                      <th className="py-3">Account Name</th>
+                      <th className="py-3">Opening Balance</th>
+                      <th className="py-3 text-center">Actions</th>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="text-center text-muted py-4">
-                      {customersList.length === 0
-                        ? "No customers found. Add your first customer!"
-                        : "No matching customers found."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-
-            <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-              <small className=" ms-2">
-                1 to {filteredCustomers.length} of {customersList.length}{" "}
-                results
-              </small>
-              <nav>
-                <ul className="pagination mb-0">
-                  <li className="page-item disabled">
-                    <button className="page-link">&laquo;</button>
-                  </li>
-                  <li className="page-item active">
-                    <button className="page-link">1</button>
-                  </li>
-                  <li className="page-item">
-                    <button className="page-link">2</button>
-                  </li>
-                  <li className="page-item">
-                    <button className="page-link">&raquo;</button>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.length > 0 ? (
+                      filteredCustomers.map((cust, idx) => (
+                        <tr key={cust.id || idx}>
+                          <td className="text-center">{idx + 1}</td>
+                          <td><strong>{cust.name}</strong></td>
+                          <td>
+                            <span
+                              style={{
+                                direction: "rtl",
+                                fontFamily: "Arial, sans-serif",
+                                display: "block",
+                                textAlign: "right",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                minWidth: "100px",
+                                maxWidth: "200px",
+                              }}
+                            >
+                              {cust.nameArabic || "-"}
+                            </span>
+                          </td>
+                          <td>{cust.contact}</td>
+                          <td>{cust.email}</td>
+                          <td>
+                            <Badge className="status-badge status-badge-info">
+                              {cust.accountType || "Sundry Debtors"}
+                            </Badge>
+                          </td>
+                          <td>{cust.accountName || "Accounts Receivable"}</td>
+                          <td className="fw-bold">${parseFloat(cust.balance || 0).toFixed(2)}</td>
+                          <td className="text-center">
+                            <div className="d-flex justify-content-center gap-2 flex-wrap">
+                              {hasViewPermission && (
+                                <Button
+                                  variant="outline-info"
+                                  size="sm"
+                                  className="btn-action btn-view"
+                                  onClick={() => handleOpenViewModal(cust)}
+                                  title="View Details"
+                                >
+                                  <FaEye size={14} />
+                                </Button>
+                              )}
+                              {hasUpdatePermission && (
+                                <Button
+                                  variant="outline-warning"
+                                  size="sm"
+                                  className="btn-action btn-edit"
+                                  onClick={() =>
+                                    handleOpenAddEditModal("edit", cust, idx)
+                                  }
+                                  title="Edit Customer"
+                                >
+                                  <FaEdit size={14} />
+                                </Button>
+                              )}
+                              {hasDeletePermission && (
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  className="btn-action btn-delete"
+                                  onClick={() => {
+                                    setCustomerIdToDelete(cust.id);
+                                    setShowConfirmDelete(true);
+                                  }}
+                                  title="Delete Customer"
+                                >
+                                  <FaTrash size={14} />
+                                </Button>
+                              )}
+                              {hasViewPermission && (
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  className="btn-ledger"
+                                  onClick={() => {
+                                    navigate(`/company/Ledgercustomer`, {
+                                      state: {
+                                        customer: {
+                                          id: cust.id,
+                                          name: cust.name,
+                                          nameArabic: cust.nameArabic || "",
+                                          companyName: cust.companyName || "N/A",
+                                          email: cust.email,
+                                          phone: cust.contact,
+                                          altPhone: cust.altPhone || "",
+                                          address: `${cust.billing.address}, ${cust.billing.city}, ${cust.billing.state}`,
+                                          shippingAddress:
+                                            cust.shippingAddress || "Same as above",
+                                          country: cust.billing.country || "India",
+                                          state: cust.billing.state || "N/A",
+                                          pincode: cust.billing.pincode || "N/A",
+                                          gst: cust.taxNumber,
+                                          gstEnabled: !!cust.taxNumber,
+                                          pan: cust.pan || "",
+                                          stateCode: cust.stateCode || "",
+                                          openingBalance: parseFloat(cust.balance || 0),
+                                          accountName:
+                                            cust.accountName || "Sundry Debtors",
+                                          accountBalance: cust.accountBalance || "0.00",
+                                          creditPeriod: cust.creditPeriod || "30",
+                                          bankAccountNumber: cust.bankAccountNumber || "",
+                                          bankIFSC: cust.bankIFSC || "",
+                                          bankName: cust.bankName || "",
+                                          creationDate:
+                                            cust.creationDate ||
+                                            new Date().toISOString().split("T")[0],
+                                          companyLocation: cust.companyLocation || "",
+                                        },
+                                      },
+                                    });
+                                  }}
+                                  title="View Ledger"
+                                >
+                                  View Ledger
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="9" className="text-center py-4 text-muted">
+                          {customersList.length === 0
+                            ? "No customers found. Add your first customer!"
+                            : "No matching customers found."}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
         )}
-      </Card>
 
-      {/* Page Description */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">
-            Page Info
-          </h5>
-          <ul
-            className=" fs-6 mb-0"
-            style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
-          >
-            <li>Manage customer records including contact and address details.</li>
-            <li>Track customer balances and tax information (e.g., GSTIN).</li>
-            <li>Perform actions like add, view, edit, and delete customers.</li>
-            <li>
-              Import and export customer data via Excel for bulk operations.
-            </li>
-            <li>Search and filter customers by name, email, phone, or city.</li>
-          </ul>
-        </Card.Body>
-      </Card>
+      {/* Page Info removed - matching Sales Return style */}
 
       {/* Modals */}
       <DeleteCustomer
@@ -1034,7 +976,7 @@ const CustomersDebtors = () => {
         customerFormData={customerFormData}
         setCustomerFormData={setCustomerFormData}
         onSave={handleSave}
-        customerId={currentCustomer.id}
+        customerId={currentCustomer?.id || null}
       />
     </div>
   );

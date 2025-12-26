@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Button, Form, Row, Col, Card, Alert, Image } from 'react-bootstrap';
-import { FaEye, FaEdit, FaTrash, FaPlus, FaBook, FaFile } from 'react-icons/fa';
+import { Modal, Button, Form, Row, Col, Card, Alert, Image, Table, Spinner, Badge } from 'react-bootstrap';
+import { FaEye, FaEdit, FaTrash, FaPlus, FaBook, FaFile, FaSearch, FaFileImport, FaFileExport, FaDownload } from 'react-icons/fa';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import GetCompanyId from '../../../Api/GetCompanyId';
@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { CurrencyContext } from '../../../hooks/CurrencyContext';
+import './VendorsCreditors.css';
 
 const VendorsCustomers = () => {
   const navigate = useNavigate();
@@ -730,204 +731,214 @@ const VendorsCustomers = () => {
   }
 
   return (
-    <div className="p-2">
+    <div className="p-4 vendors-creditors-container">
       <ToastContainer position="top-right" autoClose={3000} />
-      <Row className="align-items-center mb-3">
-        <Col xs={12} md={4}>
-          <h4 className="fw-bold mb-0">{vendorType === 'vender' ? 'Vendor' : 'Customer'} Management</h4>
-        </Col>
-        <Col xs={12} md={8}>
-          <div className="d-flex flex-wrap gap-2 justify-content-md-end">
-            {canCreate && (
-              <Button variant="success" className="rounded-pill d-flex align-items-center" onClick={handleImportClick}>Import</Button>
-            )}
-            <input type="file" accept=".xlsx, .xls" ref={(ref) => (window.importFileRef = ref)} onChange={handleImport} style={{ display: "none" }} />
-            {canView && (
-              <Button variant="primary" className="rounded-pill d-flex align-items-center" onClick={handleExport}>Export</Button>
-            )}
-            {canView && (
-              <Button
-                variant="warning"
-                className="rounded-pill d-flex align-items-center"
-                onClick={handleDownloadTemplate}
-                title={`Download ${vendorType === 'vender' ? 'Vendor' : 'Customer'} PDF Report`}
-              >
-                Download PDF
-              </Button>
-            )}
-            {canCreate && (
-              <Button variant="success" className="rounded-pill d-flex align-items-center" style={{ backgroundColor: "#53b2a5", border: "none" }} onClick={handleAddClick}>
-                <FaPlus /> Add {vendorType === 'vender' ? 'Vendor' : 'Customer'}
-              </Button>
-            )}
+      
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="vendors-creditors-title">
+          <i className="fas fa-truck me-2"></i>
+          {vendorType === 'vender' ? 'Vendors / Creditors' : 'Customers / Debtors'} Management
+        </h3>
+        <p className="vendors-creditors-subtitle">Manage {vendorType === 'vender' ? 'vendor' : 'customer'} records and account information</p>
+      </div>
+
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder={`Search ${vendorType === 'vender' ? 'vendor' : 'customer'} by name, email, phone...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </Col>
-      </Row>
-      <Row className="mb-3 justify-content-start">
-        <Col xs={12} md={6} lg={4}>
-          <Form.Control type="text" placeholder={`Search ${vendorType === 'vender' ? 'Vendor' : 'Customer'}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="rounded-pill" />
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
+          <input type="file" accept=".xlsx, .xls" ref={(ref) => (window.importFileRef = ref)} onChange={handleImport} style={{ display: "none" }} />
+          {canCreate && (
+            <Button
+              className="d-flex align-items-center btn-import"
+              onClick={handleImportClick}
+            >
+              <FaFileImport className="me-2" /> Import
+            </Button>
+          )}
+          {canView && (
+            <Button
+              className="d-flex align-items-center btn-export"
+              onClick={handleExport}
+            >
+              <FaFileExport className="me-2" /> Export
+            </Button>
+          )}
+          {canView && (
+            <Button
+              className="d-flex align-items-center btn-download-pdf"
+              onClick={handleDownloadTemplate}
+              title={`Download ${vendorType === 'vender' ? 'Vendor' : 'Customer'} PDF Report`}
+            >
+              <FaDownload className="me-2" /> Download PDF
+            </Button>
+          )}
+          {canCreate && (
+            <Button
+              className="d-flex align-items-center btn-add-vendor"
+              onClick={handleAddClick}
+            >
+              <FaPlus className="me-2" />
+              Add {vendorType === 'vender' ? 'Vendor' : 'Customer'}
+            </Button>
+          )}
         </Col>
-        <Col xs={12} md={6} lg={4} className="ms-auto">
-          <Form.Select value={vendorType} onChange={(e) => setVendorType(e.target.value)}>
+      </Row>
+
+      <Row className="mb-3">
+        <Col xs={12} md={4}>
+          <Form.Select 
+            value={vendorType} 
+            onChange={(e) => setVendorType(e.target.value)}
+            className="vendor-type-select"
+          >
             {canViewVendors && <option value="vender">Vendor</option>}
             {canViewCustomers && <option value="customer">Customer</option>}
           </Form.Select>
         </Col>
       </Row>
-      {loading && (
-        <div className="text-center my-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-2">Loading {vendorType === 'vender' ? 'Vendors' : 'Customers'} for Company</p>
-        </div>
-      )}
       {error && (
-        <Alert variant="danger" className="text-center">
+        <Alert variant="danger" className="mb-3">
           {error}
         </Alert>
       )}
-      {!loading && !error && (
-        <div className="card border rounded-3 p-4">
-          <div className="table-responsive">
-            <table className="table table-hover table-bordered align-middle mb-0">
-              <thead className=" border">
-                <tr>
-                  <th>NO.</th>
-                  <th>Name (English)</th>
-                  <th>Name (Arabic)</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Account Type</th>
-                  <th>Account Name</th>
-                  <th>Opening Balance</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredVendors.length > 0 ? (
-                  filteredVendors.map((vendor, idx) => (
-                    <tr key={vendor.id}>
-                      <td>{idx + 1}</td>
-                      <td>{vendor.name}</td>
-                      <td>
-                        <span
-                          style={{
-                            direction: 'rtl',
-                            fontFamily: 'Arial, sans-serif',
-                            display: 'block',
-                            textAlign: 'end',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            minWidth: '100px',
-                            maxWidth: '200px',
-                          }}
-                        >
-                          {vendor.nameArabic || "-"}
-                        </span>
-                      </td>
-                      <td>{vendor.email}</td>
-                      <td>{vendor.phone}</td>
-                      <td>
-                        <span className="badge bg-info text-white">
-                          {vendor.accountType}
-                        </span>
-                      </td>
-                      <td>{vendor.accountName}</td>
-                      <td>{symbol}{convertrice(vendor.payable)}</td>
-                      <td>
-                        <div
-                          className="d-flex align-items-center gap-2"
-                          style={{ minWidth: "220px", whiteSpace: "nowrap" }}
-                        >
-                          {canView && (
-                            <Button
-                              variant="link"
-                              className="text-info p-1"
-                              size="sm"
-                              onClick={() => { setSelectedVendor(vendor); setShowView(true); }}
-                              title="View Details"
-                            >
-                              <FaEye size={16} />
-                            </Button>
-                          )}
-                          {canUpdate && (
-                            <Button
-                              variant="link"
-                              className="text-warning p-1"
-                              size="sm"
-                              onClick={() => handleEditClick(vendor)}
-                              title="Edit Vendor"
-                            >
-                              <FaEdit size={16} />
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <Button
-                              variant="link"
-                              className="text-danger p-1"
-                              size="sm"
-                              onClick={() => { setSelectedVendor(vendor); setShowDelete(true); }}
-                              title="Delete Vendor"
-                            >
-                              <FaTrash size={16} />
-                            </Button>
-                          )}
-                          {canView && (
-                            <Button
-                              variant="none"
-                              className="p-0 text-primary text-decoration-none"
-                              onClick={() => handleViewLedger(vendor)}
-                              title="View Ledger"
-                              style={{
-                                cursor: "pointer",
-                                transition: "all 0.2s ease",
-                                padding: "6px 10px",
-                                borderRadius: "4px",
-                                fontSize: "0.875rem",
-                                fontWeight: 500,
-                              }}
-                            >
-                              View Ledger
-                            </Button>
-                          )}
-                        </div>
+
+      {loading ? (
+        <div className="text-center py-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+          <p className="mt-2">Loading {vendorType === 'vender' ? 'vendors' : 'customers'}...</p>
+        </div>
+      ) : (
+        <Card className="vendors-creditors-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="vendors-creditors-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
+                  <tr>
+                    <th className="py-3">#</th>
+                    <th className="py-3">Name (English)</th>
+                    <th className="py-3">Name (Arabic)</th>
+                    <th className="py-3">Email</th>
+                    <th className="py-3">Phone</th>
+                    <th className="py-3">Account Type</th>
+                    <th className="py-3">Account Name</th>
+                    <th className="py-3">Opening Balance</th>
+                    <th className="py-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredVendors.length > 0 ? (
+                    filteredVendors.map((vendor, idx) => (
+                      <tr key={vendor.id}>
+                        <td className="text-center">{idx + 1}</td>
+                        <td><strong>{vendor.name}</strong></td>
+                        <td>
+                          <span
+                            style={{
+                              direction: 'rtl',
+                              fontFamily: 'Arial, sans-serif',
+                              display: 'block',
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              minWidth: '100px',
+                              maxWidth: '200px',
+                            }}
+                          >
+                            {vendor.nameArabic || "-"}
+                          </span>
+                        </td>
+                        <td>{vendor.email}</td>
+                        <td>{vendor.phone}</td>
+                        <td>
+                          <Badge className="status-badge status-badge-info">
+                            {vendor.accountType}
+                          </Badge>
+                        </td>
+                        <td>{vendor.accountName}</td>
+                        <td className="fw-bold">{symbol}{convertrice(vendor.payable)}</td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2 flex-wrap">
+                            {canView && (
+                              <Button
+                                variant="outline-info"
+                                size="sm"
+                                className="btn-action btn-view"
+                                onClick={() => { setSelectedVendor(vendor); setShowView(true); }}
+                                title="View Details"
+                              >
+                                <FaEye size={14} />
+                              </Button>
+                            )}
+                            {canUpdate && (
+                              <Button
+                                variant="outline-warning"
+                                size="sm"
+                                className="btn-action btn-edit"
+                                onClick={() => handleEditClick(vendor)}
+                                title="Edit Vendor"
+                              >
+                                <FaEdit size={14} />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                className="btn-action btn-delete"
+                                onClick={() => { setSelectedVendor(vendor); setShowDelete(true); }}
+                                title="Delete Vendor"
+                              >
+                                <FaTrash size={14} />
+                              </Button>
+                            )}
+                            {canView && (
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                className="btn-ledger"
+                                onClick={() => handleViewLedger(vendor)}
+                                title="View Ledger"
+                              >
+                                View Ledger
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="text-center py-4 text-muted">
+                        No {vendorType === 'vender' ? 'vendors' : 'customers'} found. Add your first {vendorType === 'vender' ? 'vendor' : 'customer'}!
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="text-center text-muted">
-                      No {vendorType === 'vender' ? 'Vendors' : 'Customers'} found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-            <small className=" ms-2">
-              Showing 1 to {filteredVendors.length} of {filteredVendors.length} results
-            </small>
-            <nav>
-              <ul className="pagination mb-0">
-                <li className="page-item disabled"><button className="page-link">&laquo;</button></li>
-                <li className="page-item active"><button className="page-link">1</button></li>
-                <li className="page-item"><button className="page-link">2</button></li>
-                <li className="page-item"><button className="page-link">&raquo;</button></li>
-              </ul>
-            </nav>
-          </div>
-        </div>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </Card.Body>
+        </Card>
       )}
 
       {/* View Modal */}
-      <Modal show={showView} onHide={() => setShowView(false)} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>{vendorType === 'vender' ? 'Vendor' : 'Customer'} Details</Modal.Title>
+      <Modal show={showView} onHide={() => setShowView(false)} centered size="lg" className="vendor-modal">
+        <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+          <Modal.Title style={{ color: "white" }}>{vendorType === 'vender' ? 'Vendor' : 'Customer'} Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           {selectedVendor && (
             <>
               <div className="text-center mb-4">
@@ -1060,8 +1071,31 @@ const VendorsCustomers = () => {
             </>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowView(false)}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowView(false)}
+            className="btn-modal-cancel"
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             Close
           </Button>
         </Modal.Footer>
@@ -1073,11 +1107,12 @@ const VendorsCustomers = () => {
         onHide={() => setShowAddEditModal(false)}
         size="xl"
         backdrop="static"
+        className="vendor-modal"
       >
-        <Modal.Header closeButton className="bg-light">
-          <Modal.Title>{selectedVendor ? `Edit ${vendorType === 'vender' ? 'Vendor' : 'Customer'}` : `Add ${vendorType === 'vender' ? 'Vendor' : 'Customer'}`}</Modal.Title>
+        <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+          <Modal.Title style={{ color: "white" }}>{selectedVendor ? `Edit ${vendorType === 'vender' ? 'Vendor' : 'Customer'}` : `Add ${vendorType === 'vender' ? 'Vendor' : 'Customer'}`}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Row className="mb-3">
               <Col md={4}>
@@ -1465,14 +1500,60 @@ const VendorsCustomers = () => {
             </Row>
           </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddEditModal(false)}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowAddEditModal(false)}
+            className="btn-modal-cancel"
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              if (saving) return;
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             Cancel
           </Button>
           <Button
-            style={{ backgroundColor: "#53b2a5", border: "none" }}
+            className="btn-modal-save"
+            style={{ 
+              backgroundColor: "#505ece", 
+              borderColor: "#505ece",
+              border: "none",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+              opacity: saving ? 0.6 : 1
+            }}
             onClick={handleSave}
             disabled={saving}
+            onMouseEnter={(e) => {
+              if (saving) return;
+              e.currentTarget.style.backgroundColor = "#3d47b8";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#505ece";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             {saving ? 'Saving...' : selectedVendor ? `Update ${vendorType === 'vender' ? 'Vendor' : 'Customer'}` : `Save ${vendorType === 'vender' ? 'Vendor' : 'Customer'}`}
           </Button>
@@ -1480,39 +1561,75 @@ const VendorsCustomers = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal show={showDelete} onHide={() => setShowDelete(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Delete</Modal.Title>
+      <Modal show={showDelete} onHide={() => setShowDelete(false)} centered className="vendor-modal">
+        <Modal.Header closeButton className="modal-header-custom" style={{ background: "linear-gradient(135deg, #505ece 0%, #3d47b8 100%)", color: "white" }}>
+          <Modal.Title style={{ color: "white" }}>Confirm Delete</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           Are you sure you want to delete {vendorType === 'vender' ? 'Vendor' : 'Customer'} <strong>"{selectedVendor?.name}"</strong>? This action cannot be undone.
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDelete(false)} disabled={deleting}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowDelete(false)} 
+            disabled={deleting}
+            className="btn-modal-cancel"
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              if (deleting) return;
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             Cancel
           </Button>
           <Button
             variant="danger"
+            className="btn-modal-delete"
             onClick={handleDeleteVendor}
             disabled={deleting}
+            style={{
+              backgroundColor: "#dc3545",
+              borderColor: "#dc3545",
+              color: "white",
+              padding: "8px 18px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+              opacity: deleting ? 0.6 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (deleting) return;
+              e.currentTarget.style.backgroundColor = "#c82333";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(220, 53, 69, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#dc3545";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             {deleting ? 'Deleting...' : 'Yes, Delete'}
           </Button>
         </Modal.Footer>
       </Modal>
 
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 ">Page Info</h5>
-          <ul className="tfs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-            <li>Manage {vendorType === 'vender' ? 'Vendor' : 'Customer'} details including contact and billing information.</li>
-            <li>Track payable balances and credit periods.</li>
-            <li>Perform CRUD operations: add, view, edit, and delete {vendorType === 'vender' ? 'Vendors' : 'Customers'}.</li>
-            <li>Import and export {vendorType === 'vender' ? 'Vendor' : 'Customer'} data using Excel templates.</li>
-            <li>Assign account types and view transaction ledger for each {vendorType === 'vender' ? 'Vendor' : 'Customer'}.</li>
-          </ul>
-        </Card.Body>
-      </Card>
+      {/* Page Info removed - matching Sales Return style */}
     </div>
   );
 };
