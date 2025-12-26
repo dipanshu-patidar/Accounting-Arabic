@@ -13,6 +13,7 @@ const MainLayout = () => {
   const [sidebarVisible, setSidebarVisible] = useState(screenSize === 'desktop');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
 
   function getScreenCategory() {
@@ -46,6 +47,10 @@ const MainLayout = () => {
     }
   };
 
+  const handleSidebarCollapseChange = (collapsed) => {
+    setIsSidebarCollapsed(collapsed);
+  };
+
   useEffect(() => {
     const handleResize = () => {
       const currentScreen = getScreenCategory();
@@ -77,15 +82,20 @@ const MainLayout = () => {
           <div
             className="d-none d-lg-block bg-white border-end"
             style={{
-              width: '240px',
+              width: isSidebarCollapsed ? '70px' : '250px',
               minHeight: '100vh',
               position: 'fixed',
               top: '65px',
               left: 0,
-              zIndex: 1
+              zIndex: 1,
+              transition: 'width 0.6s ease',
             }}
           >
-            <Sidebar isMobile={false} onClose={handleCloseSidebar} />
+            <Sidebar 
+              isMobile={false} 
+              onClose={handleCloseSidebar}
+              onCollapseChange={handleSidebarCollapseChange}
+            />
           </div>
         )}
 
@@ -96,8 +106,10 @@ const MainLayout = () => {
             minHeight: "calc(100vh - 65px)",
             overflowX: "hidden",
             padding: "1rem",
-            marginRight: screenSize === 'desktop' && sidebarVisible ? "240px" : "0",
-            transition: "margin 0.3s ease",
+            marginRight: screenSize === 'desktop' && sidebarVisible 
+              ? (isSidebarCollapsed ? "70px" : "250px") 
+              : "0",
+            transition: "margin-right 0.6s ease",
             zIndex: 1,
           }}
         >

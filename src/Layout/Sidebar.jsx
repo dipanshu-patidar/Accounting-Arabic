@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Sidebar.css";
 
-const Sidebar = ({ isMobile, onLinkClick }) => {
+const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
   const { pathname } = useLocation();
   const [activePath, setActivePath] = useState(pathname);
   const [role, setRole] = useState("");
   const [userPermissions, setUserPermissions] = useState([]);
   const [expandedMenu, setExpandedMenu] = useState({});
   const [isTranslateFixed, setIsTranslateFixed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
@@ -29,6 +30,13 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
   useEffect(() => {
     setActivePath(pathname);
   }, [pathname]);
+
+  // Close all expanded menus when sidebar is collapsed
+  useEffect(() => {
+    if (isCollapsed) {
+      setExpandedMenu({});
+    }
+  }, [isCollapsed]);
 
   // Helper function to check if user has view permission for a module
   const hasViewPermission = (moduleName) => {
@@ -129,6 +137,25 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
     }));
   };
 
+  const toggleSidebar = () => {
+    setIsCollapsed((prev) => {
+      const newState = !prev;
+      // Notify parent about collapse state change
+      if (onCollapseChange) {
+        onCollapseChange(newState);
+      }
+      return newState;
+    });
+  };
+
+  // Notify parent on initial mount and when collapse state changes
+  useEffect(() => {
+    if (onCollapseChange) {
+      onCollapseChange(isCollapsed);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCollapsed]);
+
   /**
    * Renders a section with a clickable header to expand/collapse sub-items.
    * @param {string} title - The title of section (e.g., "Accounting").
@@ -152,17 +179,20 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
           }`}
           style={linkStyle}
           onClick={() => toggleMenu(menuKey)}
+          title={isCollapsed ? title : ""}
         >
           <i className={`me-3 ${icon}`} style={iconStyle}></i>
-          <span>{title}</span>
-          <i
-            className={`ms-auto fas ${isExpanded ? "fa-minus" : "fa-plus"}`}
-            style={{ fontSize: "0.8rem", opacity: 0.7 }}
-          ></i>
+          {!isCollapsed && <span>{title}</span>}
+          {!isCollapsed && (
+            <i
+              className={`ms-auto fas ${isExpanded ? "fa-minus" : "fa-plus"}`}
+              style={{ fontSize: "0.8rem", opacity: 0.7 }}
+            ></i>
+          )}
         </div>
 
         {/* Submenu Items - rendered only if section is expanded */}
-        {isExpanded && (
+        {isExpanded && !isCollapsed && (
           <div className="submenu ps-4">
             {items.map((item) => (
               <div className="nav-item" key={item.to}>
@@ -197,13 +227,14 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
       <Link
         to={to}
         onClick={() => handleMenuClick(to)}
-        className={`nav-link d-flex align-items-center sidebar-link px-3 py-2 ${
+        className={`nav-link d-flex align-items-center sidebar-link px-3 py-2${
           activePath === to ? "active-link" : ""
         }`}
         style={linkStyle}
+        title={isCollapsed ? label : ""}
       >
         <i className={`me-3 ${icon}`} style={iconStyle}></i>
-        <span>{label}</span>
+        {!isCollapsed && <span>{label}</span>}
       </Link>
     </div>
   );
@@ -761,8 +792,9 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
     fontSize: "15px",
     color: "#fff",
     // Padding is adjusted for RTL
-    paddingRight: "2.5rem",
-    paddingLeft: "1rem",
+    paddingRight: isCollapsed ? "1rem" : "2.5rem",
+    paddingLeft: isCollapsed ? "1rem" : "1rem",
+    justifyContent: isCollapsed ? "center" : "flex-start",
   };
 
   const iconStyle = {
@@ -772,7 +804,7 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
     fontSize: "17px",
     color: "#fff",
     // Margin is adjusted for RTL
-    marginLeft: "0.75rem", // was me-3
+    marginLeft: isCollapsed ? "0" : "0.75rem", // was me-3
     marginRight: "0", // was me-3
   };
 
@@ -781,16 +813,46 @@ const Sidebar = ({ isMobile, onLinkClick }) => {
       className="sidebar d-flex flex-column position-fixed"
       style={{
         height: "100vh",
-        width: "250px",
+        width: isCollapsed ? "70px" : "250px",
         // This is key fix: always position on the right
         right: 0,
         left: "auto",
         // Also ensure the border is on the correct side
         borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
         borderRight: "none",
+        transition: "width 0.6s ease",
       }}
     >
-      <div className="d-flex justify-content-between align-items-center py-2">
+      <div className="d-flex justify-content-between align-items-center py-2 position-relative mb-4 ">
+        {!isMobile && (
+          <button
+            type="button"
+            className="btn btn-link text-white p-2"
+            onClick={toggleSidebar}
+            style={{
+              position: "absolute",
+              top: "10px",
+              left: isCollapsed ? "15px" : "10px",
+              zIndex: 1001,
+              fontSize: "18px",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              transition: "all 0.6s ease",
+              // backgroundColor: "rgba(255, 255, 255, 0.1)",
+              border: "none",
+              
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+            }}
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            <i className={`fas ${isCollapsed ? "fa-chevron-left" : "fa-chevron-right"}`}></i>
+          </button>
+        )}
         {isMobile && (
           <div className="d-flex align-items-center ms-3 mt-3">
             <img
