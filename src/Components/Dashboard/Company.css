@@ -54,7 +54,21 @@
 
 .modal-content {
     border: none;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+}
+
+.modal-header {
+    background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 1rem 1.5rem;
+    border-bottom: none;
+}
+
+.modal-header .modal-title {
+    color: white !important;
+    font-weight: 700;
 }
 
 .modal-header .btn-danger {
@@ -63,6 +77,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.modal-header .btn-danger:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 .custom-dropdown {

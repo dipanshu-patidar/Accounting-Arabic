@@ -543,7 +543,7 @@ const Company = () => {
   }
 
   return (
-    <div className="container-fluid py-4 px-4 mt-4 mt-md-0">
+    <div className="container-fluid py-4 px-4 mt-4 mt-md-0" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
       {/* Show a subtle error notification if API failed, but still show the dashboard */}
       {apiError && (
         <div
@@ -566,8 +566,8 @@ const Company = () => {
         <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           {/* Left: Heading */}
           <div className="d-flex align-items-center gap-3">
-            <h4 className="fw-bold mb-0 d-flex align-items-center">
-              <BsBuildings className="me-2 fs-4 text-warning" />
+            <h4 className="fw-bold mb-0 d-flex align-items-center" style={{ color: '#505ece' }}>
+              <BsBuildings className="me-2 fs-4" style={{ color: '#505ece' }} />
               Manage Companies
             </h4>
           </div>
@@ -582,9 +582,9 @@ const Company = () => {
                 onClick={() => setViewMode("card")}
                 style={{
                   backgroundColor:
-                    viewMode === "card" ? "#53b2a5" : "transparent",
-                  color: viewMode === "card" ? "#fff" : "#53b2a5",
-                  borderColor: "#53b2a5",
+                    viewMode === "card" ? "#505ece" : "transparent",
+                  color: viewMode === "card" ? "#fff" : "#505ece",
+                  borderColor: "#505ece",
                   padding: "6px 12px",
                   borderRadius: "25px",
                   transition: "all 0.3s ease",
@@ -599,9 +599,9 @@ const Company = () => {
                 onClick={() => setViewMode("table")}
                 style={{
                   backgroundColor:
-                    viewMode === "table" ? "#53b2a5" : "transparent",
-                  color: viewMode === "table" ? "#fff" : "#53b2a5",
-                  borderColor: "#53b2a5",
+                    viewMode === "table" ? "#505ece" : "transparent",
+                  color: viewMode === "table" ? "#fff" : "#505ece",
+                  borderColor: "#505ece",
                   padding: "6px 12px",
                   borderRadius: "25px",
                   transition: "all 0.3s ease",
@@ -615,13 +615,13 @@ const Company = () => {
               className="btn btn-sm d-flex align-items-center gap-2"
               onClick={() => setShowModal(true)}
               style={{
-                backgroundColor: "#53b2a5",
-                borderColor: "#53b2a5",
+                backgroundColor: "#505ece",
+                borderColor: "#505ece",
                 color: "#fff",
                 padding: "6px 14px",
                 borderRadius: "25px",
                 fontWeight: "500",
-                boxShadow: "0 4px 10px rgba(83, 178, 165, 0.3)",
+                boxShadow: "0 4px 10px rgba(80, 94, 206, 0.3)",
                 transition: "all 0.3s ease",
               }}
             >
@@ -631,40 +631,46 @@ const Company = () => {
           </div>
         </div>
         {/* Filters Row */}
-        <div className="d-flex flex-wrap gap-3">
-          {/* Search Filter */}
-          <div
-            className="d-flex align-items-center"
-            style={{ minWidth: "220px" }}
-          >
-            <label
-              className="form-label mb-0 fw-semibold small me-2"
-              style={{ width: "80px" }}
+        <div className="bg-white rounded p-3 shadow-sm mb-4" style={{ borderRadius: '12px' }}>
+          <div className="d-flex flex-wrap gap-3">
+            {/* Search Filter */}
+            <div
+              className="d-flex align-items-center"
+              style={{ minWidth: "220px", flex: 1 }}
             >
-              Search
-            </label>
-            <div className="position-relative" style={{ flex: 1 }}>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                placeholder="Search companies..."
-                value={filter.search}
-                onChange={(e) =>
-                  setFilter({ ...filter, search: e.target.value })
-                }
-                style={{ paddingLeft: "30px" }}
-              />
-              <BsSearch
-                className="position-absolute text-muted"
-                style={{
-                  left: "10px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  fontSize: "14px",
-                }}
-              />
+              <label
+                className="form-label mb-0 fw-semibold small me-2"
+                style={{ width: "80px" }}
+              >
+                Search
+              </label>
+              <div className="position-relative" style={{ flex: 1 }}>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="Search companies..."
+                  value={filter.search}
+                  onChange={(e) =>
+                    setFilter({ ...filter, search: e.target.value })
+                  }
+                  style={{ 
+                    paddingLeft: "30px",
+                    border: '2px solid #e9ecef',
+                    borderRadius: '8px'
+                  }}
+                />
+                <BsSearch
+                  className="position-absolute text-muted"
+                  style={{
+                    left: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: "14px",
+                    color: '#6c757d'
+                  }}
+                />
+              </div>
             </div>
-          </div>
           {/* Date Filters Row */}
           <div className="d-flex align-items-center flex-wrap gap-3">
             {/* Start Date */}
@@ -685,6 +691,10 @@ const Company = () => {
                 onChange={(e) =>
                   setFilter({ ...filter, startDate: e.target.value })
                 }
+                style={{
+                  border: '2px solid #e9ecef',
+                  borderRadius: '8px'
+                }}
               />
             </div>
             {/* Expiry Date */}
@@ -705,6 +715,10 @@ const Company = () => {
                 onChange={(e) =>
                   setFilter({ ...filter, endDate: e.target.value })
                 }
+                style={{
+                  border: '2px solid #e9ecef',
+                  borderRadius: '8px'
+                }}
               />
             </div>
           </div>
@@ -723,6 +737,10 @@ const Company = () => {
               className="form-select form-select-sm"
               value={filter.plan}
               onChange={(e) => setFilter({ ...filter, plan: e.target.value })}
+              style={{
+                border: '2px solid #e9ecef',
+                borderRadius: '8px'
+              }}
             >
               <option value="">All Plans</option>
               {Array.isArray(plans) &&
@@ -732,6 +750,7 @@ const Company = () => {
                   </option>
                 ))}
             </select>
+          </div>
           </div>
         </div>
       </div>
@@ -892,8 +911,8 @@ const Company = () => {
                     <button
                       className="btn btn-sm py-1 px-2 text-white"
                       style={{
-                        backgroundColor: "#53b2a5",
-                        borderColor: "#53b2a5",
+                        backgroundColor: "#505ece",
+                        borderColor: "#505ece",
                         fontSize: "0.75rem",
                       }}
                       onClick={() => navigate("/superadmin/planpricing")}
@@ -935,25 +954,29 @@ const Company = () => {
           )}
         </div>
       ) : (
-        <div className="card mt-4 shadow-sm rounded-4">
+        <div className="card mt-4 shadow-sm rounded-4" style={{ border: 'none', background: 'white' }}>
           {/* Company Table View */}
           <div className="mt-3 mb-2 rounded-4">
-            <div className="card-header bg-white border-bottom-0">
-              <h5 className="mb-0 fw-bold">Company Table View</h5>
+            <div className="card-header border-bottom-0" style={{ 
+              background: 'linear-gradient(90deg, #505ece 0%, #3d47b8 100%)',
+              borderRadius: '12px 12px 0 0',
+              padding: '1rem 1.5rem'
+            }}>
+              <h5 className="mb-0 fw-bold" style={{ color: 'white' }}>Company Table View</h5>
             </div>
             <div className="table-responsive">
-              <table className="table table-bordered table-hover align-middle">
-                <thead className="table-light">
+              <table className="table table-hover align-middle mb-0">
+                <thead style={{ background: '#f8f9fa' }}>
                   <tr>
-                    <th>#</th>
-                    <th>Avatar</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Plan</th>
-                    <th>Start Date</th>
-                    <th>Expiry Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>#</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Avatar</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Name</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Email</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Plan</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Start Date</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Expiry Date</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Status</th>
+                    <th style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#495057' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1008,30 +1031,78 @@ const Company = () => {
                         <td>
                           <div className="d-flex gap-2">
                             <button
-                              className="btn btn-sm btn-warning"
+                              className="btn btn-sm"
                               onClick={() => handleEdit(index)}
                               title="Edit Company"
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                backgroundColor: '#ffc107',
+                                border: 'none',
+                                color: '#000',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0
+                              }}
                             >
                               <BsPencilSquare />
                             </button>
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm"
                               onClick={() => handleDelete(index)}
                               title="Delete Company"
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                backgroundColor: '#dc3545',
+                                border: 'none',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0
+                              }}
                             >
                               <BsTrash />
                             </button>
                             <button
-                              className="btn btn-sm btn-success"
+                              className="btn btn-sm"
                               onClick={() => navigate("/")}
                               title="Login as Company"
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                backgroundColor: '#28a745',
+                                border: 'none',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0
+                              }}
                             >
                               <BsShieldLock />
                             </button>
                             <button
-                              className="btn btn-sm btn-info text-black"
+                              className="btn btn-sm"
                               onClick={() => setViewUserIndex(index)}
                               title="View Users"
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                backgroundColor: '#17a2b8',
+                                border: 'none',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0
+                              }}
                             >
                               <BsEye />
                             </button>
@@ -1081,13 +1152,16 @@ const Company = () => {
               {/* Close Button */}
               <button
                 type="button"
-                className="btn btn-sm btn-danger rounded-circle position-absolute"
+                className="btn btn-sm rounded-circle position-absolute"
                 style={{
                   width: "35px",
                   height: "35px",
                   top: "10px",
                   right: "10px",
                   zIndex: 10,
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white'
                 }}
                 onClick={() => {
                   resetForm();
@@ -1097,8 +1171,11 @@ const Company = () => {
                 ×
               </button>
               {/* Modal Header */}
-              <div className="modal-header border-0 pt-3 pb-1">
-                <h5 className="modal-title fw-bold">Create Company</h5>
+              <div className="modal-header border-0 pt-3 pb-1" style={{
+                background: 'linear-gradient(90deg, #505ece 0%, #3d47b8 100%)',
+                borderRadius: '12px 12px 0 0'
+              }}>
+                <h5 className="modal-title fw-bold" style={{ color: 'white' }}>Create Company</h5>
               </div>
               {/* Logo Upload */}
               <div className="col-12 mb-3">
@@ -1373,18 +1450,28 @@ const Company = () => {
               {/* Modal Footer */}
               <div className="modal-footer border-top-0 pt-3">
                 <button
-                  className="btn btn-dark px-4"
+                  className="btn px-4"
                   onClick={() => {
                     resetForm();
                     setShowModal(false);
+                  }}
+                  style={{
+                    backgroundColor: '#6c757d',
+                    borderColor: '#6c757d',
+                    color: 'white'
                   }}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-success px-4"
+                  className="btn px-4"
                   onClick={handleAddCompany}
                   disabled={creating}
+                  style={{
+                    backgroundColor: '#505ece',
+                    borderColor: '#505ece',
+                    color: 'white'
+                  }}
                 >
                   {creating ? (
                     <>
@@ -1424,20 +1511,26 @@ const Company = () => {
               {/* Close Button */}
               <button
                 type="button"
-                className="btn btn-sm btn-danger rounded-circle position-absolute"
+                className="btn btn-sm rounded-circle position-absolute"
                 style={{
                   width: "35px",
                   height: "35px",
                   top: "10px",
                   right: "10px",
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white'
                 }}
                 onClick={() => setEditIndex(null)}
               >
                 ×
               </button>
               {/* Header */}
-              <div className="modal-header border-0 pt-3 pb-1">
-                <h5 className="modal-title fw-bold">Edit Company</h5>
+              <div className="modal-header border-0 pt-3 pb-1" style={{
+                background: 'linear-gradient(90deg, #505ece 0%, #3d47b8 100%)',
+                borderRadius: '12px 12px 0 0'
+              }}>
+                <h5 className="modal-title fw-bold" style={{ color: 'white' }}>Edit Company</h5>
               </div>
               {/* Logo Upload */}
               <div className="col-12 mb-3">
@@ -1662,15 +1755,25 @@ const Company = () => {
               {/* Footer */}
               <div className="modal-footer border-top-0 pt-3">
                 <button
-                  className="btn btn-dark px-4"
+                  className="btn px-4"
                   onClick={() => setEditIndex(null)}
+                  style={{
+                    backgroundColor: '#6c757d',
+                    borderColor: '#6c757d',
+                    color: 'white'
+                  }}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-warning px-4 text-white"
+                  className="btn px-4"
                   onClick={saveChanges}
                   disabled={updating}
+                  style={{
+                    backgroundColor: '#505ece',
+                    borderColor: '#505ece',
+                    color: 'white'
+                  }}
                 >
                   {updating ? (
                     <>
@@ -1713,16 +1816,26 @@ const Company = () => {
               <p className="text-muted mb-4">This action cannot be undone.</p>
               <div className="d-flex justify-content-center gap-3">
                 <button
-                  className="btn btn-dark px-4"
+                  className="btn px-4"
                   onClick={() => setDeleteIndex(null)}
                   disabled={deleting}
+                  style={{
+                    backgroundColor: '#6c757d',
+                    borderColor: '#6c757d',
+                    color: 'white'
+                  }}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-danger px-4"
+                  className="btn px-4"
                   onClick={confirmDelete}
                   disabled={deleting}
+                  style={{
+                    backgroundColor: '#dc3545',
+                    borderColor: '#dc3545',
+                    color: 'white'
+                  }}
                 >
                   {deleting ? (
                     <>
@@ -1762,20 +1875,26 @@ const Company = () => {
               {/* Close Button */}
               <button
                 type="button"
-                className="btn btn-sm btn-danger rounded-circle position-absolute"
+                className="btn btn-sm rounded-circle position-absolute"
                 style={{
                   width: "35px",
                   height: "35px",
                   top: "10px",
                   right: "10px",
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white'
                 }}
                 onClick={() => setResetIndex(null)}
               >
                 ×
               </button>
               {/* Header */}
-              <div className="modal-header border-0 pb-1 pt-3">
-                <h5 className="modal-title fw-bold">Reset Password</h5>
+              <div className="modal-header border-0 pb-1 pt-3" style={{
+                background: 'linear-gradient(90deg, #505ece 0%, #3d47b8 100%)',
+                borderRadius: '12px 12px 0 0'
+              }}>
+                <h5 className="modal-title fw-bold" style={{ color: 'white' }}>Reset Password</h5>
               </div>
               {/* Body */}
               <div className="modal-body pt-0">
@@ -1807,19 +1926,29 @@ const Company = () => {
               {/* Footer */}
               <div className="modal-footer border-top-0 pt-3">
                 <button
-                  className="btn btn-outline-secondary px-4"
+                  className="btn px-4"
                   onClick={() => setResetIndex(null)}
+                  style={{
+                    backgroundColor: '#6c757d',
+                    borderColor: '#6c757d',
+                    color: 'white'
+                  }}
                 >
                   Cancel
                 </button>
                 <button
-                  className="btn btn-success px-4"
+                  className="btn px-4"
                   onClick={handleResetPassword}
                   disabled={
                     !newPassword ||
                     !confirmPassword ||
                     newPassword !== confirmPassword
                   }
+                  style={{
+                    backgroundColor: '#505ece',
+                    borderColor: '#505ece',
+                    color: 'white'
+                  }}
                 >
                   Reset Password
                 </button>
@@ -1847,19 +1976,25 @@ const Company = () => {
             <div className="modal-content rounded-4 p-4 position-relative">
               <button
                 type="button"
-                className="btn btn-sm btn-danger rounded-circle position-absolute"
+                className="btn btn-sm rounded-circle position-absolute"
                 style={{
                   width: "35px",
                   height: "35px",
                   top: "10px",
                   right: "10px",
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: 'white'
                 }}
                 onClick={() => setViewUserIndex(null)}
               >
                 ×
               </button>
-              <div className="modal-header border-0 pb-1 pt-3">
-                <h5 className="modal-title fw-bold">
+              <div className="modal-header border-0 pb-1 pt-3" style={{
+                background: 'linear-gradient(90deg, #505ece 0%, #3d47b8 100%)',
+                borderRadius: '12px 12px 0 0'
+              }}>
+                <h5 className="modal-title fw-bold" style={{ color: 'white' }}>
                   Users of {companies[viewUserIndex]?.name || "Company"}
                 </h5>
               </div>
@@ -1886,16 +2021,16 @@ const Company = () => {
                   </div>
                 ) : (
                   <div className="table-responsive">
-                    <table className="table table-hover">
-                      <thead className="table-light">
+                    <table className="table table-hover mb-0">
+                      <thead style={{ background: 'linear-gradient(90deg, #505ece 0%, #3d47b8 100%)' }}>
                         <tr>
-                          <th>#</th>
-                          <th>Profile</th>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>Status</th>
-                          <th>Created Date</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>#</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>Profile</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>Name</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>Email</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>Role</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>Status</th>
+                          <th style={{ color: 'white', fontWeight: '600', padding: '0.75rem 1rem' }}>Created Date</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1952,8 +2087,13 @@ const Company = () => {
               </div>
               <div className="modal-footer border-top-0 pt-3">
                 <button
-                  className="btn btn-secondary px-4"
+                  className="btn px-4"
                   onClick={() => setViewUserIndex(null)}
+                  style={{
+                    backgroundColor: '#6c757d',
+                    borderColor: '#6c757d',
+                    color: 'white'
+                  }}
                 >
                   Close
                 </button>

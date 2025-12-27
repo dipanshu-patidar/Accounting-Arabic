@@ -1,7 +1,8 @@
 // PlanPricing.jsx
 import React, { useState, useEffect } from "react";
 import { BsListUl, BsPencilSquare, BsEye, BsChevronLeft, BsChevronRight, BsTrash } from "react-icons/bs";
-import { Button, Card, Badge, OverlayTrigger, Tooltip } from "react-bootstrap";
+import { Container, Button, Card, Badge, OverlayTrigger, Tooltip, Spinner, Table } from "react-bootstrap";
+import { FaTags, FaFile } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./PlansPricing.css";
 import Swal from "sweetalert2";
@@ -274,33 +275,37 @@ const PlanPricing = () => {
   };
 
   return (
-    <div className=" p-4">
-      <div className="header-section mb-4 d-flex justify-content-between align-items-center">
+    <Container fluid className="plans-pricing-container py-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+      {/* Header Section */}
+      <div className="header-section mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-          <h4 className="fw-bold d-flex align-items-center gap-2">
-            <span role="img" aria-label="coin">💰</span> Plans & Pricing
+          <h4 className="fw-bold d-flex align-items-center gap-2 plans-pricing-title">
+            <FaTags style={{ color: '#505ece' }} /> Plans & Pricing
           </h4>
-          <p className="text-muted">Manage your subscription plans, pricing options.</p>
+          <p className="text-muted mb-0">Manage your subscription plans, pricing options.</p>
         </div>
-        <Button variant="primary" onClick={() => setShowAddModal(true)} style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5" }}>
+        <Button 
+          className="btn-add-plan"
+          onClick={() => setShowAddModal(true)}
+        >
           + Add Plan
         </Button>
       </div>
 
-      <div className="card">
-        <div className="card-body">
-          <h6 className="fw-semibold mb-3">View All Plans</h6>
+      <Card className="plans-pricing-card">
+        <Card.Header className="plans-pricing-table-header">
+          <h6 className="mb-0 fw-bold">View All Plans</h6>
+        </Card.Header>
+        <Card.Body>
           <div className="table-responsive">
             {loading ? (
               <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-                <p className="mt-2">Loading plans...</p>
+                <Spinner animation="border" variant="primary" className="spinner-custom" />
+                <p className="mt-3 text-muted">Loading plans...</p>
               </div>
             ) : (
-              <table className="table table-hover plans-table">
-                <thead className="">
+              <Table className="plans-table" hover responsive>
+                <thead className="plans-table-header">
                   <tr>
                     <th>Plan Name</th>
                     <th>Currency</th>
@@ -320,8 +325,11 @@ const PlanPricing = () => {
                 <tbody>
                   {currentPlans.length === 0 ? (
                     <tr>
-                      <td colSpan="13" className="text-center py-4">
-                        {error ? "No plans available due to an error." : "No plans found. Click 'Add Plan' to create a new plan."}
+                      <td colSpan="13" className="text-center py-5 empty-state">
+                        <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                        <p className="text-muted mb-0">
+                          {error ? "No plans available due to an error." : "No plans found. Click 'Add Plan' to create a new plan."}
+                        </p>
                       </td>
                     </tr>
                   ) : (
@@ -332,8 +340,8 @@ const PlanPricing = () => {
                             className="badge px-3 py-2 rounded-pill fw-semibold"
                             style={{
                               ...(badgeStyles[plan.plan_name] || {
-                                backgroundColor: "#2db173ff",
-                               
+                                backgroundColor: "#505ece",
+                                color: "#fff"
                               }),
                             }}
                           >
@@ -342,7 +350,7 @@ const PlanPricing = () => {
                         </td>
                         <td>{plan.currency || "USD"}</td>
                         <td>{getCurrencySymbol(plan.currency)}{plan.base_price || 0}</td>
-                        <td><strong>{calculateTotalPrice(plan.base_price, plan.plan_modules, plan.currency)}</strong></td>
+                        <td><strong style={{ color: '#505ece' }}>{calculateTotalPrice(plan.base_price, plan.plan_modules, plan.currency)}</strong></td>
                         <td>{formatInvoiceLimit(plan.invoice_limit)}</td>
                         <td>
                           {plan.invoice_limit === -1
@@ -353,7 +361,7 @@ const PlanPricing = () => {
                         <td>{formatStorageCapacity(plan.storage_capacity)}</td>
                         <td>{plan.billing_cycle || "Monthly"}</td>
                         <td>
-                          <span className={`badge ${plan.status === "Inactive" ? "bg-warning text-dark" : "bg-success"}`}>
+                          <span className={`badge status-badge ${plan.status === "Inactive" ? "badge-warning" : "badge-success"}`}>
                             {plan.status || "Active"}
                           </span>
                         </td>
@@ -361,14 +369,26 @@ const PlanPricing = () => {
                         <td>{plan.subscribers || 0}</td>
                         <td>
                           <div className="d-flex gap-2">
-                            <button className="btn btn-sm text-warning p-0" onClick={() => handleEditClick(plan)} title="Edit">
-                              <BsPencilSquare size={18} />
+                            <button 
+                              className="btn btn-action btn-edit" 
+                              onClick={() => handleEditClick(plan)} 
+                              title="Edit"
+                            >
+                              <BsPencilSquare />
                             </button>
-                            <button className="btn btn-sm text-info p-0" onClick={() => handleViewClick(plan)} title="View">
-                              <BsEye size={18} />
+                            <button 
+                              className="btn btn-action btn-view" 
+                              onClick={() => handleViewClick(plan)} 
+                              title="View"
+                            >
+                              <BsEye />
                             </button>
-                            <button className="btn btn-sm text-danger p-0" onClick={() => handleDeleteClick(plan.id)} title="Delete">
-                              <BsTrash size={18} />
+                            <button 
+                              className="btn btn-action btn-delete" 
+                              onClick={() => handleDeleteClick(plan.id)} 
+                              title="Delete"
+                            >
+                              <BsTrash />
                             </button>
                           </div>
                         </td>
@@ -376,19 +396,18 @@ const PlanPricing = () => {
                     ))
                   )}
                 </tbody>
-              </table>
+              </Table>
             )}
           </div>
 
           {!loading && plans.length > 0 && (
-            <div className="d-flex justify-content-between align-items-center px-2 py-2">
+            <div className="d-flex justify-content-between align-items-center pt-3 mt-3 border-top flex-wrap gap-3">
               <div className="text-muted small">
                 Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, plans.length)} of {plans.length} results
               </div>
               <div className="d-flex align-items-center gap-2">
                 <button
-                  className="btn btn-sm"
-                  style={{ backgroundColor: "#f8f9fa", color: "#6c757d", borderColor: "#53b2a5" }}
+                  className="btn btn-sm btn-pagination"
                   onClick={() => paginate(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
@@ -398,12 +417,7 @@ const PlanPricing = () => {
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                     <button
                       key={page}
-                      className={`btn btn-sm ${currentPage === page ? 'active' : ''}`}
-                      style={{
-                        backgroundColor: currentPage === page ? "#53b2a5" : "white",
-                        color: currentPage === page ? "white" : "#53b2a5",
-                        borderColor: "#53b2a5",
-                      }}
+                      className={`btn btn-sm btn-pagination ${currentPage === page ? 'active' : ''}`}
                       onClick={() => paginate(page)}
                     >
                       {page}
@@ -411,8 +425,7 @@ const PlanPricing = () => {
                   ))}
                 </div>
                 <button
-                  className="btn btn-sm rounded"
-                  style={{ backgroundColor: "#53b2a5", color: "white", borderColor: "#53b2a5" }}
+                  className="btn btn-sm btn-pagination"
                   onClick={() => paginate(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
@@ -421,8 +434,8 @@ const PlanPricing = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {selectedPlan && (
         <EditPlanModal
@@ -451,7 +464,7 @@ const PlanPricing = () => {
           handleAdd={handleAddPlan}
         />
       )}
-    </div>
+    </Container>
   );
 };
 

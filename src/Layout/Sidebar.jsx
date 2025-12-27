@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MdOutlineDashboard, MdOutlineShoppingBag, MdPersonSearch, MdContactSupport, MdOutlineScreenShare } from "react-icons/md";
+import {
+  MdOutlineDashboard,
+  MdOutlineShoppingBag,
+  MdPersonSearch,
+  MdContactSupport,
+  MdOutlineScreenShare,
+} from "react-icons/md";
 import { FaSignal } from "react-icons/fa";
 import { LuCircleDollarSign } from "react-icons/lu";
 import { BsBank } from "react-icons/bs";
@@ -24,11 +30,13 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
-    
+
     // Get user permissions from localStorage
     if (storedRole === "USER") {
       try {
-        const permissions = JSON.parse(localStorage.getItem("userPermissions") || "[]");
+        const permissions = JSON.parse(
+          localStorage.getItem("userPermissions") || "[]"
+        );
         setUserPermissions(permissions);
       } catch (error) {
         console.error("Error parsing user permissions:", error);
@@ -53,8 +61,10 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
     if (role === "SUPERADMIN" || role === "COMPANY") {
       return true; // Superadmin and Company have access to all modules
     }
-    
-    const permission = userPermissions.find(p => p.module_name === moduleName);
+
+    const permission = userPermissions.find(
+      (p) => p.module_name === moduleName
+    );
     return permission ? permission.can_view : false;
   };
 
@@ -73,7 +83,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
         // RTL direction apply again
         document.documentElement.dir = "rtl";
         document.body.classList.add("rtl-mode");
-        
+
         setIsTranslateFixed(true);
         return true;
       }
@@ -97,22 +107,25 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
       }
     };
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", handleDOMContentLoaded);
     } else {
       handleDOMContentLoaded();
     }
 
     return () => {
       clearInterval(interval);
-      document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded);
+      document.removeEventListener("DOMContentLoaded", handleDOMContentLoaded);
     };
   }, []);
 
   // Additional effect to ensure RTL is maintained even after page reload
   useEffect(() => {
     // Check if RTL is applied, if not, apply it
-    if (document.documentElement.dir !== "rtl" || !document.body.classList.contains("rtl-mode")) {
+    if (
+      document.documentElement.dir !== "rtl" ||
+      !document.body.classList.contains("rtl-mode")
+    ) {
       document.documentElement.dir = "rtl";
       document.body.classList.add("rtl-mode");
     }
@@ -180,8 +193,8 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
     // Check if any child item is currently active path
     const hasActiveChild = items.some((item) => item.to === activePath);
 
-    const IconComponent = typeof icon === 'string' ? null : icon;
-    const iconClass = typeof icon === 'string' ? icon : null;
+    const IconComponent = typeof icon === "string" ? null : icon;
+    const iconClass = typeof icon === "string" ? icon : null;
 
     return (
       <div className="mb-3" key={menuKey}>
@@ -192,7 +205,7 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           }`}
           style={{
             ...linkStyle,
-            cursor: 'pointer',
+            cursor: "pointer",
           }}
           onClick={() => toggleMenu(menuKey)}
           title={isCollapsed ? title : ""}
@@ -206,10 +219,10 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           {!isCollapsed && (
             <i
               className={`ms-auto fas ${isExpanded ? "fa-minus" : "fa-plus"}`}
-              style={{ 
-                fontSize: "0.8rem", 
+              style={{
+                fontSize: "0.8rem",
                 opacity: 0.7,
-                transition: "transform 0.3s ease, opacity 0.3s ease"
+                transition: "transform 0.3s ease, opacity 0.3s ease",
               }}
             ></i>
           )}
@@ -230,7 +243,10 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
                     ...linkStyle,
                     paddingRight: "3.5rem", // More indent for sub-items
                     fontSize: "14px",
-                    color: activePath === item.to ? "#ffffff" : "rgba(255, 255, 255, 0.7)",
+                    color:
+                      activePath === item.to
+                        ? "#ffffff"
+                        : "rgba(255, 255, 255, 0.7)",
                   }}
                 >
                   <span>{item.label}</span>
@@ -247,9 +263,9 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
    * Renders a single, non-expandable navigation item.
    */
   const navItem = (to, icon, label) => {
-    const IconComponent = typeof icon === 'string' ? null : icon;
-    const iconClass = typeof icon === 'string' ? icon : null;
-    
+    const IconComponent = typeof icon === "string" ? null : icon;
+    const iconClass = typeof icon === "string" ? icon : null;
+
     return (
       <div className="nav-item ps-2" key={to}>
         <Link
@@ -295,22 +311,36 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
         ),
       ];
     }
-    
+
     // For COMPANY role, show all company menu items
     if (role === "COMPANY") {
       const menuItems = [
         navItem("/company/dashboard", MdOutlineDashboard, "Dashboard"),
       ];
 
-      // User Management section
+      // Reports section
       menuItems.push(
         renderExpandableSection(
-          "User Management",
+          "Reports",
           [
-            { to: "/company/users", label: "Users" },
-            { to: "/company/rolespermissions", label: "Roles & Permissions" },
+            { to: "/company/salesreport", label: "Sales Report" },
+            { to: "/company/purchasereport", label: "Purchase Report" },
+            { to: "/company/posreport", label: "POS Report" },
+            { to: "/company/inventorysummary", label: "Inventory Summary" },
+            { to: "/company/daybook", label: "DayBook" },
+            { to: "/company/journalentries", label: "Journal Entries" },
+            { to: "/company/ledger", label: "Ledger" },
+            { to: "/company/trialbalance", label: "Trial Balance" },
+            {
+              to: "/company/income-statement-report",
+              label: "Income Statement Report",
+            },
+            {
+              to: "/company/account-statement-report",
+              label: "Account Statement Report",
+            },
           ],
-          HiUsers
+          FaSignal
         )
       );
 
@@ -338,44 +368,6 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
         )
       );
 
-      // Accounting section
-      menuItems.push(
-        renderExpandableSection(
-          "Accounting",
-          [
-            { to: "/company/allacounts", label: "Charts of Accounts" },
-            { to: "/company/customersdebtors", label: "Customers/Debtors" },
-            { to: "/company/vendorscreditors", label: "Vendors/Creditors" },
-            { to: "/company/cashflow", label: "Cash Flow" },
-            { to: "/company/profitloss", label: "Profit & Loss" },
-            { to: "/company/balancesheet", label: "Balance Sheet" },
-            { to: "/company/expense", label: "Expenses" },
-            // { to: "/company/vatreport", label: "Vat Report" },
-            { to: "/company/taxreport", label: "Tax Report" },
-          ],
-          BsBank
-        )
-      );
-
-      // Inventory section
-      menuItems.push(
-        renderExpandableSection(
-          "Inventory",
-          [
-            { to: "/company/warehouse", label: "Warehouse" },
-            { to: "/company/unitofmeasure", label: "Unit of measure" },
-            { to: "/company/inventorys", label: "Product & Inventory" },
-            { to: "/company/service", label: "Service" },
-            { to: "/company/stocktranfer", label: "StockTransfer" },
-            {
-              to: "/company/inventory-adjustment",
-              label: "Inventory Adjustment",
-            },
-          ],
-          RiBarcodeLine
-        )
-      );
-
       // HR & Payroll section
       menuItems.push(
         renderExpandableSection(
@@ -398,6 +390,44 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             { to: "/company/payrollsettings", label: "Payroll Setting" },
           ],
           TbUserDollar
+        )
+      );
+
+      // Inventory section
+      menuItems.push(
+        renderExpandableSection(
+          "Inventory",
+          [
+            { to: "/company/warehouse", label: "Warehouse" },
+            { to: "/company/unitofmeasure", label: "Unit of measure" },
+            { to: "/company/inventorys", label: "Product & Inventory" },
+            { to: "/company/service", label: "Service" },
+            { to: "/company/stocktranfer", label: "StockTransfer" },
+            {
+              to: "/company/inventory-adjustment",
+              label: "Inventory Adjustment",
+            },
+          ],
+          RiBarcodeLine
+        )
+      );
+
+      // Accounting section
+      menuItems.push(
+        renderExpandableSection(
+          "Accounting",
+          [
+            { to: "/company/allacounts", label: "Charts of Accounts" },
+            { to: "/company/customersdebtors", label: "Customers/Debtors" },
+            { to: "/company/vendorscreditors", label: "Vendors/Creditors" },
+            { to: "/company/cashflow", label: "Cash Flow" },
+            { to: "/company/profitloss", label: "Profit & Loss" },
+            { to: "/company/balancesheet", label: "Balance Sheet" },
+            { to: "/company/expense", label: "Expenses" },
+            // { to: "/company/vatreport", label: "Vat Report" },
+            { to: "/company/taxreport", label: "Tax Report" },
+          ],
+          BsBank
         )
       );
 
@@ -429,22 +459,13 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
         )
       );
 
-      menuItems.push(navItem("/company/audit-logs", MdPersonSearch, "Audit Logs"));
-      menuItems.push(navItem("/company/support-tickets", MdContactSupport, "Support Tickets"));
-
-      // Settings section
       menuItems.push(
-        renderExpandableSection(
-          "Settings",
-          [
-            { to: "/company/companyinfo", label: "Company Info" },
-            { to: "/company/password-request", label: "Password Requests" },
-          ],
-          CiSettings
-        )
+        navItem("/company/audit-logs", MdPersonSearch, "Audit Logs")
       );
 
-      menuItems.push(navItem("/company/ponitofsale", MdOutlineScreenShare, "POS Screen"));
+      menuItems.push(
+        navItem("/company/ponitofsale", MdOutlineScreenShare, "POS Screen")
+      );
 
       // Voucher section
       menuItems.push(
@@ -460,58 +481,59 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
         )
       );
 
-      // Reports section
+      // User Management section
       menuItems.push(
         renderExpandableSection(
-          "Reports",
+          "User Management",
           [
-            { to: "/company/salesreport", label: "Sales Report" },
-            { to: "/company/purchasereport", label: "Purchase Report" },
-            { to: "/company/posreport", label: "POS Report" },
-            { to: "/company/inventorysummary", label: "Inventory Summary" },
-            { to: "/company/daybook", label: "DayBook" },
-            { to: "/company/journalentries", label: "Journal Entries" },
-            { to: "/company/ledger", label: "Ledger" },
-            { to: "/company/trialbalance", label: "Trial Balance" },
-            {
-              to: "/company/income-statement-report",
-              label: "Income Statement Report",
-            },
-            {
-              to: "/company/account-statement-report",
-              label: "Account Statement Report",
-            },
+            { to: "/company/users", label: "Users" },
+            { to: "/company/rolespermissions", label: "Roles & Permissions" },
           ],
-          FaSignal
+          HiUsers
         )
       );
 
+      menuItems.push(
+        navItem("/company/support-tickets", MdContactSupport, "Support Tickets")
+      );
+
+      // Settings section
+      menuItems.push(
+        renderExpandableSection(
+          "Settings",
+          [
+            { to: "/company/companyinfo", label: "Company Info" },
+            { to: "/company/password-request", label: "Password Requests" },
+          ],
+          CiSettings
+        )
+      );
       return menuItems;
     }
-    
+
     // For USER role, show only menu items based on permissions
     if (role === "USER") {
       const menuItems = [];
-      
+
       // Dashboard section
       if (hasViewPermission("Dashboard")) {
         menuItems.push(
           navItem("/company/dashboard", MdOutlineDashboard, "Dashboard")
         );
       }
-      
+
       // User Management section
       const userManagementItems = [];
       if (hasViewPermission("Users")) {
         userManagementItems.push({
           to: "/company/users",
-          label: "Users"
+          label: "Users",
         });
       }
       if (hasViewPermission("Roles_Permissions")) {
         userManagementItems.push({
           to: "/company/rolespermissions",
-          label: "Roles & Permissions"
+          label: "Roles & Permissions",
         });
       }
       if (userManagementItems.length > 0) {
@@ -523,43 +545,39 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           )
         );
       }
-      
+
       // Sales section
       const salesItems = [];
       if (hasViewPermission("Sales_Order")) {
         salesItems.push({
           to: "/company/Invoice",
-          label: "Sales Order"
+          label: "Sales Order",
         });
       }
       if (hasViewPermission("Sales_Return")) {
         salesItems.push({
           to: "/company/salesreturn",
-          label: "Sales Return"
+          label: "Sales Return",
         });
       }
       if (salesItems.length > 0) {
         menuItems.push(
-          renderExpandableSection(
-            "Sales",
-            salesItems,
-            LuCircleDollarSign
-          )
+          renderExpandableSection("Sales", salesItems, LuCircleDollarSign)
         );
       }
-      
+
       // Purchases section
       const purchasesItems = [];
       if (hasViewPermission("Purchase_Orders")) {
         purchasesItems.push({
           to: "/company/purchasorderr",
-          label: "Purchase Orders"
+          label: "Purchase Orders",
         });
       }
       if (hasViewPermission("Purchase_Return")) {
         purchasesItems.push({
           to: "/company/purchasereturn",
-          label: "Purchase Return"
+          label: "Purchase Return",
         });
       }
       if (purchasesItems.length > 0) {
@@ -571,49 +589,49 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
           )
         );
       }
-      
+
       // Accounting section
       const accountingItems = [];
       if (hasViewPermission("Charts_of_Accounts")) {
         accountingItems.push({
           to: "/company/allacounts",
-          label: "Charts of Accounts"
+          label: "Charts of Accounts",
         });
       }
       if (hasViewPermission("Customers/Debtors")) {
         accountingItems.push({
           to: "/company/customersdebtors",
-          label: "Customers/Debtors"
+          label: "Customers/Debtors",
         });
       }
       if (hasViewPermission("Vendors/Creditors")) {
         accountingItems.push({
           to: "/company/vendorscreditors",
-          label: "Vendors/Creditors"
+          label: "Vendors/Creditors",
         });
       }
       if (hasViewPermission("Cash_Flow")) {
         accountingItems.push({
           to: "/company/cashflow",
-          label: "Cash Flow"
+          label: "Cash Flow",
         });
       }
       if (hasViewPermission("Profit_Loss")) {
         accountingItems.push({
           to: "/company/profitloss",
-          label: "Profit & Loss"
+          label: "Profit & Loss",
         });
       }
       if (hasViewPermission("Balance_Sheet")) {
         accountingItems.push({
           to: "/company/balancesheet",
-          label: "Balance Sheet"
+          label: "Balance Sheet",
         });
       }
       if (hasViewPermission("Expenses")) {
         accountingItems.push({
           to: "/company/expense",
-          label: "Expenses"
+          label: "Expenses",
         });
       }
       // if (hasViewPermission("Vat_Report")) {
@@ -625,197 +643,177 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
       if (hasViewPermission("Tax_Report")) {
         accountingItems.push({
           to: "/company/taxreport",
-          label: "Tax Report"
+          label: "Tax Report",
         });
       }
       if (accountingItems.length > 0) {
         menuItems.push(
-          renderExpandableSection(
-            "Accounting",
-            accountingItems,
-            BsBank
-          )
+          renderExpandableSection("Accounting", accountingItems, BsBank)
         );
       }
-      
+
       // Inventory section
       const inventoryItems = [];
       if (hasViewPermission("Warehouse")) {
         inventoryItems.push({
           to: "/company/warehouse",
-          label: "Warehouse"
+          label: "Warehouse",
         });
       }
       if (hasViewPermission("Unit_of_measure")) {
         inventoryItems.push({
           to: "/company/unitofmeasure",
-          label: "Unit of measure"
+          label: "Unit of measure",
         });
       }
       if (hasViewPermission("Product_Inventory")) {
         inventoryItems.push({
           to: "/company/inventorys",
-          label: "Product & Inventory"
+          label: "Product & Inventory",
         });
       }
       if (hasViewPermission("Service")) {
         inventoryItems.push({
           to: "/company/service",
-          label: "Service"
+          label: "Service",
         });
       }
       if (hasViewPermission("StockTransfer")) {
         inventoryItems.push({
           to: "/company/stocktranfer",
-          label: "StockTransfer"
+          label: "StockTransfer",
         });
       }
       if (hasViewPermission("Inventory_Adjustment")) {
         inventoryItems.push({
           to: "/company/inventory-adjustment",
-          label: "Inventory Adjustment"
+          label: "Inventory Adjustment",
         });
       }
       if (inventoryItems.length > 0) {
         menuItems.push(
-          renderExpandableSection(
-            "Inventory",
-            inventoryItems,
-            RiBarcodeLine
-          )
+          renderExpandableSection("Inventory", inventoryItems, RiBarcodeLine)
         );
       }
-      
+
       // POS section
       if (hasViewPermission("POS_Screen")) {
         menuItems.push(
           navItem("/company/ponitofsale", MdOutlineScreenShare, "POS Screen")
         );
       }
-      
+
       // Voucher section
       const voucherItems = [];
       if (hasViewPermission("Create_Voucher")) {
         voucherItems.push({
           to: "/company/createvoucher",
-          label: "Create Voucher"
+          label: "Create Voucher",
         });
       }
       if (hasViewPermission("Expenses")) {
         voucherItems.push({
           to: "/company/expense",
-          label: "Expenses"
+          label: "Expenses",
         });
       }
       if (hasViewPermission("Income")) {
         voucherItems.push({
           to: "/company/income",
-          label: "Income"
+          label: "Income",
         });
       }
       if (hasViewPermission("Contra_Voucher")) {
         voucherItems.push({
           to: "/company/contravoucher",
-          label: "Contra Voucher"
+          label: "Contra Voucher",
         });
       }
       if (voucherItems.length > 0) {
         menuItems.push(
-          renderExpandableSection(
-            "Voucher",
-            voucherItems,
-            IoTicket
-          )
+          renderExpandableSection("Voucher", voucherItems, IoTicket)
         );
       }
-      
+
       // Reports section
       const reportsItems = [];
       if (hasViewPermission("Sales_Report")) {
         reportsItems.push({
           to: "/company/salesreport",
-          label: "Sales Report"
+          label: "Sales Report",
         });
       }
       if (hasViewPermission("Purchase_Report")) {
         reportsItems.push({
           to: "/company/purchasereport",
-          label: "Purchase Report"
+          label: "Purchase Report",
         });
       }
       if (hasViewPermission("POS_Report")) {
         reportsItems.push({
           to: "/company/posreport",
-          label: "POS Report"
+          label: "POS Report",
         });
       }
       if (hasViewPermission("Inventory_Summary")) {
         reportsItems.push({
           to: "/company/inventorysummary",
-          label: "Inventory Summary"
+          label: "Inventory Summary",
         });
       }
       if (hasViewPermission("DayBook")) {
         reportsItems.push({
           to: "/company/daybook",
-          label: "DayBook"
+          label: "DayBook",
         });
       }
       if (hasViewPermission("Journal_Entries")) {
         reportsItems.push({
           to: "/company/journalentries",
-          label: "Journal Entries"
+          label: "Journal Entries",
         });
       }
       if (hasViewPermission("Ledger")) {
         reportsItems.push({
           to: "/company/ledger",
-          label: "Ledger"
+          label: "Ledger",
         });
       }
       if (hasViewPermission("Trial_Balance")) {
         reportsItems.push({
           to: "/company/trialbalance",
-          label: "Trial Balance"
+          label: "Trial Balance",
         });
       }
       if (reportsItems.length > 0) {
         menuItems.push(
-          renderExpandableSection(
-            "Reports",
-            reportsItems,
-            FaSignal
-          )
+          renderExpandableSection("Reports", reportsItems, FaSignal)
         );
       }
-      
+
       // Settings section
       const settingsItems = [];
       if (hasViewPermission("Company_Info")) {
         settingsItems.push({
           to: "/company/companyinfo",
-          label: "Company Info"
+          label: "Company Info",
         });
       }
       if (hasViewPermission("Password_Requests")) {
         settingsItems.push({
           to: "/company/password-request",
-          label: "Password Requests"
+          label: "Password Requests",
         });
       }
       if (settingsItems.length > 0) {
         menuItems.push(
-          renderExpandableSection(
-            "Settings",
-            settingsItems,
-            CiSettings
-          )
+          renderExpandableSection("Settings", settingsItems, CiSettings)
         );
       }
-      
+
       return menuItems;
     }
-    
+
     return null;
   };
 
@@ -885,7 +883,11 @@ const Sidebar = ({ isMobile, onLinkClick, onCollapseChange }) => {
             }}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            <i className={`fas ${isCollapsed ? "fa-chevron-left" : "fa-chevron-right"}`}></i>
+            <i
+              className={`fas ${
+                isCollapsed ? "fa-chevron-left" : "fa-chevron-right"
+              }`}
+            ></i>
           </button>
         )}
         {isMobile && (

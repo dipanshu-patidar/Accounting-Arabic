@@ -1,49 +1,231 @@
+/* Plans Pricing Page Container */
+.plans-pricing-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
 
-  
-  .plans-table th,
-  .plans-table td {
-    vertical-align: middle;
-    font-size: 0.95rem;
-  }
-  
-  .plans-table .badge {
-    font-size: 0.75rem;
-    padding: 5px 10px;
-    border-radius: 12px;
-  }
-  
-  @media (max-width: 576px) {
-    .plans-page .header-section h4 {
-      font-size: 1.25rem;
-    }
-    .plans-table th,
-    .plans-table td {
-      font-size: 0.85rem;
-    }
+/* Title Styling */
+.plans-pricing-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+/* Add Plan Button */
+.btn-add-plan {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 0.625rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-add-plan:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+  color: white;
+}
+
+/* Card Styling */
+.plans-pricing-card {
+  border: none !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  overflow: hidden;
+}
+
+.plans-pricing-table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%) !important;
+  color: white !important;
+  border-radius: 12px 12px 0 0;
+  padding: 1rem 1.5rem;
+  border-bottom: none !important;
+}
+
+.plans-pricing-table-header h6 {
+  color: white !important;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+/* Table Styling */
+.plans-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.plans-table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.plans-table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.plans-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.plans-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.plans-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+.plans-table .badge {
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 12px;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-success {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%) !important;
+  color: white !important;
+}
+
+.badge-warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;
+  color: #343a40 !important;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+}
+
+.btn-edit {
+  background-color: #ffc107 !important; /* Yellow */
+  color: #000 !important; /* Black icon on yellow */
+}
+
+.btn-view {
+  background-color: #17a2b8 !important; /* Blue */
+}
+
+.btn-delete {
+  background-color: #dc3545 !important; /* Red */
+}
+
+/* Pagination */
+.btn-pagination {
+  background-color: white;
+  color: #505ece;
+  border: 1px solid #505ece;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-width: 40px;
+  transition: all 0.3s ease;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background-color: rgba(80, 94, 206, 0.1);
+  color: #505ece;
+  border-color: #505ece;
+}
+
+.btn-pagination.active {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white !important;
+}
+
+.btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+/* Loading Spinner */
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .plans-pricing-title {
+    font-size: 1.5rem;
   }
 
-  @media (max-width: 576px) {
-    .table-responsive table {
-      min-width: 600px;
-    }
-  
-    .custom-pagination-orange {
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-    }
-  
-    .input-group {
-      flex-direction: column;
-    }
-  
-    .input-group .form-control {
-      width: 100%;
-      margin-bottom: 0.5rem;
-    }
-  
-    .input-group .btn {
-      width: 100%;
-    }
+  .plans-table {
+    font-size: 14px;
   }
+  
+  .table-responsive table {
+    min-width: 600px;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .input-group .form-control {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .input-group .btn {
+    width: 100%;
+  }
+}
   
