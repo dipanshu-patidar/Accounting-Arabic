@@ -1,0 +1,339 @@
+/* Task Progress Tracking Page Container */
+.task-progress-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.task-progress-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.task-progress-title i {
+  color: #505ece;
+}
+
+.task-progress-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Table Card Styling */
+.task-progress-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+}
+
+.task-progress-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.task-progress-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.task-progress-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.task-progress-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Status Badges */
+.badge-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge-completed {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-in-progress {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.badge-pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+/* Progress Bar Styling */
+.progress-bar-custom {
+  height: 10px;
+  border-radius: 10px;
+  background-color: #e9ecef;
+}
+
+.progress-bar-success {
+  background-color: #28a745 !important;
+}
+
+.progress-bar-info {
+  background-color: #505ece !important;
+}
+
+.progress-bar-warning {
+  background-color: #ffc107 !important;
+}
+
+.progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-label {
+  font-weight: 600;
+  color: #495057;
+  min-width: 45px;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white !important;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+}
+
+.btn-edit {
+  background-color: #ffc107;
+  color: #000 !important;
+}
+
+.btn-edit:hover {
+  background-color: #e0a800;
+  color: #000 !important;
+}
+
+.btn-view {
+  background-color: #17a2b8;
+  color: white !important;
+}
+
+.btn-view:hover {
+  background-color: #138496;
+}
+
+/* Modal Styling */
+.task-progress-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  background: white;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background: #505ece;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+  background: white;
+}
+
+/* Form Controls */
+.form-label-custom {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+  outline: none;
+}
+
+.form-control-custom::placeholder {
+  color: #adb5bd;
+}
+
+textarea.form-control-custom {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Details Display */
+.details-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.details-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.details-list li:last-child {
+  border-bottom: none;
+}
+
+.details-list strong {
+  color: #505ece;
+  min-width: 120px;
+  display: inline-block;
+}
+
+/* Modal Buttons */
+.btn-modal-save {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-save:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Loading Spinner */
+.loading-container {
+  background: #f8f9fa;
+}
+
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .task-progress-title {
+    font-size: 1.5rem;
+  }
+
+  .task-progress-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+
+  .progress-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

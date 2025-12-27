@@ -11,11 +11,14 @@ import {
   Modal,
   Card,
   ListGroup,
+  Spinner,
 } from "react-bootstrap";
+import { FaWarehouse, FaFile, FaSearch, FaDownload, FaFileExcel, FaFileImport } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
 import BaseUrl from "../../../Api/BaseUrl";
+import './InventorySummary.css';
 
 const InventorySummary = () => {
   const companyId = GetCompanyId();
@@ -239,187 +242,203 @@ const InventorySummary = () => {
   };
 
   return (
-    <Container className="mt-4">
-      <Row className="align-items-center mb-3 g-2">
-        <Col md={4}>
-          <h4> Inventory Summary</h4>
-        </Col>
-        <Col md={8} className="text-md-end d-flex justify-content-md-end flex-wrap">
-          <Button
-            style={{ backgroundColor: "#28a745", borderColor: "#28a745" }}
-            className="rounded-pill me-2 mb-2 text-white"
-            onClick={handleImport}
-          >
+    <Container fluid className="inventory-summary-container py-4">
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <div>
+          <h4 className="inventory-summary-title">
+            <FaWarehouse className="me-2" />
+            Inventory Summary
+          </h4>
+          <p className="inventory-summary-subtitle mb-0">Manage and track your inventory data</p>
+        </div>
+        <div className="d-flex gap-2 flex-wrap mt-2">
+          <Button className="btn-import" onClick={handleImport}>
+            <FaFileImport className="me-2" />
             Import
           </Button>
-          <Button
-            style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
-            className="rounded-pill me-2 mb-2 text-white"
-            onClick={handleExport}
-          >
+          <Button className="btn-export" onClick={handleExport}>
+            <FaDownload className="me-2" />
             Export
           </Button>
-          <Button
-            style={{ backgroundColor: "#ffc107", borderColor: "#ffc107" }}
-            className="rounded-pill mb-2 text-dark"
-            onClick={handleDownloadTemplate}
-          >
+          <Button className="btn-template" onClick={handleDownloadTemplate}>
+            <FaFileExcel className="me-2" />
             Download Template
           </Button>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
-      <Row className="mb-3 g-3">
-        <Col md={6}>
-          <InputGroup>
-            <Form.Control
-              type="text"
-              placeholder="Search by product name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="rounded-pill"
-            />
-          </InputGroup>
-        </Col>
-        <Col md={6}>
-          <InputGroup>
+      {/* Search and Filter Section */}
+      <Card className="search-filter-card">
+        <Row className="g-3">
+          <Col md={6}>
+            <Form.Label className="filter-label">Search Product</Form.Label>
+            <InputGroup>
+              <InputGroup.Text style={{ background: '#f8f9fa', borderRight: 'none' }}>
+                <FaSearch style={{ color: '#6c757d' }} />
+              </InputGroup.Text>
+              <Form.Control
+                type="text"
+                className="filter-input"
+                placeholder="Search by product name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ borderLeft: 'none' }}
+              />
+            </InputGroup>
+          </Col>
+          <Col md={6}>
+            <Form.Label className="filter-label">Minimum Price Filter</Form.Label>
             <Form.Control
               type="number"
+              className="filter-input"
               placeholder="Filter by min price..."
               value={priceFilter}
               onChange={(e) => setPriceFilter(e.target.value)}
-              className="rounded-pill"
             />
-          </InputGroup>
-        </Col>
-      </Row>
+          </Col>
+        </Row>
+      </Card>
 
       {loading ? (
         <div className="text-center my-5">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
+          <Spinner animation="border" variant="primary" className="spinner-custom" />
+          <p className="mt-3">Loading inventory data...</p>
         </div>
       ) : error ? (
-        <div className="alert alert-danger" role="alert">
+        <div className="alert alert-danger alert-custom" role="alert">
           {error}
         </div>
       ) : (
-        <>
-          <Table striped bordered responsive hover>
-            <thead className="">
-              <tr>
-                <th>#</th>
-                <th>Product</th>
-                <th>SKU</th>
-                <th>Warehouse</th>
-                <th>Opening</th>
-                <th>Inward</th>
-                <th>Outward</th>
-                <th>Closing</th>
-                <th>Price (₹)</th>
-                <th>Total Value (₹)</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="inventory-summary-table-card">
+          <Card.Body>
+            <div className="table-responsive">
               {filteredData.length > 0 ? (
-                filteredData.map((item, index) => {
-                  const statusBadge = item.status === "Low Stock" ? (
-                    <Badge bg="danger">Low Stock</Badge>
-                  ) : item.status === "Out of Stock" ? (
-                    <Badge bg="warning">Out of Stock</Badge>
-                  ) : (
-                    <Badge bg="success">In Stock</Badge>
-                  );
-                  return (
-                    <tr key={item.id}>
-                      <td>{(currentPage - 1) * 10 + index + 1}</td>
-                      <td>{item.productName}</td>
-                      <td>{item.sku}</td>
-                      <td>{item.warehouse}</td>
-                      <td>{item.opening}</td>
-                      <td>{item.inward}</td>
-                      <td>{item.outward}</td>
-                      <td>{item.closing}</td>
-                      <td>₹{item.price}</td>
-                      <td>₹{item.totalValue}</td>
-                      <td>{statusBadge}</td>
-                      <td>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleViewDetails(item)}
-                          disabled={detailsLoading}
-                        >
-                          {detailsLoading ? "Loading..." : "View Details"}
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
+                <>
+                  <Table className="inventory-summary-table" hover responsive="sm">
+                    <thead className="table-header">
+                      <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Warehouse</th>
+                        <th>Opening</th>
+                        <th>Inward</th>
+                        <th>Outward</th>
+                        <th>Closing</th>
+                        <th>Price (₹)</th>
+                        <th>Total Value (₹)</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredData.map((item, index) => {
+                        const statusBadge = item.status === "Low Stock" ? (
+                          <Badge bg="danger" className="status-badge">Low Stock</Badge>
+                        ) : item.status === "Out of Stock" ? (
+                          <Badge bg="warning" className="status-badge">Out of Stock</Badge>
+                        ) : (
+                          <Badge bg="success" className="status-badge">In Stock</Badge>
+                        );
+                        return (
+                          <tr key={item.id}>
+                            <td><strong>{(currentPage - 1) * 10 + index + 1}</strong></td>
+                            <td><strong>{item.productName}</strong></td>
+                            <td>{item.sku}</td>
+                            <td>{item.warehouse}</td>
+                            <td>{item.opening}</td>
+                            <td>{item.inward}</td>
+                            <td>{item.outward}</td>
+                            <td><strong>{item.closing}</strong></td>
+                            <td>₹{item.price}</td>
+                            <td className="amount-cell">₹{item.totalValue}</td>
+                            <td>{statusBadge}</td>
+                            <td>
+                              <Button
+                                className="btn-view-details"
+                                size="sm"
+                                onClick={() => handleViewDetails(item)}
+                                disabled={detailsLoading}
+                              >
+                                {detailsLoading ? (
+                                  <>
+                                    <Spinner as="span" animation="border" size="sm" className="me-2" />
+                                    Loading...
+                                  </>
+                                ) : (
+                                  'View Details'
+                                )}
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </Table>
+                </>
               ) : (
-                <tr>
-                  <td colSpan="12" className="text-center">
-                    No products found.
-                  </td>
-                </tr>
+                <div className="text-center py-5 empty-state">
+                  <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                  <p className="text-muted mb-0">No inventory data available</p>
+                </div>
               )}
-            </tbody>
-          </Table>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
 
-          <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-            <small className="text-muted ms-2">
-              Showing {filteredData.length} of {totalCount} results
-            </small>
-            <nav>
-              <ul className="pagination mb-0">
-                <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+      {!loading && !error && filteredData.length > 0 && (
+        <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
+          <small className="text-muted ms-2">
+            Showing {filteredData.length} of {totalCount} results
+          </small>
+          <nav>
+            <ul className="pagination mb-0">
+              <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                <button 
+                  className="page-link" 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                >
+                  &laquo;
+                </button>
+              </li>
+              {[...Array(totalPages)].map((_, index) => (
+                <li 
+                  key={index} 
+                  className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                >
                   <button 
                     className="page-link" 
-                    onClick={() => handlePageChange(currentPage - 1)}
+                    onClick={() => handlePageChange(index + 1)}
                   >
-                    &laquo;
+                    {index + 1}
                   </button>
                 </li>
-                {[...Array(totalPages)].map((_, index) => (
-                  <li 
-                    key={index} 
-                    className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
-                  >
-                    <button 
-                      className="page-link" 
-                      onClick={() => handlePageChange(index + 1)}
-                    >
-                      {index + 1}
-                    </button>
-                  </li>
-                ))}
-                <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-                  <button 
-                    className="page-link" 
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    &raquo;
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </>
+              ))}
+              <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                <button 
+                  className="page-link" 
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  &raquo;
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
       )}
 
       {/* Comprehensive Product Details Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="xl" scrollable>
-        <Modal.Header closeButton>
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="xl" scrollable className="inventory-summary-modal">
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>📋 Comprehensive Product Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           {selectedProduct && selectedWarehouse && (
             <>
               {/* Product Master Information */}
-              <Card className="mb-4">
+              <Card className="modal-card">
                 <Card.Header as="h5">Product Master Information</Card.Header>
                 <Card.Body>
                   <Row>
@@ -443,7 +462,7 @@ const InventorySummary = () => {
               </Card>
 
               {/* Warehouse Selection */}
-              <Card className="mb-4">
+              <Card className="modal-card">
                 <Card.Header as="h5">Warehouse Locations</Card.Header>
                 <Card.Body>
                   <ListGroup horizontal>
@@ -480,7 +499,7 @@ const InventorySummary = () => {
                 return (
                   <>
                     {/* Stock Summary */}
-                    <Card className="mb-4">
+                    <Card className="modal-card">
                       <Card.Header as="h5">Stock Summary - {selectedWarehouse}</Card.Header>
                       <Card.Body>
                         <Row>
@@ -507,7 +526,7 @@ const InventorySummary = () => {
                     </Card>
 
                     {/* Purchase History */}
-                    <Card className="mb-4">
+                    <Card className="modal-card">
                       <Card.Header as="h5">Purchase History - {selectedWarehouse}</Card.Header>
                       <Card.Body>
                         <Row className="mb-3">
@@ -536,7 +555,7 @@ const InventorySummary = () => {
                             </Form.Group>
                           </Col>
                         </Row>
-                        <Table striped bordered hover responsive>
+                        <Table className="modal-table" striped bordered hover responsive>
                           <thead>
                             <tr>
                               <th>Date</th>
@@ -568,7 +587,7 @@ const InventorySummary = () => {
                     </Card>
 
                     {/* Sales History */}
-                    <Card className="mb-4">
+                    <Card className="modal-card">
                       <Card.Header as="h5">Sales History - {selectedWarehouse}</Card.Header>
                       <Card.Body>
                         <Row className="mb-3">
@@ -597,7 +616,7 @@ const InventorySummary = () => {
                             </Form.Group>
                           </Col>
                         </Row>
-                        <Table striped bordered hover responsive>
+                        <Table className="modal-table" striped bordered hover responsive>
                           <thead>
                             <tr>
                               <th>Date</th>
@@ -632,7 +651,7 @@ const InventorySummary = () => {
               })()}
 
               {/* Warehouse Overview */}
-              <Card className="mb-4">
+              <Card className="modal-card">
                 <Card.Header as="h5">Warehouse Overview - {selectedWarehouse}</Card.Header>
                 <Card.Body>
                   {(() => {
@@ -659,8 +678,8 @@ const InventorySummary = () => {
             </>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-close" onClick={() => setShowModal(false)}>
             Close
           </Button>
         </Modal.Footer>

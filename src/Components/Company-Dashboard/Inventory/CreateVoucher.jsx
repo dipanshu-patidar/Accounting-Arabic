@@ -1,12 +1,13 @@
 // 📄 File Name: CreateVoucher.js
 import React, { useState, useEffect, useRef } from "react";
-import { Button, Form, Table, Modal, Row, Col, Spinner, InputGroup, FormControl, Dropdown } from "react-bootstrap";
-import { FaEye, FaEdit, FaTrash, FaFileSignature, FaCamera, FaTimes, FaSearch, FaChevronDown } from "react-icons/fa";
+import { Button, Form, Table, Modal, Row, Col, Spinner, InputGroup, FormControl, Dropdown, Container, Card } from "react-bootstrap";
+import { FaEye, FaEdit, FaTrash, FaFileSignature, FaCamera, FaTimes, FaSearch, FaChevronDown, FaFileInvoice } from "react-icons/fa";
 import AddProductModal from "./AddProductModal";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './CreateVoucher.css';
 
 // ✅ Constants
 const VOUCHER_TYPES = [
@@ -1251,11 +1252,11 @@ const CreateVoucherModal = ({ show, onHide, onExited, onSave, editData, companyI
 
   return (
     <>
-      <Modal show={show} onHide={onHide} onExited={onExited} centered size="xl">
-        <Modal.Header closeButton>
+      <Modal show={show} onHide={onHide} onExited={onExited} centered size="xl" className="create-voucher-modal">
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{editData ? "Edit Voucher" : "Create Voucher"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <div ref={pdfRef} style={{ display: 'none' }} dir={printLanguage === "ar" || printLanguage === "both" ? "rtl" : "ltr"}>
               <div className="text-center mb-4">
@@ -1395,20 +1396,20 @@ const CreateVoucherModal = ({ show, onHide, onExited, onSave, editData, companyI
             <Row className="mb-4">
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>{voucherType === "Receipt" ? "Receipt Number" : "Voucher Number"}</Form.Label>
-                  <Form.Control name="voucherNo" value={formData.voucherNo} onChange={handleChange} placeholder="VOUCH-001" />
+                  <Form.Label className="form-label-custom">{voucherType === "Receipt" ? "Receipt Number" : "Voucher Number"}</Form.Label>
+                  <Form.Control name="voucherNo" value={formData.voucherNo} onChange={handleChange} placeholder="VOUCH-001" className="form-control-custom" />
                 </Form.Group>
                 {voucherType === "Receipt" && (
                   <Form.Group className="mb-3">
-                    <Form.Label>Voucher Number</Form.Label>
-                    <Form.Control name="receiptNo" value={formData.receiptNo} onChange={handleChange} placeholder="VOUCH-001" />
+                    <Form.Label className="form-label-custom">Voucher Number</Form.Label>
+                    <Form.Control name="receiptNo" value={formData.receiptNo} onChange={handleChange} placeholder="VOUCH-001" className="form-control-custom" />
                   </Form.Group>
                 )}
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Date</Form.Label>
-                  <Form.Control type="date" name="date" value={formData.date} onChange={handleChange} />
+                  <Form.Label className="form-label-custom">Date</Form.Label>
+                  <Form.Control type="date" name="date" value={formData.date} onChange={handleChange} className="form-control-custom" />
                 </Form.Group>
               </Col>
             </Row>
@@ -1431,50 +1432,52 @@ const CreateVoucherModal = ({ show, onHide, onExited, onSave, editData, companyI
             )}
 
             <Form.Group className="mb-4">
-              <Form.Control as="textarea" rows={3} placeholder="Notes" name="note" value={formData.note} onChange={handleChange} />
+              <Form.Label className="form-label-custom">Notes</Form.Label>
+              <Form.Control as="textarea" rows={3} placeholder="Notes" name="note" value={formData.note} onChange={handleChange} className="form-control-custom" />
             </Form.Group>
 
             {/* ✅ Signature Section */}
             <h6 className="fw-bold mb-3 border-bottom pb-2">Signature</h6>
             <Form.Group className="mb-4">
+              <Form.Label className="form-label-custom">Signature</Form.Label>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 {formData.signature ? (
                   <>
-                    <div className="border p-2" style={{ width: "200px", height: "100px" }}>
+                    <div className="border p-2" style={{ width: "200px", height: "100px", borderRadius: "8px" }}>
                       <img src={formData.signature} alt="Signature" style={{ maxWidth: "100%", maxHeight: "100%" }} />
                     </div>
                     <Button variant="outline-danger" size="sm" onClick={() => handleRemovePhoto('signature')}><FaTimes /> Remove</Button>
                   </>
                 ) : (
-                  <Button style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5" }} size="sm" onClick={() => signatureInputRef.current.click()}><FaFileSignature /> Upload Signature</Button>
+                  <Button style={{ backgroundColor: "#505ece", borderColor: "#505ece", color: "white" }} size="sm" onClick={() => signatureInputRef.current.click()}><FaFileSignature /> Upload Signature</Button>
                 )}
                 <input type="file" ref={signatureInputRef} onChange={e => handlePhotoUpload(e, 'signature')} accept="image/png, image/jpeg" style={{ display: "none" }} />
               </div>
             </Form.Group>
 
-            <h6 className="fw-bold mb-3 border-bottom pb-2">Photos</h6>
             <Form.Group className="mb-4">
+              <Form.Label className="form-label-custom">Photos</Form.Label>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 {formData.photo ? (
                   <>
-                    <div className="border p-2" style={{ width: "200px", height: "150px" }}>
+                    <div className="border p-2" style={{ width: "200px", height: "150px", borderRadius: "8px" }}>
                       <img src={formData.photo} alt="Attached" style={{ maxWidth: "100%", maxHeight: "100%" }} />
                     </div>
                     <Button variant="outline-danger" size="sm" onClick={() => handleRemovePhoto('photo')}><FaTimes /> Remove</Button>
                   </>
                 ) : (
-                  <Button style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5" }} size="sm" onClick={() => fileInputRef.current.click()}><FaCamera /> Add Photo</Button>
+                  <Button style={{ backgroundColor: "#505ece", borderColor: "#505ece", color: "white" }} size="sm" onClick={() => fileInputRef.current.click()}><FaCamera /> Add Photo</Button>
                 )}
                 <input type="file" ref={fileInputRef} onChange={e => handlePhotoUpload(e, 'photo')} accept="image/*" style={{ display: "none" }} />
               </div>
             </Form.Group>
 
-            <h6 className="fw-bold mb-3 border-bottom pb-2">Reference Documents</h6>
             <Form.Group className="mb-4">
+              <Form.Label className="form-label-custom">Reference Documents</Form.Label>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 {formData.attachments && formData.attachments.length > 0 ? (
                   formData.attachments.map((file, index) => (
-                    <div key={index} className="border p-2 position-relative" style={{ width: "400px" }}>
+                    <div key={index} className="border p-2 position-relative" style={{ width: "400px", borderRadius: "8px" }}>
                       <div className="d-flex align-items-center">
                         <span className="text-truncate" style={{ maxWidth: "400px" }} title={file.name}>{file.name}</span>
                         <Button variant="danger" size="sm" className="ms-2" onClick={() => handleRemoveAttachment(index)}><FaTimes /></Button>
@@ -1487,7 +1490,7 @@ const CreateVoucherModal = ({ show, onHide, onExited, onSave, editData, companyI
                     </div>
                   ))
                 ) : (
-                  <Button style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5" }} size="sm" onClick={() => attachmentInputRef.current.click()}>📎 Add File</Button>
+                  <Button style={{ backgroundColor: "#505ece", borderColor: "#505ece", color: "white" }} size="sm" onClick={() => attachmentInputRef.current.click()}>📎 Add File</Button>
                 )}
                 <input
                   type="file"
@@ -1507,16 +1510,16 @@ const CreateVoucherModal = ({ show, onHide, onExited, onSave, editData, companyI
                 <Button variant={printLanguage === "both" ? "primary" : "outline-primary"} size="sm" onClick={() => setPrintLanguage("both")}>English + العربية</Button>
               </div>
               <div className="d-flex gap-2">
-                <Button variant="outline-secondary" className="rounded-pill" onClick={onHide}>Cancel</Button>
+                <Button className="btn-modal-cancel" onClick={onHide}>Cancel</Button>
                 <Button variant="outline-info" onClick={handlePrint}>🖨️ Print</Button>
                 <Button 
-                  style={{ backgroundColor: "#53b2a5", border: "none", borderRadius: "50px", fontWeight: 600 }} 
+                  className="btn-modal-save"
                   onClick={handleSubmit}
-                  disabled={isSaving || !permissions.can_update} // ✅ UPDATED: Disable button when saving or no update permission
+                  disabled={isSaving || !permissions.can_update}
                 >
-                  {isSaving ? ( // ✅ UPDATED: Show spinner when saving
+                  {isSaving ? (
                     <>
-                      <Spinner as="span" animation="border" size="sm" /> Saving...
+                      <Spinner as="span" animation="border" size="sm" className="me-2" /> Saving...
                     </>
                   ) : editData ? "Update Voucher" : "Save Voucher"}
                 </Button>
@@ -1576,9 +1579,11 @@ const VoucherViewModal = ({ show, onHide, onExited, voucher, permissions }) => {
   };
 
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited} centered size="xl">
-      <Modal.Header closeButton><Modal.Title>Voucher Details</Modal.Title></Modal.Header>
-      <Modal.Body>
+    <Modal show={show} onHide={onHide} onExited={onExited} centered size="xl" className="create-voucher-modal">
+      <Modal.Header closeButton className="modal-header-custom">
+        <Modal.Title>Voucher Details</Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="modal-body-custom">
         <div ref={pdfRef} style={{ display: 'none' }}>
           <h2>{voucher.voucherType}</h2>
           <p><strong>From:</strong> {voucher.partyName || voucher.fromAccount}</p>
@@ -1607,11 +1612,13 @@ const VoucherViewModal = ({ show, onHide, onExited, voucher, permissions }) => {
         <p><strong>Total:</strong> ₹{total.toFixed(2)}</p>
         {voucher.signature && <div><h6>Signature:</h6><img src={voucher.signature} alt="sig" style={{ maxWidth: "200px" }} /></div>}
       </Modal.Body>
-      <Modal.Footer>
-        {permissions.can_update && (
-          <Button variant="outline-info" onClick={handlePrint}>🖨️ Print</Button>
-        )}
-        <Button variant="secondary" onClick={onHide}>Close</Button>
+      <Modal.Footer className="modal-footer-custom">
+        <div className="d-flex gap-2">
+          {permissions.can_update && (
+            <Button variant="outline-info" onClick={handlePrint}>🖨️ Print</Button>
+          )}
+          <Button className="btn-modal-cancel" onClick={onHide}>Close</Button>
+        </div>
       </Modal.Footer>
     </Modal>
   );
@@ -1825,25 +1832,34 @@ const CreateVoucher = () => {
   // If user doesn't have view permission, show access denied message
   if (!createVoucherPermissions.can_view) {
     return (
-      <div className="container py-4">
-        <div className="text-center py-5">
-          <h3 className="text-danger">Access Denied</h3>
-          <p>You don't have permission to view the Create Voucher module.</p>
-        </div>
-      </div>
+      <Container fluid className="create-voucher-container py-4">
+        <Card className="create-voucher-table-card">
+          <Card.Body className="text-center py-5">
+            <h3 className="text-danger">Access Denied</h3>
+            <p className="text-muted">You don't have permission to view the Create Voucher module.</p>
+          </Card.Body>
+        </Card>
+      </Container>
     );
   }
 
   return (
-    <div className="container py-4">
+    <Container fluid className="create-voucher-container py-4">
       {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4>Vouchers</h4>
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 className="create-voucher-title">
+            <FaFileInvoice className="me-2" />
+            Vouchers
+          </h4>
+          <p className="create-voucher-subtitle mb-0">Manage and track all your vouchers</p>
+        </div>
         {createVoucherPermissions.can_create && (
           <Button
-            style={{ backgroundColor: "#53b2a5", border: "none", borderRadius: "50px", fontWeight: 600 }}
+            className="btn-create-voucher"
             onClick={() => {
               // Reset cleanup flag
               isCleaningUpRef.current = false;
@@ -1855,57 +1871,76 @@ const CreateVoucher = () => {
               setShowModal(true);
             }}
           >
+            <FaFileInvoice className="me-2" />
             Create Voucher
           </Button>
         )}
       </div>
+
+      {/* Table Card */}
       {loading ? (
-        <div className="text-center my-4">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-2">Loading vouchers...</p>
+        <div className="text-center my-5 loading-container">
+          <Spinner animation="border" variant="primary" className="spinner-custom" />
+          <p className="mt-3">Loading vouchers...</p>
         </div>
       ) : (
-        <div className="table-responsive">
-          <Table bordered hover responsive="sm">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Customer/Vendor</th>
-                <th>Voucher No</th>
-                <th>Amount</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vouchers?.map((v, i) => (
-                <tr key={v.id || i}>
-                  <td>{i + 1}</td>
-                  <td>{v.voucherType}</td>
-                  <td>{v.date}</td>
-                  <td>{v.customerVendor}</td>
-                  <td>{v.voucherNo}</td>
-                  <td>₹{v.items.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}</td>
-                  <td>
-                    {createVoucherPermissions.can_view && (
-                      <button className="btn text-primary" onClick={() => handleView(i)} aria-label="View"><FaEye /></button>
-                    )}
-                    {createVoucherPermissions.can_update && (
-                      <button className="btn text-success" onClick={() => handleEdit(i)} aria-label="Edit"><FaEdit /></button>
-                    )}
-                    {createVoucherPermissions.can_delete && (
-                      <button className="btn text-danger" onClick={() => handleDelete(i)} aria-label="Delete"><FaTrash /></button>
-                    )}
-                  </td>
+        <Card className="create-voucher-table-card">
+          <div className="table-responsive">
+            <Table className="create-voucher-table" hover responsive="sm">
+              <thead className="table-header">
+                <tr>
+                  <th>#</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th>Customer/Vendor</th>
+                  <th>Voucher No</th>
+                  <th>Amount</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-              {vouchers.length === 0 && (
-                <tr><td colSpan="8" className="text-center">No vouchers found for your company</td></tr>
-              )}
-            </tbody>
-          </Table>
-        </div>
+              </thead>
+              <tbody>
+                {vouchers?.length > 0 ? vouchers.map((v, i) => (
+                  <tr key={v.id || i}>
+                    <td>{i + 1}</td>
+                    <td>{v.voucherType}</td>
+                    <td>{v.date}</td>
+                    <td>{v.customerVendor || "N/A"}</td>
+                    <td>{v.voucherNo}</td>
+                    <td className="amount-cell">₹{v.items?.reduce((sum, item) => sum + (item.amount || 0), 0).toFixed(2)}</td>
+                    <td>
+                      <div className="d-flex gap-2">
+                        {createVoucherPermissions.can_view && (
+                          <Button className="btn-action btn-view" onClick={() => handleView(i)} title="View" aria-label="View">
+                            <FaEye />
+                          </Button>
+                        )}
+                        {createVoucherPermissions.can_update && (
+                          <Button className="btn-action btn-edit" onClick={() => handleEdit(i)} title="Edit" aria-label="Edit">
+                            <FaEdit />
+                          </Button>
+                        )}
+                        {createVoucherPermissions.can_delete && (
+                          <Button className="btn-action btn-delete" onClick={() => handleDelete(i)} title="Delete" aria-label="Delete">
+                            <FaTrash />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="7" className="text-center empty-state">
+                      <div>
+                        <FaFileInvoice style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                        <p className="mb-0">No vouchers found for your company</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Card>
       )}
 
       <CreateVoucherModal
@@ -1927,8 +1962,8 @@ const CreateVoucher = () => {
         voucher={viewVoucher}
         permissions={createVoucherPermissions}
       />
-    </div>
-  ); 
+    </Container>
+  );
 };
 
 export default CreateVoucher;

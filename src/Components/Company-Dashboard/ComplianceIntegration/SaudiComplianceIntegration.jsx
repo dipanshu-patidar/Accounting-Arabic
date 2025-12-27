@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Table, Button, Modal, Form, Row, Col, Card, Container, Badge, Alert
+  Table, Button, Modal, Form, Row, Col, Card, Container, Badge, Alert, Spinner
 } from 'react-bootstrap';
 import {
   FaCog, FaSyncAlt, FaEye, FaSave, FaPlug, FaTrash
 } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './SaudiComplianceIntegration.css';
 
 const SaudiComplianceIntegration = () => {
   const companyIdRaw = GetCompanyId();
@@ -194,107 +195,122 @@ const SaudiComplianceIntegration = () => {
     alert(success ? '✅ Connection successful!' : '❌ Connection failed.');
   };
 
-  const getStatusVariant = (integration) => {
+  const getStatusBadgeClass = (integration) => {
     // Infer status from config completeness
     const hasKey = integration.api_key && integration.api_key.trim();
     const hasUrl = integration.endpoint_url && integration.endpoint_url.trim();
-    if (hasKey && hasUrl) return 'success';
-    if (hasKey || hasUrl) return 'warning';
-    return 'danger';
+    if (hasKey && hasUrl) return 'badge-status badge-completed';
+    if (hasKey || hasUrl) return 'badge-status badge-warning';
+    return 'badge-status badge-missing';
   };
 
   const getConfigStatus = (integration) => {
-    return (integration.api_key && integration.api_url) ? 'Completed' : 'Missing Fields';
+    const hasKey = integration.api_key && integration.api_key.trim();
+    const hasUrl = integration.endpoint_url && integration.endpoint_url.trim();
+    if (hasKey && hasUrl) return 'Completed';
+    if (hasKey || hasUrl) return 'Incomplete';
+    return 'Missing Fields';
   };
 
   if (loading) {
     return (
-      <Container fluid className="p-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-        <div className="text-center py-5">Loading compliance integrations...</div>
+      <Container fluid className="p-4 loading-container" style={{ minHeight: '100vh' }}>
+        <div className="text-center py-5">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading compliance integrations...</p>
+        </div>
       </Container>
     );
   }
 
   return (
-    <Container
-      fluid
-      className="p-4"
-      style={{
-        backgroundColor: '#f0f7f8',
-        fontFamily: 'Segoe UI, sans-serif',
-        minHeight: '100vh',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: '25px', textAlign: 'center' }}>
-        <h2 className="fw-bold" style={{ color: '#023347', fontSize: '1.8rem', marginBottom: '8px' }}>
+    <Container fluid className="p-4 saudi-compliance-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="saudi-compliance-title">
+          <i className="fas fa-plug me-2"></i>
           Saudi Compliance Integration Readiness
-        </h2>
-        <p style={{ color: '#2a8e9c', fontSize: '0.95rem', marginBottom: '0' }}>
-          Manage and monitor integration readiness with Saudi regulatory systems.
+        </h3>
+        <p className="saudi-compliance-subtitle">
+          Manage and monitor integration readiness with Saudi regulatory systems
         </p>
       </div>
 
       {/* Error Alert */}
-      {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
+      {error && (
+        <Alert variant="danger" className="mb-3 error-alert">
+          {error}
+        </Alert>
+      )}
 
       {/* Add New Button */}
       <div className="d-flex justify-content-end mb-3">
         <Button
-          style={{ backgroundColor: '#023347', border: 'none' }}
+          className="btn-add-integration"
           onClick={() => openModal()}
         >
-          <FaCog className="me-1" /> Add New Integration
+          <FaCog /> Add New Integration
         </Button>
       </div>
 
-      {/* Table */}
-      <Card className="shadow-lg border-0">
-        <Card.Body style={{ padding: '15px' }}>
+      {/* Table Card */}
+      <Card className="saudi-compliance-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
           <div className="table-responsive">
-            <Table hover className="align-middle text-nowrap" style={{ fontSize: '0.9rem' }}>
-              <thead style={{ backgroundColor: '#e6f3f5', color: '#023347' }}>
+            <Table hover responsive className="saudi-compliance-table">
+              <thead className="table-header">
                 <tr>
                   <th>Integration</th>
                   <th>API Key</th>
                   <th>Configuration</th>
-                  <th className="text-end">Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {integrations.length > 0 ? (
+                {integrations.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="text-center text-muted py-4">
+                      <div className="empty-state">
+                        <i className="fas fa-plug"></i>
+                        <p>No compliance integrations configured</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
                   integrations.map((int) => (
                     <tr key={int.id}>
                       <td>
-                        <div style={{ fontWeight: '600', color: '#023347' }}>{int.integration_name}</div>
-                        <div className="text-muted small">{int.notes || 'No description'}</div>
+                        <div className="integration-name">{int.integration_name}</div>
+                        <div className="integration-description">{int.notes || 'No description'}</div>
                       </td>
-                      <td style={{ fontFamily: 'monospace' }}>{maskApiKey(int.api_key)}</td>
                       <td>
-                        <Badge bg={getStatusVariant(int) === 'success' ? 'success' : 'danger'}>
+                        <span className="api-key-masked">{maskApiKey(int.api_key)}</span>
+                      </td>
+                      <td>
+                        <Badge className={getStatusBadgeClass(int)}>
                           {getConfigStatus(int)}
                         </Badge>
                       </td>
-                      <td className="text-end">
-                        <div className="d-flex justify-content-end gap-2">
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
                           <Button
-                            size="sm"
-                            variant="outline-primary"
+                            className="btn-action btn-edit"
                             onClick={() => openModal(int)}
+                            title="Edit Integration"
                           >
                             <FaCog />
                           </Button>
                           <Button
-                            size="sm"
-                            variant="outline-secondary"
+                            className="btn-action btn-test"
                             onClick={() => testConnection(int.integration_name)}
+                            title="Test Connection"
                           >
                             <FaPlug />
                           </Button>
                           <Button
-                            size="sm"
-                            variant="outline-danger"
+                            className="btn-action btn-delete"
                             onClick={() => handleDelete(int)}
+                            title="Delete Integration"
                           >
                             <FaTrash />
                           </Button>
@@ -302,12 +318,6 @@ const SaudiComplianceIntegration = () => {
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="text-center text-muted py-3">
-                      No compliance integrations configured.
-                    </td>
-                  </tr>
                 )}
               </tbody>
             </Table>
@@ -322,30 +332,25 @@ const SaudiComplianceIntegration = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         centered
+        className="saudi-compliance-modal"
       >
-        <Modal.Header
-          closeButton
-          style={{
-            backgroundColor: '#e6f3f5',
-            color: '#023347',
-            borderBottom: '1px solid #d1e6e9',
-          }}
-        >
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>
             {editingIntegration ? 'Edit Integration' : 'Add New Integration'}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ padding: '20px' }}>
-          {error && <Alert variant="danger">{error}</Alert>}
+        <Modal.Body className="modal-body-custom">
+          {error && <Alert variant="danger" className="error-alert">{error}</Alert>}
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Integration Name *</Form.Label>
+              <Form.Label className="form-label-custom">Integration Name *</Form.Label>
               <Form.Control
                 type="text"
                 name="name"
                 placeholder="e.g., Zakat, Tax and Customs Authority"
                 value={formData.name}
                 onChange={handleInputChange}
+                className="form-control-custom"
                 required
               />
             </Form.Group>
@@ -353,50 +358,54 @@ const SaudiComplianceIntegration = () => {
             <Row>
               <Col xs={12} md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>API Key *</Form.Label>
+                  <Form.Label className="form-label-custom">API Key *</Form.Label>
                   <Form.Control
                     type="text"
                     name="apiKey"
                     placeholder="Enter API key"
                     value={formData.apiKey}
                     onChange={handleInputChange}
+                    className="form-control-custom"
                     required
                   />
                 </Form.Group>
               </Col>
               <Col xs={12} md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Endpoint URL</Form.Label>
+                  <Form.Label className="form-label-custom">Endpoint URL</Form.Label>
                   <Form.Control
                     type="text"
                     name="endpointUrl"
                     placeholder="https://api.example.com"
                     value={formData.endpointUrl}
                     onChange={handleInputChange}
+                    className="form-control-custom"
                   />
                 </Form.Group>
               </Col>
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Username</Form.Label>
+              <Form.Label className="form-label-custom">Username</Form.Label>
               <Form.Control
                 type="text"
                 name="username"
                 placeholder="API username"
                 value={formData.username}
                 onChange={handleInputChange}
+                className="form-control-custom"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Password</Form.Label>
+              <Form.Label className="form-label-custom">Password</Form.Label>
               <Form.Control
                 type="password"
                 name="password"
                 placeholder={editingIntegration ? "••••••••" : "Enter new password"}
                 value={formData.password}
                 onChange={handleInputChange}
+                className="form-control-custom"
               />
               {editingIntegration && (
                 <Form.Text className="text-muted">
@@ -406,7 +415,7 @@ const SaudiComplianceIntegration = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Notes</Form.Label>
+              <Form.Label className="form-label-custom">Notes</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -414,20 +423,18 @@ const SaudiComplianceIntegration = () => {
                 placeholder="Additional notes or instructions..."
                 value={formData.notes}
                 onChange={handleInputChange}
+                className="form-control-custom"
               />
             </Form.Group>
           </Form>
         </Modal.Body>
 
-        <Modal.Footer style={{ borderTop: '1px solid #d1e6e9' }}>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button
-            style={{ backgroundColor: '#023347', border: 'none' }}
-            onClick={handleSaveConfig}
-          >
-            <FaSave className="me-2" /> Save
+          <Button className="btn-modal-save" onClick={handleSaveConfig}>
+            <FaSave /> Save
           </Button>
         </Modal.Footer>
       </Modal>

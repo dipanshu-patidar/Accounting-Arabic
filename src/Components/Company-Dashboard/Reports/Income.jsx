@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Tab, Button, Form, Card } from "react-bootstrap";
+import { Tabs, Tab, Button, Form, Card, Modal, Container, Table, Row, Col, Spinner } from "react-bootstrap";
 import {
   FaFilePdf,
   FaFileExcel,
@@ -8,6 +8,8 @@ import {
   FaEdit,
   FaTrash,
   FaSearch,
+  FaMoneyBillWave,
+  FaFile,
 } from "react-icons/fa";
 import axiosInstance from "../../../Api/axiosInstance";
 import Swal from "sweetalert2";
@@ -16,6 +18,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './Income.css';
 
 const Income = () => {
   const companyId = GetCompanyId();
@@ -654,109 +657,112 @@ const Income = () => {
   // If user doesn't have view permission, show access denied message
   if (!incomePermissions.can_view) {
     return (
-      <div className="p-4 mt-1 product-header">
-        <div className="text-center py-5">
-          <h3 className="text-danger">Access Denied</h3>
-          <p>You don't have permission to view the Income module.</p>
-        </div>
-      </div>
+      <Container fluid className="income-container py-4">
+        <Card className="income-table-card">
+          <Card.Body className="text-center py-5">
+            <h3 className="text-danger">Access Denied</h3>
+            <p className="text-muted">You don't have permission to view the Income module.</p>
+          </Card.Body>
+        </Card>
+      </Container>
     );
   }
 
   return (
-    <div className="p-4 mt-1 product-header">
+    <Container fluid className="income-container py-4">
       {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       
-      {/* Header */}
-      <div className="d-flex justify-content-between gap-4 mb-4">
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h5 className="fw-bold mb-1">Income Voucher</h5>
-          <p className="text-muted mb-0">Manage your income receipts</p>
+          <h4 className="income-title">
+            <FaMoneyBillWave className="me-2" />
+            Income Voucher
+          </h4>
+          <p className="income-subtitle mb-0">Manage and track all your income receipts</p>
         </div>
         <div className="d-flex align-items-center gap-2 flex-wrap">
-          <button className="btn btn-light border text-danger">
-            <FaFilePdf />
-          </button>
-          <button className="btn btn-light border text-success">
-            <FaFileExcel />
-          </button>
+          <Button className="btn-export-pdf">
+            <FaFilePdf className="me-2" /> PDF
+          </Button>
+          <Button className="btn-export-excel">
+            <FaFileExcel className="me-2" /> Excel
+          </Button>
           {incomePermissions.can_create && (
-            <button
-              className="btn text-white d-flex align-items-center gap-2"
-              style={{ backgroundColor: "#3daaaa" }}
+            <Button
+              className="btn-add-voucher d-flex align-items-center"
               onClick={() => setShowCreateModal(true)}
               disabled={fetching}
             >
-              <FaPlusCircle /> Create Income Voucher
-            </button>
+              <FaPlusCircle className="me-2" />
+              Create Income Voucher
+            </Button>
           )}
         </div>
       </div>
 
       {/* Filters */}
-      <div className="border p-3 rounded shadow-sm mb-4">
-        <div className="row g-3">
-          <div className="col-md-4">
-            <label className="form-label fw-semibold">Receipt No</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by Receipt No..."
-              value={filters.receiptNo}
-              onChange={(e) =>
-                setFilters({ ...filters, receiptNo: e.target.value })
-              }
-            />
-          </div>
-          <div className="col-md-4">
-            <label className="form-label fw-semibold">Account</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by Account..."
-              value={filters.accountName}
-              onChange={(e) =>
-                setFilters({ ...filters, accountName: e.target.value })
-              }
-            />
-          </div>
-          <div className="col-md-4">
-            <label className="form-label fw-semibold">Deposited To</label>
-            {accountsLoading ? ( // ✅ Changed from customersLoading to accountsLoading
-              <div className="d-flex align-items-center">
-                <div className="spinner-border spinner-border-sm me-2" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-                <span>Loading accounts...</span>
-              </div>
-            ) : (
-              <select
-                className="form-select"
-                value={filters.depositedTo}
+      <Card className="filter-card mb-4 shadow-sm">
+        <Card.Body className="p-4">
+          <Row className="g-3">
+            <Col md={4}>
+              <Form.Label className="filter-label">Receipt No</Form.Label>
+              <Form.Control
+                type="text"
+                className="filter-input"
+                placeholder="Search by Receipt No..."
+                value={filters.receiptNo}
                 onChange={(e) =>
-                  setFilters({ ...filters, depositedTo: e.target.value })
+                  setFilters({ ...filters, receiptNo: e.target.value })
                 }
-              >
-                <option value="">All</option>
-                {accounts.map((acc) => ( // ✅ Changed from customers to accounts
-                  <option key={acc.id} value={acc.id}>
-                    {acc.display_name || acc.bank_name_branch}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
-      </div>
+              />
+            </Col>
+            <Col md={4}>
+              <Form.Label className="filter-label">Account</Form.Label>
+              <Form.Control
+                type="text"
+                className="filter-input"
+                placeholder="Search by Account..."
+                value={filters.accountName}
+                onChange={(e) =>
+                  setFilters({ ...filters, accountName: e.target.value })
+                }
+              />
+            </Col>
+            <Col md={4}>
+              <Form.Label className="filter-label">Deposited To</Form.Label>
+              {accountsLoading ? (
+                <div className="d-flex align-items-center">
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  <span>Loading accounts...</span>
+                </div>
+              ) : (
+                <Form.Select
+                  className="filter-select"
+                  value={filters.depositedTo}
+                  onChange={(e) =>
+                    setFilters({ ...filters, depositedTo: e.target.value })
+                  }
+                >
+                  <option value="">All</option>
+                  {accounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.display_name || acc.bank_name_branch}
+                    </option>
+                  ))}
+                </Form.Select>
+              )}
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {/* Loading */}
       {fetching ? (
-        <div className="text-center my-4">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-2">Loading income vouchers...</p>
+        <div className="text-center my-5">
+          <Spinner animation="border" variant="primary" style={{ color: "#505ece" }} />
+          <p className="mt-3">Loading income vouchers...</p>
         </div>
       ) : (
         <>
@@ -766,73 +772,84 @@ const Income = () => {
             className="mb-3"
           >
             <Tab eventKey="direct" title="All Income Vouchers">
-              <div className="table-responsive">
-                {filteredVouchers.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted">No income vouchers found.</p>
-                  </div>
-                ) : (
-                  <table className="table table-bordered text-center align-middle mb-0">
-                    <thead className="">
-                      <tr>
-                        <th>DATE</th>
-                        <th>AUTO RECEIPT NO</th>
-                        <th>MANUAL RECEIPT NO</th>
-                        <th>DEPOSITED TO</th>
-                        <th>RECEIVED FROM</th>
-                        <th>TOTAL AMOUNT</th>
-                        <th>NARRATION</th>
-                        <th>STATUS</th>
-                        <th>ACTION</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredVouchers.map((voucher) => (
-                        <tr key={voucher.id}>
-                          <td>{voucher.date}</td>
-                          <td>{voucher.autoReceiptNo}</td>
-                          <td>{voucher.manualReceiptNo}</td>
-                          <td>{getAccountName(voucher.depositedTo)}</td> {/* ✅ Changed to getAccountName */}
-                          <td>{getCustomerName(voucher.receivedFromId)}</td>
-                          <td>{voucher.totalAmount}</td>
-                          <td>{voucher.narration}</td>
-                          <td>
-                            <span className={getStatusBadge(voucher.status)}>
-                              {voucher.status}
-                            </span>
-                          </td>
-                          <td className="d-flex gap-2 justify-content-center">
-                            {incomePermissions.can_view && (
-                              <button
-                                className="btn btn-sm text-info"
-                                onClick={() => handleView(voucher)}
-                              >
-                                <FaEye />
-                              </button>
-                            )}
-                            {incomePermissions.can_update && (
-                              <button
-                                className="btn btn-sm text-warning"
-                                onClick={() => handleEdit(voucher)}
-                              >
-                                <FaEdit />
-                              </button>
-                            )}
-                            {incomePermissions.can_delete && (
-                              <button
-                                className="btn btn-sm text-danger"
-                                onClick={() => handleDelete(voucher)}
-                              >
-                                <FaTrash />
-                              </button>
-                            )}
-                          </td>
+              <Card className="income-table-card">
+                <div className="table-responsive">
+                  {filteredVouchers.length === 0 ? (
+                    <div className="text-center py-5">
+                      <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                      <p className="text-muted mb-0">No income vouchers found.</p>
+                    </div>
+                  ) : (
+                    <Table className="income-table align-middle mb-0">
+                      <thead className="table-header">
+                        <tr>
+                          <th>DATE</th>
+                          <th>AUTO RECEIPT NO</th>
+                          <th>MANUAL RECEIPT NO</th>
+                          <th>DEPOSITED TO</th>
+                          <th>RECEIVED FROM</th>
+                          <th>TOTAL AMOUNT</th>
+                          <th>NARRATION</th>
+                          <th>STATUS</th>
+                          <th>ACTION</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+                      </thead>
+                      <tbody>
+                        {filteredVouchers.map((voucher) => (
+                          <tr key={voucher.id}>
+                            <td>{voucher.date}</td>
+                            <td><strong>{voucher.autoReceiptNo}</strong></td>
+                            <td>{voucher.manualReceiptNo || "-"}</td>
+                            <td>{getAccountName(voucher.depositedTo)}</td>
+                            <td>{getCustomerName(voucher.receivedFromId)}</td>
+                            <td className="amount-cell">₹{Number(voucher.totalAmount || 0).toLocaleString("en-IN")}</td>
+                            <td>{voucher.narration || "-"}</td>
+                            <td>
+                              <span className={getStatusBadge(voucher.status)}>
+                                {voucher.status}
+                              </span>
+                            </td>
+                            <td className="text-center">
+                              <div className="d-flex gap-2 justify-content-center">
+                                {incomePermissions.can_view && (
+                                  <Button
+                                    size="sm"
+                                    className="btn-action btn-view"
+                                    onClick={() => handleView(voucher)}
+                                    title="View"
+                                  >
+                                    <FaEye />
+                                  </Button>
+                                )}
+                                {incomePermissions.can_update && (
+                                  <Button
+                                    size="sm"
+                                    className="btn-action btn-edit"
+                                    onClick={() => handleEdit(voucher)}
+                                    title="Edit"
+                                  >
+                                    <FaEdit />
+                                  </Button>
+                                )}
+                                {incomePermissions.can_delete && (
+                                  <Button
+                                    size="sm"
+                                    className="btn-action btn-delete"
+                                    onClick={() => handleDelete(voucher)}
+                                    title="Delete"
+                                  >
+                                    <FaTrash />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  )}
+                </div>
+              </Card>
             </Tab>
           </Tabs>
 
@@ -841,95 +858,66 @@ const Income = () => {
               Showing 1 to {filteredVouchers.length} of {incomeVouchers.length}{" "}
               results
             </span>
-            <nav>
-              <ul className="pagination pagination-sm mb-0">
-                <li className="page-item disabled">
-                  <button className="page-link">&laquo;</button>
-                </li>
-                <li className="page-item active">
-                  <button
-                    className="page-link"
-                    style={{ backgroundColor: "#3daaaa" }}
-                  >
-                    1
-                  </button>
-                </li>
-                <li className="page-item">
-                  <button className="page-link">2</button>
-                </li>
-                <li className="page-item">
-                  <button className="page-link">&raquo;</button>
-                </li>
-              </ul>
-            </nav>
           </div>
         </>
       )}
 
       {/* CREATE MODAL */}
       {incomePermissions.can_create && (
-        <div
-          className={`modal fade ${showCreateModal ? "show" : ""}`}
-          style={{
-            display: showCreateModal ? "block" : "none",
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          tabIndex="-1"
+        <Modal
+          show={showCreateModal}
+          onHide={() => setShowCreateModal(false)}
+          centered
+          size="lg"
+          className="income-modal"
         >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header border-0">
-                <h5 className="modal-title fw-bold">Create Income Voucher</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowCreateModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={handleSubmit}>
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold">
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Create Income Voucher</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="modal-body-custom">
+            <form onSubmit={handleSubmit}>
+                  <Row className="mb-3">
+                    <Col md={6}>
+                      <Form.Label className="form-label-custom">
                         Auto Receipt No
-                      </label>
-                      <input
+                      </Form.Label>
+                      <Form.Control
                         type="text"
-                        className="form-control"
+                        className="form-control-custom"
                         value={autoReceiptNo}
                         readOnly
                       />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold">
+                    </Col>
+                    <Col md={6}>
+                      <Form.Label className="form-label-custom">
                         Manual Receipt No
-                      </label>
-                      <input
+                      </Form.Label>
+                      <Form.Control
                         type="text"
-                        className="form-control"
+                        className="form-control-custom"
                         value={manualReceiptNo}
                         onChange={(e) => setManualReceiptNo(e.target.value)}
                         placeholder="Enter manual receipt number"
                       />
-                    </div>
-                  </div>
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold">
+                    </Col>
+                  </Row>
+                  <Row className="mb-3">
+                    <Col md={6}>
+                      <Form.Label className="form-label-custom">
                         Voucher Date
-                      </label>
-                      <input
+                      </Form.Label>
+                      <Form.Control
                         type="date"
-                        className="form-control"
+                        className="form-control-custom"
                         name="voucherDate"
                         defaultValue={new Date().toISOString().split("T")[0]}
                         required
                       />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold">
+                    </Col>
+                    <Col md={6}>
+                      <Form.Label className="form-label-custom">
                         Deposited To
-                      </label>
+                      </Form.Label>
                       {accountsLoading ? ( // ✅ Changed from customersLoading to accountsLoading
                         <div className="d-flex align-items-center">
                           <div className="spinner-border spinner-border-sm me-2" role="status">
@@ -965,13 +953,13 @@ const Income = () => {
                           </button>
                         </div>
                       )}
-                    </div>
-                  </div>
-                  <div className="row mb-3">
-                    <div className="col-md-12">
-                      <label className="form-label fw-semibold">
+                    </Col>
+                  </Row>
+                  <Row className="mb-3">
+                    <Col md={12}>
+                      <Form.Label className="form-label-custom">
                         Received From
-                      </label>
+                      </Form.Label>
                       <div className="customer-search-container position-relative">
                         <div className="input-group">
                           <input
@@ -1046,8 +1034,8 @@ const Income = () => {
                           </button>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </Col>
+                  </Row>
 
                   <div className="mb-3">
                     <table className="table table-bordered">
@@ -1132,13 +1120,13 @@ const Income = () => {
                   </div>
 
                   <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
-                    <button
+                    <Button
                       type="button"
-                      className="btn btn-outline-secondary btn-sm"
+                      className="btn-add-row btn-sm"
                       onClick={handleAddRow}
                     >
                       + Add Row
-                    </button>
+                    </Button>
                     <div className="form-check d-flex align-items-center gap-2 mb-0">
                       <input
                         className="form-check-input mb-0"
@@ -1170,54 +1158,51 @@ const Income = () => {
                   )}
 
                   <div className="d-flex justify-content-end gap-2">
-                    <button
+                    <Button
+                      type="button"
+                      className="btn-modal-cancel"
+                      onClick={() => setShowCreateModal(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
                       type="submit"
-                      className="btn"
-                      style={{ backgroundColor: "#3daaaa", color: "white" }}
+                      className="btn-modal-save"
                       disabled={loading}
                     >
                       {loading ? (
                         <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          ></span>
+                          <Spinner
+                            as="span"
+                            animation="border"
+                            size="sm"
+                            className="me-2"
+                          />
                           Saving...
                         </>
                       ) : (
                         "Save"
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </form>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+        </Modal>
       )}
 
       {/* VIEW MODAL */}
       {incomePermissions.can_view && (
-        <div
-          className={`modal fade ${showViewModal ? "show" : ""}`}
-          style={{
-            display: showViewModal ? "block" : "none",
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          tabIndex="-1"
+        <Modal
+          show={showViewModal}
+          onHide={() => setShowViewModal(false)}
+          centered
+          size="lg"
+          className="income-modal"
         >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Income Voucher Details</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowViewModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Income Voucher Details</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="modal-body-custom">
                 {selectedVoucher && (
                   <div>
                     <table className="table table-bordered">
@@ -1301,33 +1286,28 @@ const Income = () => {
                     </table>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+          <Modal.Footer className="modal-footer-custom">
+            <Button className="btn-modal-cancel" onClick={() => setShowViewModal(false)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
       )}
 
       {/* EDIT MODAL */}
       {incomePermissions.can_update && (
-        <div
-          className={`modal fade ${showEditModal ? "show" : ""}`}
-          style={{
-            display: showEditModal ? "block" : "none",
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          tabIndex="-1"
+        <Modal
+          show={showEditModal}
+          onHide={() => setShowEditModal(false)}
+          centered
+          size="lg"
+          className="income-modal"
         >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header border-0">
-                <h5 className="modal-title">Edit Income Voucher</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowEditModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Edit Income Voucher</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="modal-body-custom">
                 {editVoucher && (
                   <form onSubmit={handleEditSubmit}>
                     <div className="row mb-3">
@@ -1431,54 +1411,48 @@ const Income = () => {
                       </div>
                     </div>
                     <div className="d-flex justify-content-end gap-3 mt-4">
-                      <button
+                      <Button
                         type="button"
-                        className="btn btn-outline-secondary"
+                        className="btn-modal-cancel"
                         onClick={() => setShowEditModal(false)}
                       >
                         Cancel
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="submit"
-                        className="btn"
-                        style={{ backgroundColor: "#3daaaa", color: "white" }}
+                        className="btn-modal-save"
                         disabled={loading}
                       >
                         {loading ? (
                           <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              role="status"
-                              aria-hidden="true"
-                            ></span>
+                            <Spinner
+                              as="span"
+                              animation="border"
+                              size="sm"
+                              className="me-2"
+                            />
                             Saving...
                           </>
                         ) : (
                           "Save Changes"
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+        </Modal>
       )}
 
       {/* DELETE MODAL */}
       {incomePermissions.can_delete && (
-        <div
-          className={`modal fade ${showDeleteModal ? "show" : ""}`}
-          style={{
-            display: showDeleteModal ? "block" : "none",
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          tabIndex="-1"
+        <Modal
+          show={showDeleteModal}
+          onHide={() => setShowDeleteModal(false)}
+          centered
+          className="income-modal"
         >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0" style={{ borderRadius: 16 }}>
-              <div className="modal-body text-center py-4">
+          <Modal.Body className="modal-body-custom text-center py-4">
                 <div
                   className="mx-auto mb-3"
                   style={{
@@ -1498,66 +1472,37 @@ const Income = () => {
                   Are you sure you want to delete this income voucher?
                 </p>
                 <div className="d-flex justify-content-center gap-3">
-                  <button
-                    className="btn btn-dark"
+                  <Button
+                    className="btn-modal-cancel"
                     onClick={() => setShowDeleteModal(false)}
                   >
-                    No, Cancel
-                  </button>
-                  <button
-                    className="btn"
-                    style={{
-                      background: "#3daaaa",
-                      color: "#fff",
-                      fontWeight: 600,
-                    }}
+                    Cancel
+                  </Button>
+                  <Button
+                    className="btn-modal-delete"
                     onClick={confirmDelete}
                     disabled={loading}
                   >
                     {loading ? (
                       <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        ></span>
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          className="me-2"
+                        />
                         Deleting...
                       </>
                     ) : (
                       "Yes, Delete"
                     )}
-                  </button>
+                  </Button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+        </Modal>
       )}
 
-      {/* Page Info */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">
-            Page Info
-          </h5>
-          <ul
-            className="text-muted fs-6 mb-0"
-            style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
-          >
-            <li>
-              Create and manage income vouchers for various revenue sources.
-            </li>
-            <li>
-              Each voucher has both auto-generated and manual receipt numbers
-              for tracking.
-            </li>
-            <li>
-              Helps maintain accurate financial records and income tracking.
-            </li>
-          </ul>
-        </Card.Body>
-      </Card>
-    </div>
+    </Container>
   );
 };
 

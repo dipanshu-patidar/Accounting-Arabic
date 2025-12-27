@@ -7,6 +7,11 @@ import {
   Badge,
   Card,
   Modal,
+  Row,
+  Col,
+  Table,
+  Spinner,
+  Container,
 } from "react-bootstrap";
 import {
   FaFilePdf,
@@ -15,6 +20,11 @@ import {
   FaEye,
   FaEdit,
   FaTrash,
+  FaSearch,
+  FaFilter,
+  FaTimes,
+  FaFile,
+  FaPlus,
 } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min";
@@ -22,6 +32,7 @@ import BaseUrl from "../../../Api/BaseUrl";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './Expense.css';
 
 const Expense = () => {
   const companyId = GetCompanyId();
@@ -35,6 +46,7 @@ const Expense = () => {
     manualReceiptNo: "",
     paidFrom: "",
   });
+  const [showFilters, setShowFilters] = useState(false);
 
   // State for table rows
   const [tableRows, setTableRows] = useState([
@@ -238,7 +250,20 @@ const Expense = () => {
     }
   }, [showCreateModal, expenseVouchers, accounts]);
 
-  const getStatusBadge = () => "badge bg-success";
+  const getStatusBadge = (status) => {
+    return (
+      <span className="status-badge status-badge-paid">Paid</span>
+    );
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      accountName: "",
+      paymentNo: "",
+      manualReceiptNo: "",
+      paidFrom: "",
+    });
+  };
 
   // Calculate total amount safely
   const calculateTotal = () => {
@@ -522,123 +547,205 @@ const Expense = () => {
   // If user doesn't have permission to view expenses, show access denied message
   if (!hasPermission || !expensePermissions.can_view) {
     return (
-      <div className="p-4 mt-1 product-header">
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
-          <div className="text-center">
+      <Container fluid className="expense-container py-4">
+        <Card className="expense-table-card">
+          <Card.Body className="text-center py-5">
             <h3 className="text-danger">Access Denied</h3>
-            <p>You don't have permission to view the Expense module.</p>
-          </div>
-        </div>
-      </div>
+            <p className="text-muted">You don't have permission to view the Expense module.</p>
+          </Card.Body>
+        </Card>
+      </Container>
     );
   }
 
   return (
-    <div className="p-4 mt-1 product-header">
-      {/* Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-      
-      {/* Header */}
-      <div className="d-flex justify-content-between gap-4 mb-4">
-        <div><h5 className="fw-bold mb-1">Expense Voucher</h5></div>
-        <div className="d-flex align-items-center gap-2 flex-wrap">
-          <button className="btn btn-light border text-danger"><FaFilePdf /></button>
-          <button className="btn btn-light border text-success"><FaFileExcel /></button>
+    <Container fluid className="expense-container py-4">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="expense-title">
+          <i className="fas fa-money-bill-wave me-2"></i>
+          Expense Voucher Management
+        </h3>
+        <p className="expense-subtitle">Manage and track all expense vouchers</p>
+      </div>
+
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <Form.Control
+              className="search-input"
+              placeholder="Search by payment no, account name..."
+              value={filters.paymentNo}
+              onChange={(e) => setFilters({ ...filters, paymentNo: e.target.value })}
+            />
+          </div>
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2">
+          <Button
+            className="d-flex align-items-center btn-export"
+            onClick={() => {
+              let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+              csvContent += "Payment No,Account,Paid From,Total Amount,Date\n";
+              filteredExpenses.forEach(exp => {
+                csvContent += `"${exp.auto_receipt_no}","${exp.items?.[0]?.account_name || ''}","${getPaidFromAccountName(exp.paid_from_account_id)}","${exp.total_amount}","${formatDate(exp.voucher_date)}"\n`;
+              });
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement("a");
+              link.setAttribute("href", encodedUri);
+              link.setAttribute("download", "Expense-Vouchers.csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+          >
+            <FaFile className="me-2" /> Export
+          </Button>
           {expensePermissions.can_create && (
-            <button
-              className="btn text-white d-flex align-items-center gap-2"
-              style={{ backgroundColor: "#3daaaa" }}
+            <Button
+              className="d-flex align-items-center btn-add-voucher"
               onClick={() => {
                 isCleaningUpRef.current = false;
                 modalKeyRef.current.create += 1;
                 setShowCreateModal(true);
               }}
             >
-              <FaPlusCircle /> Create Voucher
-            </button>
+              <FaPlus className="me-2" />
+              Create Voucher
+            </Button>
           )}
-        </div>
+        </Col>
+      </Row>
+
+      {/* Filter Toggle */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button
+          variant="outline-secondary"
+          size="sm"
+          className="btn-toggle-filters"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <FaFilter className="me-2" />
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </Button>
       </div>
 
-      {/* Filters */}
-      <div className="border p-4 rounded shadow-sm mb-3">
-        <div className="row g-3">
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">Payment No</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by Payment No..."
-              value={filters.paymentNo}
-              onChange={(e) => setFilters({ ...filters, paymentNo: e.target.value })}
-            />
-          </div>
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">Account</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by Account..."
-              value={filters.accountName}
-              onChange={(e) => setFilters({ ...filters, accountName: e.target.value })}
-            />
-          </div>
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">Paid From</label>
-            <select
-              className="form-select"
-              value={filters.paidFrom}
-              onChange={(e) => setFilters({ ...filters, paidFrom: e.target.value })}
-            >
-              <option value="">All</option>
-              {accounts.map(account => (
-                <option key={`filter-${account.id}`} value={account.id}>
-                  {account?.parent_account?.subgroup_name || 'N/A'} ({account?.sub_of_subgroup?.name || 'N/A'})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-3">
-            <label className="form-label fw-semibold">Manual Receipt No</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by Manual Receipt No..."
-              value={filters.manualReceiptNo}
-              onChange={(e) => setFilters({ ...filters, manualReceiptNo: e.target.value })}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Advanced Filters */}
+      {showFilters && (
+        <Card className="mb-4 filter-card border-0 shadow-lg">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold filter-title">
+                <FaFilter className="me-2" />
+                Filter Expense Vouchers
+              </h5>
+              <Button variant="outline-secondary" size="sm" className="btn-clear-filters" onClick={clearFilters}>
+                <FaTimes className="me-1" /> Clear All
+              </Button>
+            </div>
+            <Row className="g-3">
+              <Col md={3}>
+                <Form.Label className="filter-label">Payment No</Form.Label>
+                <Form.Control
+                  className="filter-input"
+                  type="text"
+                  placeholder="Search by Payment No..."
+                  value={filters.paymentNo}
+                  onChange={(e) => setFilters({ ...filters, paymentNo: e.target.value })}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Account</Form.Label>
+                <Form.Control
+                  className="filter-input"
+                  type="text"
+                  placeholder="Search by Account..."
+                  value={filters.accountName}
+                  onChange={(e) => setFilters({ ...filters, accountName: e.target.value })}
+                />
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Paid From</Form.Label>
+                <Form.Select
+                  className="filter-select"
+                  value={filters.paidFrom}
+                  onChange={(e) => setFilters({ ...filters, paidFrom: e.target.value })}
+                >
+                  <option value="">All Accounts</option>
+                  {accounts.map(account => (
+                    <option key={`filter-${account.id}`} value={account.id}>
+                      {account?.parent_account?.subgroup_name || 'N/A'} ({account?.sub_of_subgroup?.name || 'N/A'})
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={3}>
+                <Form.Label className="filter-label">Manual Receipt No</Form.Label>
+                <Form.Control
+                  className="filter-input"
+                  type="text"
+                  placeholder="Search by Manual Receipt No..."
+                  value={filters.manualReceiptNo}
+                  onChange={(e) => setFilters({ ...filters, manualReceiptNo: e.target.value })}
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
 
-      {/* Tabs */}
-      <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-3">
-        <Tab eventKey="direct" title="All Vouchers">
-          <div className="table-responsive">
-            <table className="table table-bordered text-center align-middle mb-0">
-              <thead className="">
+      {/* Table */}
+      <Card className="expense-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
+          <div style={{ overflowX: "auto" }}>
+            <Table responsive className="expense-table align-middle" style={{ fontSize: 16 }}>
+              <thead className="table-header">
                 <tr>
-                  <th>DATE</th>
-                  <th>AUTO RECEIPT NO</th>
-                  <th>MANUAL RECEIPT NO</th>
-                  <th>PAID FROM</th>
-                  <th>ACCOUNTS</th>
-                  <th>TOTAL AMOUNT</th>
-                  <th>STATUS</th>
-                  <th>NARRATION</th>
-                  <th>ACTION</th>
+                  <th className="py-3">DATE</th>
+                  <th className="py-3">AUTO RECEIPT NO</th>
+                  <th className="py-3">MANUAL RECEIPT NO</th>
+                  <th className="py-3">PAID FROM</th>
+                  <th className="py-3">ACCOUNTS</th>
+                  <th className="py-3">TOTAL AMOUNT</th>
+                  <th className="py-3">STATUS</th>
+                  <th className="py-3">NARRATION</th>
+                  <th className="py-3 text-center">ACTION</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && !vouchersLoaded ? (
-                  <tr><td colSpan="9" className="text-center py-3"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div></td></tr>
+                  <tr>
+                    <td colSpan="9" className="text-center py-4">
+                      <Spinner animation="border" style={{ color: "#505ece" }} />
+                    </td>
+                  </tr>
                 ) : filteredExpenses.length === 0 ? (
-                  <tr><td colSpan="9" className="text-center py-3">No expense vouchers found</td></tr>
+                  <tr>
+                    <td colSpan="9" className="text-center py-5">
+                      <div>
+                        <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                        <p className="text-muted mb-0">No expense vouchers found</p>
+                      </div>
+                    </td>
+                  </tr>
                 ) : (
                   filteredExpenses.map((exp, idx) => (
                     <tr key={exp.id || idx}>
                       <td>{formatDate(exp.voucher_date)}</td>
-                      <td>{exp.auto_receipt_no}</td>
+                      <td><strong>{exp.auto_receipt_no}</strong></td>
                       <td>{exp.manual_receipt_no || "-"}</td>
                       <td>{getPaidFromAccountName(exp.paid_from_account_id)}</td>
                       <td>
@@ -648,24 +755,30 @@ const Expense = () => {
                           </div>
                         ))}
                       </td>
-                      <td>{exp.total_amount}</td>
-                      <td><span className={getStatusBadge()}>Paid</span></td>
-                      <td>{exp.narration}</td>
-                      <td>
-                        <div className="d-flex justify-content-center align-items-center gap-2">
+                      <td className="fw-bold text-danger">₹{Number(exp.total_amount || 0).toLocaleString("en-IN")}</td>
+                      <td>{getStatusBadge("paid")}</td>
+                      <td>{exp.narration || "-"}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
                           {expensePermissions.can_view && (
-                            <button className="btn btn-sm text-info p-2" onClick={() => {
+                            <Button size="sm" className="btn-action btn-view" onClick={() => {
                               isCleaningUpRef.current = false;
                               modalKeyRef.current.view += 1;
                               setSelectedExpense(exp);
                               setShowViewModal(true);
-                            }}><FaEye /></button>
+                            }} title="View">
+                              <FaEye size={14} />
+                            </Button>
                           )}
                           {expensePermissions.can_update && (
-                            <button className="btn btn-sm text-warning p-2" onClick={() => handleEdit(exp)}><FaEdit /></button>
+                            <Button size="sm" className="btn-action btn-edit" onClick={() => handleEdit(exp)} title="Edit">
+                              <FaEdit size={14} />
+                            </Button>
                           )}
                           {expensePermissions.can_delete && (
-                            <button className="btn btn-sm text-danger p-2" onClick={() => handleDelete(exp)}><FaTrash /></button>
+                            <Button size="sm" className="btn-action btn-delete" onClick={() => handleDelete(exp)} title="Delete">
+                              <FaTrash size={14} />
+                            </Button>
                           )}
                         </div>
                       </td>
@@ -673,23 +786,11 @@ const Expense = () => {
                   ))
                 )}
               </tbody>
-            </table>
+            </Table>
           </div>
-        </Tab>
-      </Tabs>
+        </Card.Body>
+      </Card>
 
-      {/* Pagination */}
-      <div className="d-flex justify-content-between align-items-center mt-2 px-3">
-        <span className="small text-muted">Showing 1 to {filteredExpenses.length} of {filteredExpenses.length} results</span>
-        <nav>
-          <ul className="pagination pagination-sm mb-0">
-            <li className="page-item disabled"><button className="page-link">&laquo;</button></li>
-            <li className="page-item active"><button className="page-link" style={{ backgroundColor: '#3daaaa' }}>1</button></li>
-            <li className="page-item"><button className="page-link">2</button></li>
-            <li className="page-item"><button className="page-link">&raquo;</button></li>
-          </ul>
-        </nav>
-      </div>
 
       {/* Create Voucher Modal */}
       {expensePermissions.can_create && (
@@ -700,8 +801,11 @@ const Expense = () => {
           onExited={handleCreateModalExited}
           centered 
           size="lg"
+          className="expense-modal"
         >
-          <Modal.Header closeButton><Modal.Title className="fw-bold">Create Voucher</Modal.Title></Modal.Header>
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Create Voucher</Modal.Title>
+          </Modal.Header>
           <Modal.Body>
             <form onSubmit={handleSubmit}>
               <div className="row mb-3">
@@ -846,7 +950,7 @@ const Expense = () => {
               </div>
 
               <div className="mb-3">
-                <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleAddRow}>+ Add Row</button>
+                <button type="button" className="btn btn-add-row btn-sm" onClick={handleAddRow}>+ Add Row</button>
               </div>
 
               <div className="mb-3">
@@ -861,10 +965,12 @@ const Expense = () => {
               </div>
 
               <div className="d-flex justify-content-end gap-2">
-                <button type="button" className="btn btn-outline-secondary" onClick={handleCloseCreateModal}>Cancel</button>
-                <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
+                <Button type="button" variant="secondary" className="btn-modal-cancel" onClick={handleCloseCreateModal}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="btn-modal-save" disabled={submitting}>
                   {submitting ? 'Saving...' : 'Save'}
-                </button>
+                </Button>
               </div>
             </form>
           </Modal.Body>
@@ -879,9 +985,12 @@ const Expense = () => {
           onHide={handleCloseViewModal}
           onExited={handleViewModalExited}
           size="lg"
+          className="expense-modal"
         >
-          <Modal.Header closeButton><Modal.Title>Voucher Details</Modal.Title></Modal.Header>
-          <Modal.Body>
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Voucher Details</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="modal-body-custom">
             {selectedExpense && (
               <div>
                 <table className="table table-bordered">
@@ -919,6 +1028,11 @@ const Expense = () => {
               </div>
             )}
           </Modal.Body>
+          <Modal.Footer className="modal-footer-custom">
+            <Button variant="secondary" className="btn-modal-cancel" onClick={handleCloseViewModal}>
+              Close
+            </Button>
+          </Modal.Footer>
         </Modal>
       )}
 
@@ -930,9 +1044,12 @@ const Expense = () => {
           onHide={handleCloseEditModal}
           onExited={handleEditModalExited}
           centered
+          className="expense-modal"
         >
-          <Modal.Header closeButton><Modal.Title>Edit Voucher</Modal.Title></Modal.Header>
-          <Modal.Body>
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Edit Voucher</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="modal-body-custom">
             {editExpense && (
               <form onSubmit={handleEditSubmit}>
                 <div className="mb-3">
@@ -962,10 +1079,12 @@ const Expense = () => {
                   <textarea className="form-control" rows="3" defaultValue={editExpense.narration} name="narration"></textarea>
                 </div>
                 <div className="d-flex justify-content-end gap-3 mt-4">
-                  <button type="button" className="btn btn-outline-secondary" onClick={handleCloseEditModal}>Cancel</button>
-                  <button type="submit" className="btn" style={{ backgroundColor: "#3daaaa", color: "white" }} disabled={submitting}>
+                  <Button type="button" variant="secondary" className="btn-modal-cancel" onClick={handleCloseEditModal}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="btn-modal-save" disabled={submitting}>
                     {submitting ? 'Updating...' : 'Save Changes'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
@@ -981,35 +1100,29 @@ const Expense = () => {
           onHide={handleCloseDeleteModal}
           onExited={handleDeleteModalExited}
           centered
+          className="expense-modal"
         >
-          <Modal.Body className="text-center py-4">
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Delete Voucher</Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="modal-body-custom text-center py-4">
             <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <FaTrash size={32} color="#F04438" />
             </div>
             <h4 className="fw-bold mb-2">Delete Voucher</h4>
-            <p className="mb-4" style={{ color: "#555" }}>Are you sure you want to delete this voucher?</p>
-            <div className="d-flex justify-content-center gap-3">
-              <button className="btn btn-dark" onClick={handleCloseDeleteModal}>No, Cancel</button>
-              <button className="btn" style={{ background: "#3daaaa", color: "#fff", fontWeight: 600 }} onClick={confirmDelete} disabled={submitting}>
-                {submitting ? 'Deleting...' : 'Yes, Delete'}
-              </button>
-            </div>
+            <p className="mb-4" style={{ color: "#555" }}>Are you sure you want to delete this voucher? This action cannot be undone.</p>
           </Modal.Body>
+          <Modal.Footer className="modal-footer-custom">
+            <Button variant="secondary" className="btn-modal-cancel" onClick={handleCloseDeleteModal}>
+              Cancel
+            </Button>
+            <Button className="btn-modal-delete" onClick={confirmDelete} disabled={submitting}>
+              {submitting ? 'Deleting...' : 'Yes, Delete'}
+            </Button>
+          </Modal.Footer>
         </Modal>
       )}
-
-      {/* Page Info */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
-          <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-            <li>Create and manage payment vouchers for various expenses.</li>
-            <li>Each voucher is linked to an account and payment method.</li>
-            <li>Helps maintain accurate financial records and expense tracking.</li>
-          </ul>
-        </Card.Body>
-      </Card>
-    </div>
+    </Container>
   );
 };
 

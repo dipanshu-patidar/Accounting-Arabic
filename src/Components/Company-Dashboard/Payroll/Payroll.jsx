@@ -8,6 +8,8 @@ import {
   Form,
   Button,
   Modal,
+  Spinner,
+  Badge,
 } from "react-bootstrap";
 import {
   FaMoneyBillWave,
@@ -20,6 +22,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './Payroll.css';
 
 const emptyPayroll = {
   id: null,
@@ -303,65 +306,49 @@ const Payroll = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
-        <div className="spinner-border" style={{ color: "#023347" }} role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading payroll records...</p>
         </div>
       </div>
     );
   }
 
-  const paymentStatusBadge = (status) => {
-    return (
-      <span
-        className="badge"
-        style={{
-          backgroundColor: status === "Paid" ? "#28a745" : "#ffc107",
-          color: status === "Paid" ? "#fff" : "#212529",
-          fontWeight: 500,
-        }}
-      >
-        {status}
-      </span>
-    );
+  const getStatusBadgeClass = (status) => {
+    return status === "Paid" ? "badge-status badge-paid" : "badge-status badge-pending";
   };
 
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: "#f0f7f8", minHeight: "100vh" }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: "#e6f3f5" }}>
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h4 className="mb-1" style={{ color: "#023347" }}>
-                <FaMoneyBillWave className="me-2" style={{ color: "#2a8e9c" }} />
-                Payroll
-              </h4>
-              <p className="text-muted">Manage employee salary records</p>
-            </div>
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-secondary"
-                onClick={handlePDF}
-                size="sm"
-                style={{ borderColor: "#2a8e9c", color: "#2a8e9c" }}
-                className="d-flex align-items-center"
-              >
-                <FaFilePdf className="me-1" /> Export PDF
-              </Button>
-              <Button
-                style={{ backgroundColor: "#023347", border: "none" }}
-                onClick={handleAdd}
-                size="sm"
-                className="d-flex align-items-center"
-              >
-                <FaPlus className="me-1" /> Add Payroll
-              </Button>
-            </div>
-          </div>
+    <Container fluid className="p-4 payroll-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="payroll-title">
+              <i className="fas fa-money-bill-wave me-2"></i>
+              Payroll Management
+            </h3>
+            <p className="payroll-subtitle">Manage employee salary records and payments</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+            <Button className="btn-export-pdf d-flex align-items-center" onClick={handlePDF}>
+              <FaFilePdf className="me-2" /> Export PDF
+            </Button>
+            <Button className="btn-add-payroll d-flex align-items-center" onClick={handleAdd}>
+              <FaPlus className="me-2" /> Add Payroll
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Table Card */}
+      <Card className="payroll-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
 
           <div style={{ overflowX: "auto" }}>
-            <Table hover responsive>
-              <thead>
+            <Table hover responsive className="payroll-table">
+              <thead className="table-header">
                 <tr>
                   <th>Employee</th>
                   <th>Month</th>
@@ -369,7 +356,7 @@ const Payroll = () => {
                   <th>Deductions</th>
                   <th>Net Salary</th>
                   <th>Payment Status</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -378,37 +365,40 @@ const Payroll = () => {
                     const { gross } = calculateSalaries(p);
                     return (
                       <tr key={p.id}>
-                        <td>{getEmployeeName(p.employeeId)}</td>
+                        <td className="fw-semibold">{getEmployeeName(p.employeeId)}</td>
                         <td>{getMonthLabel(p.month)}</td>
-                        <td>₹{gross.toLocaleString()}</td>
-                        <td>₹{parseFloat(p.deductions).toLocaleString()}</td>
-                        <td>₹{parseFloat(p.netSalary).toLocaleString()}</td>
-                        <td>{paymentStatusBadge(p.paymentStatus)}</td>
+                        <td className="fw-semibold text-success">₹{gross.toLocaleString()}</td>
+                        <td className="fw-semibold text-danger">₹{parseFloat(p.deductions || 0).toLocaleString()}</td>
+                        <td className="fw-bold text-primary">₹{parseFloat(p.netSalary).toLocaleString()}</td>
                         <td>
-                          <Button
-                            size="sm"
-                            variant="light"
-                            className="me-1"
-                            style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
-                            onClick={() => handleEdit(p)}
-                          >
-                            <FaEdit />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="light"
-                            style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
-                            onClick={() => confirmDelete(p)}
-                          >
-                            <FaTrash />
-                          </Button>
+                          <Badge className={getStatusBadgeClass(p.paymentStatus)}>
+                            {p.paymentStatus}
+                          </Badge>
+                        </td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            <Button
+                              className="btn-action btn-edit"
+                              onClick={() => handleEdit(p)}
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </Button>
+                            <Button
+                              className="btn-action btn-delete"
+                              onClick={() => confirmDelete(p)}
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center text-muted">
+                    <td colSpan="7" className="text-center text-muted py-4">
                       No payroll records found.
                     </td>
                   </tr>
@@ -426,20 +416,23 @@ const Payroll = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         size="lg"
+        centered
+        className="payroll-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#fff" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{modalType === "edit" ? "Edit Payroll" : "Add Payroll Record"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
+        <Modal.Body className="modal-body-custom">
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Employee *</Form.Label>
+                <Form.Label className="form-label-custom">Employee *</Form.Label>
                 <Form.Select
                   name="employeeId"
                   value={form.employeeId}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select Employee</option>
                   {employees.map((emp) => (
@@ -453,7 +446,7 @@ const Payroll = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Month *</Form.Label>
+                <Form.Label className="form-label-custom">Month *</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="e.g., December, 2025"
@@ -461,13 +454,14 @@ const Payroll = () => {
                   value={form.month}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Basic Salary *</Form.Label>
+                <Form.Label className="form-label-custom">Basic Salary *</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
@@ -475,81 +469,87 @@ const Payroll = () => {
                   value={form.basicSalary}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Allowances</Form.Label>
+                <Form.Label className="form-label-custom">Allowances</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   name="allowances"
                   value={form.allowances}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Overtime</Form.Label>
+                <Form.Label className="form-label-custom">Overtime</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   name="overtime"
                   value={form.overtime}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Bonus</Form.Label>
+                <Form.Label className="form-label-custom">Bonus</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   name="bonus"
                   value={form.bonus}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Deductions</Form.Label>
+                <Form.Label className="form-label-custom">Deductions</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   name="deductions"
                   value={form.deductions}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Net Salary (Auto)</Form.Label>
+                <Form.Label className="form-label-custom">Net Salary (Auto)</Form.Label>
                 <Form.Control
                   type="text"
                   value={form.netSalary ? `₹${parseFloat(form.netSalary).toLocaleString()}` : "—"}
                   readOnly
-                  style={{ backgroundColor: "#e6f3f5" }}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Payment Status</Form.Label>
+                <Form.Label className="form-label-custom">Payment Status</Form.Label>
                 <Form.Select
                   name="paymentStatus"
                   value={form.paymentStatus}
                   onChange={handleInputChange}
+                  className="form-select-custom"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Paid">Paid</option>
@@ -559,22 +559,23 @@ const Payroll = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Payment Date</Form.Label>
+                <Form.Label className="form-label-custom">Payment Date</Form.Label>
                 <Form.Control
                   type="date"
                   name="paymentDate"
                   value={form.paymentDate}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
+          <Button className="btn-modal-save" onClick={handleSave}>
             {modalType === "edit" ? "Update" : "Save"} Payroll
           </Button>
         </Modal.Footer>
@@ -587,20 +588,27 @@ const Payroll = () => {
         onHide={handleDeleteModalClose}
         onExited={handleDeleteModalExited}
         centered
+        className="payroll-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#fff" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Delete Payroll Record</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
-          Are you sure you want to delete payroll for{" "}
-          <strong>{getEmployeeName(payrollToDelete?.employeeId)}</strong> for{" "}
-          <strong>{getMonthLabel(payrollToDelete?.month)}</strong>?
+        <Modal.Body className="modal-body-custom text-center py-4">
+          <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FaTrash style={{ fontSize: "32px", color: "#F04438" }} />
+          </div>
+          <h4 className="fw-bold mb-2">Delete Payroll Record</h4>
+          <p className="text-muted mb-3">
+            Are you sure you want to delete payroll for{" "}
+            <strong>{getEmployeeName(payrollToDelete?.employeeId)}</strong> for{" "}
+            <strong>{getMonthLabel(payrollToDelete?.month)}</strong>? This action cannot be undone.
+          </p>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
-          <Button variant="secondary" onClick={handleDeleteModalClose}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete}>
+          <Button className="btn-modal-delete" onClick={handleDelete}>
             Delete
           </Button>
         </Modal.Footer>

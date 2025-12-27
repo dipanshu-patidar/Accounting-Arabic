@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Table, Button, Modal, Form } from "react-bootstrap";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { Table, Button, Modal, Form, Card, Row, Col, Spinner, Alert } from "react-bootstrap";
+import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import GetCompanyId from "../../../../Api/GetCompanyId";
 import axiosInstance from "../../../../Api/axiosInstance";
 import BaseUrl from "../../../../Api/BaseUrl";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './Service.css';
 
 const initialServices = [];
 const initialUnitOptions = [];
@@ -545,42 +546,18 @@ function Service() {
     setShowView(true);
   };
 
-  const customButtonStyle = {
-    backgroundColor: '#53b2a5',
-    borderColor: '#53b2a5',
-    color: 'white'
-  };
-
-  const viewButtonStyle = {
-    backgroundColor: '#007bff',
-    borderColor: '#007bff',
-    color: 'white'
-  };
-
-  const editButtonStyle = {
-    backgroundColor: '#ffc107',
-    borderColor: '#ffc107',
-    color: 'black'
-  };
-
-  const deleteButtonStyle = {
-    backgroundColor: '#dc3545',
-    borderColor: '#dc3545',
-    color: 'white'
-  };
 
   // If user doesn't have view permission, show access denied message
   if (!canViewServices) {
     return (
       <>
-        <div className="p-4 mt-2">
-          <div className="text-center p-5">
-            <h3>Access Denied</h3>
+        <div className="p-4 service-container">
+          <Card className="text-center p-5 border-0 shadow-lg">
+            <h3 className="text-danger">Access Denied</h3>
             <p>You don't have permission to view Services.</p>
             <p>Please contact your administrator for access.</p>
-          </div>
+          </Card>
         </div>
-        {/* Toast container outside the main component to prevent unmounting issues */}
         <ToastContainer
           key={`toast-access-${isRTL ? 'rtl' : 'ltr'}`}
           position={isRTL ? "top-left" : "top-right"}
@@ -599,103 +576,143 @@ function Service() {
       </>
     );
   }
-
-  // Debug: Log services state
-  console.log("Current services state:", services);
-  console.log("Services loading:", servicesLoading);
   
   return (
     <>
-      <div className="container mt-5" dir={isRTL ? "rtl" : "ltr"} style={{ position: "relative" }}>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="mb-0">Service Management</h2>
-          {canCreateServices && (
-            <Button 
-              style={customButtonStyle} 
-              onClick={handleShow} 
-              disabled={loading}
-              type="button"
-            >
-              {loading ? 'Loading...' : 'Add Service'}
-            </Button>
-          )}
+      <div className="p-4 service-container" dir={isRTL ? "rtl" : "ltr"}>
+        <ToastContainer
+          key={`toast-${isRTL ? 'rtl' : 'ltr'}`}
+          position={isRTL ? "top-left" : "top-right"}
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={isRTL}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          limit={3}
+          enableMultiContainer
+          containerId={"service-management"}
+        />
+
+        {/* Header Section */}
+        <div className="mb-4">
+          <h3 className="service-title">
+            <i className="fas fa-concierge-bell me-2"></i>
+            Service Management
+          </h3>
+          <p className="service-subtitle">Manage and track all services offered by your company</p>
         </div>
-          
-        <div className="table-responsive">
-          <Table striped bordered hover className="shadow-sm">
-            <thead>
-              <tr>
-                <th>Service Name</th>
-                <th>Service Description</th>
-                <th>Unit of Measure</th>
-                <th>Price</th>
-                <th className="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {servicesLoading ? (
-                <tr>
-                  <td colSpan="5" className="text-center py-3">
-                    <div className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
-                    Loading services...
-                  </td>
-                </tr>
-              ) : services && services.length > 0 ? (
-                services.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.name}</td>
-                    <td>{s.serviceDescription}</td>
-                    <td>{s.unit}</td>
-                    <td>₹{parseFloat(s.price || 0).toFixed(2)}</td>
-                    <td className="text-center">
-                      {canViewServices && (
-                        <Button 
-                          type="button"
-                          size="sm" 
-                          style={viewButtonStyle} 
-                          onClick={() => handleView(s)} 
-                          title="View"
-                          className={isRTL ? "ms-1" : "me-1"}
-                        >
-                          <FaEye />
-                        </Button>
-                      )}
-                      {canUpdateServices && (
-                        <Button 
-                          type="button"
-                          size="sm" 
-                          style={editButtonStyle} 
-                          onClick={() => handleEdit(s)} 
-                          title="Edit"
-                          className={isRTL ? "ms-1" : "me-1"}
-                        >
-                          <FaEdit />
-                        </Button>
-                      )}
-                      {canDeleteServices && (
-                        <Button 
-                          type="button"
-                          size="sm" 
-                          style={deleteButtonStyle} 
-                          onClick={() => handleDeleteClick(s.id)} 
-                          title="Delete"
-                        >
-                          <FaTrash />
-                        </Button>
-                      )}
-                    </td>
+
+        <Row className="g-3 mb-4 align-items-center">
+          <Col xs={12} md={6}>
+            {/* Search can be added here if needed */}
+          </Col>
+          <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start">
+            {canCreateServices && (
+              <Button 
+                className="d-flex align-items-center btn-add-service"
+                onClick={handleShow} 
+                disabled={loading}
+                type="button"
+              >
+                {loading ? (
+                  <Spinner animation="border" size="sm" className="me-2" />
+                ) : (
+                  <FaPlus className="me-2" />
+                )}
+                Add Service
+              </Button>
+            )}
+          </Col>
+        </Row>
+
+        {/* Table Card */}
+        <Card className="service-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="service-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
+                  <tr>
+                    <th className="py-3">Service Name</th>
+                    <th className="py-3">Service Description</th>
+                    <th className="py-3">Unit of Measure</th>
+                    <th className="py-3">Price</th>
+                    <th className="py-3 text-center">Actions</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center py-3">
-                    No services added
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-        </div>
+                </thead>
+                <tbody>
+                  {servicesLoading ? (
+                    <tr>
+                      <td colSpan="5" className="text-center py-5">
+                        <Spinner animation="border" style={{ color: "#505ece" }} />
+                        <p className="mt-2 text-muted">Loading services...</p>
+                      </td>
+                    </tr>
+                  ) : services && services.length > 0 ? (
+                    services.map((s) => (
+                      <tr key={s.id}>
+                        <td className="fw-bold">{s.name}</td>
+                        <td>{s.serviceDescription || "-"}</td>
+                        <td>
+                          <span className="badge bg-info text-dark">{s.unit || "-"}</span>
+                        </td>
+                        <td className="fw-bold">₹{parseFloat(s.price || 0).toFixed(2)}</td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            {canViewServices && (
+                              <Button 
+                                type="button"
+                                variant="outline-info"
+                                size="sm"
+                                className="btn-action btn-view"
+                                onClick={() => handleView(s)} 
+                                title="View"
+                              >
+                                <FaEye size={14} />
+                              </Button>
+                            )}
+                            {canUpdateServices && (
+                              <Button 
+                                type="button"
+                                variant="outline-warning"
+                                size="sm"
+                                className="btn-action btn-edit"
+                                onClick={() => handleEdit(s)} 
+                                title="Edit"
+                              >
+                                <FaEdit size={14} />
+                              </Button>
+                            )}
+                            {canDeleteServices && (
+                              <Button 
+                                type="button"
+                                variant="outline-danger"
+                                size="sm"
+                                className="btn-action btn-delete"
+                                onClick={() => handleDeleteClick(s.id)} 
+                                title="Delete"
+                              >
+                                <FaTrash size={14} />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="text-center py-4 text-muted">
+                        No services added
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </Card.Body>
+        </Card>
                 
         {/* Add/Edit Modal */}
         <Modal 
@@ -706,15 +723,17 @@ function Service() {
           centered 
           enforceFocus={false}
           dir={isRTL ? "rtl" : "ltr"}
+          className="service-modal"
         >
-            <Modal.Header closeButton>
+            <Modal.Header closeButton className="modal-header-custom">
               <Modal.Title>{editMode ? "Edit Service" : "Add Service"}</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body className="modal-body-custom">
               <Form onSubmit={(e) => { e.preventDefault(); handleSave(e); }}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Service Name</Form.Label>
+                  <Form.Label className="form-label-custom">Service Name</Form.Label>
                   <Form.Control 
+                    className="form-control-custom"
                     type="text"
                     name="name" 
                     value={form.name || ''} 
@@ -726,8 +745,9 @@ function Service() {
                 </Form.Group>
               
               <Form.Group className="mb-3">
-                <Form.Label>SKU</Form.Label>
+                <Form.Label className="form-label-custom">SKU</Form.Label>
                 <Form.Control 
+                  className="form-control-custom"
                   type="text"
                   name="sku" 
                   value={form.sku || ''} 
@@ -737,8 +757,9 @@ function Service() {
               </Form.Group>
               
               <Form.Group className="mb-3">
-                <Form.Label>Service Description</Form.Label>
+                <Form.Label className="form-label-custom">Service Description</Form.Label>
                 <Form.Control 
+                  className="form-control-custom"
                   as="textarea" 
                   name="serviceDescription" 
                   value={form.serviceDescription || ''} 
@@ -749,8 +770,9 @@ function Service() {
               </Form.Group>
               
               <Form.Group className="mb-3">
-                <Form.Label>Unit of Measure</Form.Label>
+                <Form.Label className="form-label-custom">Unit of Measure</Form.Label>
                 <Form.Select 
+                  className="form-select-custom"
                   name="unit" 
                   value={form.unit || ''} 
                   onChange={handleInput}
@@ -774,8 +796,9 @@ function Service() {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Price</Form.Label>
+                <Form.Label className="form-label-custom">Price</Form.Label>
                 <Form.Control 
+                  className="form-control-custom"
                   type="number" 
                   step="0.01"
                   name="price" 
@@ -787,8 +810,9 @@ function Service() {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Default Tax %</Form.Label>
+                <Form.Label className="form-label-custom">Default Tax %</Form.Label>
                 <Form.Control 
+                  className="form-control-custom"
                   type="number" 
                   step="0.01"
                   name="tax" 
@@ -809,8 +833,9 @@ function Service() {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Remarks</Form.Label>
+                <Form.Label className="form-label-custom">Remarks</Form.Label>
                 <Form.Control 
+                  className="form-control-custom"
                   as="textarea" 
                   name="remarks" 
                   value={form.remarks || ''} 
@@ -824,12 +849,19 @@ function Service() {
               </Form.Group>
               </Form>
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleClose} type="button">
+            <Modal.Footer className="modal-footer-custom">
+              <Button variant="secondary" className="btn-modal-cancel" onClick={handleClose} type="button">
                 Cancel
               </Button>
-              <Button style={customButtonStyle} onClick={handleSave} disabled={loading} type="button">
-                {loading ? 'Saving...' : (editMode ? "Update" : "Save") + " Service"}
+              <Button className="btn-modal-save" onClick={handleSave} disabled={loading} type="button">
+                {loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Saving...
+                  </>
+                ) : (
+                  (editMode ? "Update" : "Save") + " Service"
+                )}
               </Button>
             </Modal.Footer>
         </Modal>
@@ -843,32 +875,33 @@ function Service() {
           centered 
           enforceFocus={false}
           dir={isRTL ? "rtl" : "ltr"}
+          className="service-modal"
         >
-            <Modal.Header closeButton>
+            <Modal.Header closeButton className="modal-header-custom">
               <Modal.Title>Service Details</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body className="modal-body-custom">
               {viewData && (
                 <div className="p-3">
-                  <h5 className="text-primary mb-3">{viewData.name}</h5>
-                <p className="mb-2"><strong>SKU:</strong> {viewData.sku || 'N/A'}</p>
-                <p className="mb-2"><strong>Service Description:</strong> {viewData.serviceDescription || 'N/A'}</p>
-                <p className="mb-2"><strong>Unit of Measure:</strong> {viewData.unit || 'N/A'}</p>
-                <p className="mb-2"><strong>Price:</strong> ₹{parseFloat(viewData.price || 0).toFixed(2)}</p>
-                <p className="mb-2"><strong>Default Tax %:</strong> {viewData.tax || 'N/A'}</p>
-                <p className="mb-2">
-                  <strong>Available in Invoices:</strong> {viewData.isInvoiceable ? (
-                    <span className="badge bg-success">Yes</span>
-                  ) : (
-                    <span className="badge bg-secondary">No</span>
-                  )}
-                </p>
+                  <h5 className="text-primary mb-3 fw-bold">{viewData.name}</h5>
+                  <p className="mb-2"><strong>SKU:</strong> {viewData.sku || 'N/A'}</p>
+                  <p className="mb-2"><strong>Service Description:</strong> {viewData.serviceDescription || 'N/A'}</p>
+                  <p className="mb-2"><strong>Unit of Measure:</strong> <span className="badge bg-info text-dark">{viewData.unit || 'N/A'}</span></p>
+                  <p className="mb-2"><strong>Price:</strong> <span className="fw-bold text-primary">₹{parseFloat(viewData.price || 0).toFixed(2)}</span></p>
+                  <p className="mb-2"><strong>Default Tax %:</strong> {viewData.tax || 'N/A'}</p>
+                  <p className="mb-2">
+                    <strong>Available in Invoices:</strong> {viewData.isInvoiceable ? (
+                      <span className="badge bg-success">Yes</span>
+                    ) : (
+                      <span className="badge bg-secondary">No</span>
+                    )}
+                  </p>
                   <p className="mb-2"><strong>Remarks:</strong> {viewData.remarks || 'N/A'}</p>
                 </div>
               )}
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleViewClose} type="button">
+            <Modal.Footer className="modal-footer-custom">
+              <Button variant="secondary" className="btn-modal-cancel" onClick={handleViewClose} type="button">
                 Close
               </Button>
             </Modal.Footer>
@@ -883,40 +916,35 @@ function Service() {
           centered 
           enforceFocus={false}
           dir={isRTL ? "rtl" : "ltr"}
+          className="service-modal"
         >
-            <Modal.Header closeButton>
+            <Modal.Header closeButton className="modal-header-custom">
               <Modal.Title>Confirm Deletion</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-              <p>Are you sure you want to delete this service? This action cannot be undone.</p>
+            <Modal.Body className="modal-body-custom text-center py-4">
+              <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FaTrash size={32} color="#F04438" />
+              </div>
+              <h4 className="fw-bold mb-2">Delete Service</h4>
+              <p className="text-muted">Are you sure you want to delete this service? This action cannot be undone.</p>
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleDeleteConfirmClose} type="button">
+            <Modal.Footer className="modal-footer-custom">
+              <Button variant="secondary" className="btn-modal-cancel" onClick={handleDeleteConfirmClose} type="button">
                 Cancel
               </Button>
-              <Button variant="danger" onClick={handleDeleteConfirm} disabled={loading} type="button">
-                {loading ? 'Deleting...' : 'Delete'}
+              <Button className="btn-modal-delete" onClick={handleDeleteConfirm} disabled={loading} type="button">
+                {loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
               </Button>
             </Modal.Footer>
         </Modal>
       </div>
-      
-      {/* Toast Container - Always render but with stable key */}
-      <ToastContainer
-        key={`toast-${isRTL ? 'rtl' : 'ltr'}`}
-        position={isRTL ? "top-left" : "top-right"}
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={isRTL}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-        enableMultiContainer
-        containerId={"service-management"}
-      />
     </>
   );
 }

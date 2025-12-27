@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { toast } from 'react-toastify';
+import { Container, Card, Button, Table, Modal, Form, Row, Col, Spinner } from 'react-bootstrap';
+import { FaBook, FaFile, FaEye, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './JournalEntries.css';
 
 // Hardcoded account map (replace with real API fetch if needed)
 const ACCOUNT_NAME_TO_ID = {
@@ -270,54 +273,113 @@ function JournalEntries() {
   const accountOptions = Object.keys(ACCOUNT_NAME_TO_ID);
 
   return (
-    <div className="container mt-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="text-dark">Journal Entries</h3>
-        <button
-          className="btn btn-primary"
+    <Container fluid className="journal-entries-container py-4">
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <div>
+          <h4 className="journal-entries-title">
+            <FaBook className="me-2" />
+            Journal Entries
+          </h4>
+          <p className="journal-entries-subtitle mb-0">Manage and track your journal entries</p>
+        </div>
+        <Button
+          className="btn-add-entry"
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
           disabled={loading}
         >
-          + Add Journal Entry
-        </button>
+          <FaPlus className="me-2" />
+          Add Journal Entry
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="card mb-2">
-        <div className="card-body">
-          <h5>Filter Journal Entries</h5>
-          <div className="row g-3">
-            {['fromDate', 'toDate', 'autoVoucherNo', 'manualVoucherNo', 'minDebit', 'minCredit'].map(key => (
-              <div className="col-md-2" key={key}>
-                <label>{key.split(/(?=[A-Z])/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</label>
-                <input
-                  type={key.includes('Date') ? 'date' : key.includes('min') ? 'number' : 'text'}
-                  className="form-control"
-                  value={filters[key]}
-                  onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
-                  placeholder={`Filter by ${key}`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <Card className="filter-card">
+        <Card.Body>
+          <h5 className="mb-3" style={{ color: '#505ece', fontWeight: 600 }}>Filter Journal Entries</h5>
+          <Row className="g-3">
+            <Col md={2}>
+              <Form.Label className="filter-label">From Date</Form.Label>
+              <Form.Control
+                type="date"
+                className="filter-input"
+                value={filters.fromDate}
+                onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Label className="filter-label">To Date</Form.Label>
+              <Form.Control
+                type="date"
+                className="filter-input"
+                value={filters.toDate}
+                onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Label className="filter-label">Auto Voucher No</Form.Label>
+              <Form.Control
+                type="text"
+                className="filter-input"
+                value={filters.autoVoucherNo}
+                onChange={(e) => setFilters({ ...filters, autoVoucherNo: e.target.value })}
+                placeholder="Filter by voucher no"
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Label className="filter-label">Manual Voucher No</Form.Label>
+              <Form.Control
+                type="text"
+                className="filter-input"
+                value={filters.manualVoucherNo}
+                onChange={(e) => setFilters({ ...filters, manualVoucherNo: e.target.value })}
+                placeholder="Filter by manual no"
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Label className="filter-label">Min Debit</Form.Label>
+              <Form.Control
+                type="number"
+                className="filter-input"
+                value={filters.minDebit}
+                onChange={(e) => setFilters({ ...filters, minDebit: e.target.value })}
+                placeholder="Min debit"
+              />
+            </Col>
+            <Col md={2}>
+              <Form.Label className="filter-label">Min Credit</Form.Label>
+              <Form.Control
+                type="number"
+                className="filter-input"
+                value={filters.minCredit}
+                onChange={(e) => setFilters({ ...filters, minCredit: e.target.value })}
+                placeholder="Min credit"
+              />
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {/* Table */}
-      <div className="card">
-        <div className="card-body">
+      <Card className="journal-entries-table-card">
+        <Card.Body>
           {loading ? (
-            <p className="text-center">Loading...</p>
+            <div className="text-center my-5">
+              <Spinner animation="border" variant="primary" className="spinner-custom" />
+              <p className="mt-3">Loading journal entries...</p>
+            </div>
           ) : filteredJournalEntries.length === 0 ? (
-            <p className="text-center text-muted">No journal entries found.</p>
+            <div className="text-center py-5 empty-state">
+              <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+              <p className="text-muted mb-0">No journal entries found</p>
+            </div>
           ) : (
             <div className="table-responsive">
-              <table className="table table-bordered table-striped">
-                <thead className="thead-light">
+              <Table className="journal-entries-table" hover responsive="sm">
+                <thead className="table-header">
                   <tr>
                     <th>Auto Voucher No</th>
                     <th>Manual Voucher No</th>
@@ -330,242 +392,240 @@ function JournalEntries() {
                 <tbody>
                   {filteredJournalEntries.map(journal => (
                     <tr key={journal.id}>
-                      <td>{journal.voucherNo}</td>
+                      <td><strong>{journal.voucherNo}</strong></td>
                       <td>{journal.manualVoucherNo || '-'}</td>
                       <td>{journal.voucherDate}</td>
-                      <td>₹{journal.totals.totalDebit}</td>
-                      <td>₹{journal.totals.totalCredit}</td>
+                      <td className="amount-cell">₹{journal.totals.totalDebit}</td>
+                      <td className="amount-cell">₹{journal.totals.totalCredit}</td>
                       <td>
-                        <div className="btn-group gap-2"role="group">
-                          <button
-                            className="btn btn-sm d-flex align-items-center justify-content-center"
-                            style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5", color: "white", width: "36px", height: "36px" }}
+                        <div className="d-flex gap-2">
+                          <Button
+                            className="btn-action btn-view"
                             onClick={() => setViewJournal(journal)}
                             title="View Details"
                           >
-                            <i className="fas fa-eye"></i>
-                          </button>
-                          <button
-                            className="btn btn-sm d-flex align-items-center justify-content-center"
-                            style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "white", width: "36px", height: "36px" }}
+                            <FaEye />
+                          </Button>
+                          <Button
+                            className="btn-action btn-edit"
                             onClick={() => handleUpdate(journal)}
                             title="Update"
                           >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button
-                            className="btn btn-sm d-flex align-items-center justify-content-center"
-                            style={{ backgroundColor: "#dc3545", borderColor: "#dc3545", color: "white", width: "36px", height: "36px" }}
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            className="btn-action btn-delete"
                             onClick={() => handleDelete(journal)}
                             title="Delete"
                           >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                            <FaTrash />
+                          </Button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {/* Add/Update Modal */}
-      {showModal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{isUpdateMode ? 'Update Journal Entry' : 'New Journal Entry'}</h5>
-                <button type="button" className="close" onClick={() => setShowModal(false)}>&times;</button>
-              </div>
-              <div className="modal-body">
-                <div className="card">
-                  <div className="card-body">
-                    <div className="row mb-4">
-                      <div className="col-md-4">
-                        <label>Voucher No (Auto)</label>
-                        <input type="text" className="form-control" value={voucherNo} readOnly />
-                      </div>
-                      <div className="col-md-4">
-                        <label>Voucher No (Manual)</label>
-                        <input type="text" className="form-control" value={manualVoucherNo} onChange={e => setManualVoucherNo(e.target.value)} />
-                      </div>
-                      <div className="col-md-4">
-                        <label>Voucher Date</label>
-                        <input type="date" className="form-control" value={voucherDate} onChange={e => setVoucherDate(e.target.value)} />
-                      </div>
-                    </div>
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered className="journal-entries-modal">
+        <Modal.Header closeButton className="modal-header-custom">
+          <Modal.Title>{isUpdateMode ? 'Update Journal Entry' : 'New Journal Entry'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="modal-body-custom">
+          <Row className="mb-3">
+            <Col md={4}>
+              <Form.Label className="modal-form-label">Voucher No (Auto)</Form.Label>
+              <Form.Control type="text" className="modal-form-control" value={voucherNo} readOnly />
+            </Col>
+            <Col md={4}>
+              <Form.Label className="modal-form-label">Voucher No (Manual)</Form.Label>
+              <Form.Control type="text" className="modal-form-control" value={manualVoucherNo} onChange={e => setManualVoucherNo(e.target.value)} />
+            </Col>
+            <Col md={4}>
+              <Form.Label className="modal-form-label">Voucher Date</Form.Label>
+              <Form.Control type="date" className="modal-form-control" value={voucherDate} onChange={e => setVoucherDate(e.target.value)} />
+            </Col>
+          </Row>
 
-                    <div className="row mb-4">
-                      <div className="col-md-12">
-                        <label>Select Account</label>
-                        <select className="form-control" onChange={handleAccountSelect}>
-                          <option value="">-- Select an Account --</option>
-                          {accountOptions.map(name => (
-                            <option key={name} value={name}>{name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
+          <Row className="mb-3">
+            <Col md={12}>
+              <Form.Label className="modal-form-label">Select Account</Form.Label>
+              <Form.Select className="modal-form-control" onChange={handleAccountSelect}>
+                <option value="">-- Select an Account --</option>
+                {accountOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </Form.Select>
+            </Col>
+          </Row>
 
-                    <div className="table-responsive">
-                      <table className="table table-bordered table-striped">
-                        <thead className="thead-light">
-                          <tr>
-                            <th>Account</th>
-                            <th>Debit Amount</th>
-                            <th>Credit Amount</th>
-                            <th>Narration</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {entries.length > 0 ? (
-                            entries.map(entry => (
-                              <tr key={entry.id}>
-                                <td>{entry.accountName}</td>
-                                <td>
-                                  <input type="number" step="0.01" min="0" className="form-control"
-                                    value={entry.debitAmount} onChange={e => updateEntryField(entry.id, 'debitAmount', e.target.value)} />
-                                </td>
-                                <td>
-                                  <input type="number" step="0.01" min="0" className="form-control"
-                                    value={entry.creditAmount} onChange={e => updateEntryField(entry.id, 'creditAmount', e.target.value)} />
-                                </td>
-                                <td>
-                                  <textarea className="form-control" rows="1" value={entry.narrationText || ''}
-                                    onChange={e => updateEntryField(entry.id, 'narrationText', e.target.value)} />
-                                </td>
-                                <td>
-                                  <button className="btn btn-sm btn-danger" onClick={() => removeEntry(entry.id)}>Remove</button>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr><td colSpan="5" className="text-center">No entries added yet.</td></tr>
-                          )}
-                          <tr className="table-active">
-                            <td><strong>Total</strong></td>
-                            <td><strong>₹{totals.totalDebit}</strong></td>
-                            <td><strong>₹{totals.totalCredit}</strong></td>
-                            <td></td>
-                            <td></td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="row mb-4">
-                      <div className="col-md-12">
-                        <label>Narration</label>
-                        <textarea className="form-control" rows="3" value={narration} onChange={e => setNarration(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="row mb-4">
-                      <div className="col-md-12">
-                        <label>Upload Document</label>
-                        <input type="file" className="form-control-file" onChange={handleDocumentUpload} />
-                        {document && <div className="mt-2 text-success">Selected: {document.name}</div>}
-                      </div>
-                    </div>
-
-                    <div className="d-flex justify-content-end">
-                      <button className="btn btn-success" onClick={handleSubmit} disabled={loading}>
-                        {isUpdateMode ? 'Update' : 'Submit'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="table-responsive mb-3">
+            <Table className="modal-table" bordered>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Debit Amount</th>
+                  <th>Credit Amount</th>
+                  <th>Narration</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.length > 0 ? (
+                  entries.map(entry => (
+                    <tr key={entry.id}>
+                      <td>{entry.accountName}</td>
+                      <td>
+                        <Form.Control type="number" step="0.01" min="0" className="modal-form-control"
+                          value={entry.debitAmount} onChange={e => updateEntryField(entry.id, 'debitAmount', e.target.value)} />
+                      </td>
+                      <td>
+                        <Form.Control type="number" step="0.01" min="0" className="modal-form-control"
+                          value={entry.creditAmount} onChange={e => updateEntryField(entry.id, 'creditAmount', e.target.value)} />
+                      </td>
+                      <td>
+                        <Form.Control as="textarea" rows={1} className="modal-form-control" value={entry.narrationText || ''}
+                          onChange={e => updateEntryField(entry.id, 'narrationText', e.target.value)} />
+                      </td>
+                      <td>
+                        <Button className="btn-remove-entry" size="sm" onClick={() => removeEntry(entry.id)}>Remove</Button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="5" className="text-center">No entries added yet.</td></tr>
+                )}
+                <tr className="table-active">
+                  <td><strong>Total</strong></td>
+                  <td><strong>₹{totals.totalDebit}</strong></td>
+                  <td><strong>₹{totals.totalCredit}</strong></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </Table>
           </div>
-        </div>
-      )}
+
+          <Row className="mb-3">
+            <Col md={12}>
+              <Form.Label className="modal-form-label">Narration</Form.Label>
+              <Form.Control as="textarea" rows={3} className="modal-form-control" value={narration} onChange={e => setNarration(e.target.value)} />
+            </Col>
+          </Row>
+
+          <Row className="mb-3">
+            <Col md={12}>
+              <Form.Label className="modal-form-label">Upload Document</Form.Label>
+              <Form.Control type="file" className="modal-form-control" onChange={handleDocumentUpload} />
+              {document && <div className="mt-2 text-success">Selected: {document.name}</div>}
+            </Col>
+          </Row>
+        </Modal.Body>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-close" onClick={() => setShowModal(false)}>Cancel</Button>
+          <Button className="btn-modal-save" onClick={handleSubmit} disabled={loading}>
+            {loading ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {isUpdateMode ? 'Updating...' : 'Submitting...'}
+              </>
+            ) : (
+              isUpdateMode ? 'Update' : 'Submit'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* View Modal */}
-      {viewJournal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5>Journal Entry Details</h5>
-                <button className="close" onClick={() => setViewJournal(null)}>&times;</button>
-              </div>
-              <div className="modal-body">
-                <div className="row mb-3">
-                  <div className="col-md-4"><strong>Auto Voucher No:</strong> {viewJournal.voucherNo}</div>
-                  <div className="col-md-4"><strong>Manual Voucher No:</strong> {viewJournal.manualVoucherNo || '-'}</div>
-                  <div className="col-md-4"><strong>Date:</strong> {viewJournal.voucherDate}</div>
-                </div>
+      <Modal show={!!viewJournal} onHide={() => setViewJournal(null)} size="lg" className="journal-entries-modal">
+        <Modal.Header closeButton className="modal-header-custom">
+          <Modal.Title>Journal Entry Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="modal-body-custom">
+          {viewJournal && (
+            <>
+              <Row className="mb-3">
+                <Col md={4}><strong>Auto Voucher No:</strong> {viewJournal.voucherNo}</Col>
+                <Col md={4}><strong>Manual Voucher No:</strong> {viewJournal.manualVoucherNo || '-'}</Col>
+                <Col md={4}><strong>Date:</strong> {viewJournal.voucherDate}</Col>
+              </Row>
 
-                <div className="table-responsive mb-4">
-                  <table className="table table-bordered">
-                    <thead><tr><th>Account</th><th>Debit</th><th>Credit</th><th>Narration</th></tr></thead>
-                    <tbody>
-                      {viewJournal.entries.map((e, i) => (
-                        <tr key={i}>
-                          <td>{e.accountName}</td>
-                          <td>₹{e.debitAmount || '0.00'}</td>
-                          <td>₹{e.creditAmount || '0.00'}</td>
-                          <td>{e.narrationText || '-'}</td>
-                        </tr>
-                      ))}
-                      <tr className="table-active">
-                        <td><strong>Total</strong></td>
-                        <td><strong>₹{viewJournal.totals.totalDebit}</strong></td>
-                        <td><strong>₹{viewJournal.totals.totalCredit}</strong></td>
-                        <td></td>
+              <div className="table-responsive mb-4">
+                <Table className="modal-table" bordered>
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Debit</th>
+                      <th>Credit</th>
+                      <th>Narration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewJournal.entries.map((e, i) => (
+                      <tr key={i}>
+                        <td>{e.accountName}</td>
+                        <td>₹{e.debitAmount || '0.00'}</td>
+                        <td>₹{e.creditAmount || '0.00'}</td>
+                        <td>{e.narrationText || '-'}</td>
                       </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {viewJournal.narration && (
-                  <p><strong>Narration:</strong> {viewJournal.narration}</p>
-                )}
-
-                {viewJournal.fileUrl && (
-                  <div>
-                    <strong>Attachment:</strong>
-                    <br />
-                    <a href={viewJournal.fileUrl} target="_blank" rel="noopener noreferrer">{viewJournal.document}</a>
-                  </div>
-                )}
-
-                <div className="mt-3">
-                  <button className="btn btn-secondary" onClick={() => setViewJournal(null)}>Close</button>
-                </div>
+                    ))}
+                    <tr className="table-active">
+                      <td><strong>Total</strong></td>
+                      <td><strong>₹{viewJournal.totals.totalDebit}</strong></td>
+                      <td><strong>₹{viewJournal.totals.totalCredit}</strong></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </Table>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+
+              {viewJournal.narration && (
+                <p><strong>Narration:</strong> {viewJournal.narration}</p>
+              )}
+
+              {viewJournal.fileUrl && (
+                <div>
+                  <strong>Attachment:</strong>
+                  <br />
+                  <a href={viewJournal.fileUrl} target="_blank" rel="noopener noreferrer">{viewJournal.document}</a>
+                </div>
+              )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-close" onClick={() => setViewJournal(null)}>Close</Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Delete Confirmation */}
-      {showDeleteModal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5>Confirm Delete</h5>
-                <button className="close" onClick={() => setShowDeleteModal(false)}>&times;</button>
-              </div>
-              <div className="modal-body">
-                <p>Are you sure you want to delete journal entry <strong>{journalToDelete?.voucherNo}</strong>?</p>
-              </div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-                <button className="btn btn-danger" onClick={confirmDelete} disabled={loading}>Delete</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} className="journal-entries-modal">
+        <Modal.Header closeButton className="modal-header-custom">
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="modal-body-custom">
+          <p>Are you sure you want to delete journal entry <strong>{journalToDelete?.voucherNo}</strong>?</p>
+        </Modal.Body>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-close" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+          <Button className="btn-modal-danger" onClick={confirmDelete} disabled={loading}>
+            {loading ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                Deleting...
+              </>
+            ) : (
+              'Delete'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Container>
   );
 }
 

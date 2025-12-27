@@ -6,9 +6,10 @@ import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './CompanyInfo.css';
 
 const CompanyInfo = () => {
-  const [printLanguage, setPrintLanguage] = useState('en');
+  const [printLanguage, setPrintLanguage] = useState('ar');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -656,6 +657,7 @@ const CompanyInfo = () => {
 
   return (
     <div
+      className="company-info-container"
       style={{
         minHeight: '100vh',
         padding: '20px 0',
@@ -668,25 +670,36 @@ const CompanyInfo = () => {
 
       <Container className="p-4" style={{ maxWidth: '100%' }}>
         {/* Language Toggle Buttons */}
-        <div className="d-flex justify-content-end mb-3 flex-wrap gap-2">
-          <Button style={langButtonStyle(printLanguage === 'en')} onClick={() => setPrintLanguage('en')} size="sm">English</Button>
-          <Button style={langButtonStyle(printLanguage === 'ar')} onClick={() => setPrintLanguage('ar')} size="sm">العربية</Button>
+        <div className="lang-toggle-container">
+          <Button 
+            className={`btn-lang ${printLanguage === 'en' ? 'active' : ''}`}
+            onClick={() => setPrintLanguage('en')} 
+            size="sm"
+          >
+            English
+          </Button>
+          <Button 
+            className={`btn-lang ${printLanguage === 'ar' ? 'active' : ''}`}
+            onClick={() => setPrintLanguage('ar')} 
+            size="sm"
+          >
+            العربية
+          </Button>
         </div>
 
         {/* Page Title */}
-        <h1 className="mb-3" style={{ fontSize: '24px', fontWeight: '600' }}>
+        <h3 className="company-info-title mb-2">
           {t('settings')}
-        </h1>
-        <p className="mb-4 text-muted">{t('manageSettings')}</p>
+        </h3>
+        <p className="company-info-subtitle mb-4">{t('manageSettings')}</p>
 
         {/* Tabs: Company & Invoice Settings */}
         <Tab.Container defaultActiveKey="company">
-          <Nav variant="tabs" className="mb-4">
+          <Nav variant="tabs" className="mb-4 company-info-tabs">
             <Nav.Item>
               <Nav.Link
                 eventKey="company"
-                className="d-flex align-items-center gap-2 p-2"
-                style={{ fontWeight: '500' }}
+                className="d-flex align-items-center gap-2"
               >
                 <FaBuilding className="fs-5" />
                 <span>{t('companySettings')}</span>
@@ -696,8 +709,7 @@ const CompanyInfo = () => {
             <Nav.Item>
               <Nav.Link
                 eventKey="invoice"
-                className="d-flex align-items-center gap-2 p-2"
-                style={{ fontWeight: '500' }}
+                className="d-flex align-items-center gap-2"
               >
                 <FaFileInvoice className="fs-5" />
                 <span>{t('invoiceSettings')}</span>
@@ -708,35 +720,38 @@ const CompanyInfo = () => {
           <Tab.Content>
             {/* COMPANY SETTINGS */}
             <Tab.Pane eventKey="company">
-              <div className="bg-white p-4 rounded shadow-sm">
-                <h2 className="mb-4" style={{ fontSize: '20px', fontWeight: '600' }}>
+              <Card className="company-info-card">
+                <h2 className="section-title mb-4">
                   {t('companyInformation')}
                 </h2>
 
                 <Form onSubmit={handleSubmit}>
                   <Form.Group className="mb-4">
+                    <Form.Label className="form-label-custom">{t('companyName')}</Form.Label>
                     <Form.Control
                       type="text"
                       placeholder={t('companyName')}
-                      className="mb-3"
+                      className="form-control-custom mb-3"
                       name="companyName"
                       value={formData.companyName}
                       onChange={handleChange}
                       required
                     />
+                    <Form.Label className="form-label-custom">{t('companyEmail')}</Form.Label>
                     <Form.Control
                       type="email"
                       placeholder={t('companyEmail')}
-                      className="mb-3"
+                      className="form-control-custom mb-3"
                       name="companyEmail"
                       value={formData.companyEmail}
                       onChange={handleChange}
                       required
                     />
+                    <Form.Label className="form-label-custom">{t('phoneNumber')}</Form.Label>
                     <Form.Control
                       type="tel"
                       placeholder={t('phoneNumber')}
-                      className="mb-3"
+                      className="form-control-custom mb-3"
                       name="phoneNumber"
                       value={formData.phoneNumber}
                       onChange={handleChange}
@@ -744,18 +759,18 @@ const CompanyInfo = () => {
                     />
                   </Form.Group>
 
-                  <hr className="my-4" />
+                  <hr className="divider" />
 
-                  <div className="d-flex align-items-center mb-3">
-                    <FaImage className="me-2" style={{ color: '#002d4d' }} />
-                    <h5 style={{ marginBottom: 0 }}>{t('companyImages')}</h5>
+                  <div className="section-header">
+                    <FaImage />
+                    <h5 className="section-title mb-0">{t('companyImages')}</h5>
                   </div>
 
                   {["companyIcon", "favicon", "companyLogo", "companyDarkLogo"].map((field) => (
                     <Form.Group className="mb-4" key={field}>
-                      <Form.Label className="fw-bold d-block mb-2">{t(field)}</Form.Label>
+                      <Form.Label className="form-label-custom d-block mb-2">{t(field)}</Form.Label>
                       <div className="d-flex align-items-center">
-                        <Button as="label" htmlFor={`${field}-upload`} style={uploadButtonStyle}>
+                        <Button as="label" htmlFor={`${field}-upload`} className="btn-upload">
                           {t('chooseFile')}
                           <Form.Control
                             type="file"
@@ -767,7 +782,7 @@ const CompanyInfo = () => {
                           />
                         </Button>
                         {previewImages[field] && (
-                          <Image src={previewImages[field]} alt={`${field} Preview`} style={previewImageStyle} />
+                          <Image src={previewImages[field]} alt={`${field} Preview`} className="preview-image" />
                         )}
                       </div>
                       <Form.Text className="text-muted">
@@ -776,14 +791,15 @@ const CompanyInfo = () => {
                     </Form.Group>
                   ))}
 
-                  <hr className="my-4" />
+                  <hr className="divider" />
 
-                  <div className="d-flex align-items-center mb-3">
-                    <FaMapMarkerAlt className="me-2" style={{ color: '#002d4d' }} />
-                    <h5 style={{ marginBottom: 0 }}>{t('addressInformation')}</h5>
+                  <div className="section-header">
+                    <FaMapMarkerAlt />
+                    <h5 className="section-title mb-0">{t('addressInformation')}</h5>
                   </div>
 
                   <Form.Group className="mb-4">
+                    <Form.Label className="form-label-custom">{t('address')}</Form.Label>
                     <Form.Control
                       as="textarea"
                       rows={3}
@@ -791,17 +807,19 @@ const CompanyInfo = () => {
                       name="address"
                       value={formData.address}
                       onChange={handleChange}
+                      className="form-control-custom"
                       required
                     />
                   </Form.Group>
 
                   <div className="row mb-4">
                     <div className="col-md-6 mb-3 mb-md-0">
-                      <Form.Label className="fw-bold">{t('country')}</Form.Label>
+                      <Form.Label className="form-label-custom">{t('country')}</Form.Label>
                       <Form.Select
                         name="country"
                         value={formData.country}
                         onChange={handleChange}
+                        className="form-select-custom"
                         required
                       >
                         {countryOptions.map((option) => (
@@ -812,11 +830,12 @@ const CompanyInfo = () => {
                       </Form.Select>
                     </div>
                     <div className="col-md-6">
-                      <Form.Label className="fw-bold">{t('city')}</Form.Label>
+                      <Form.Label className="form-label-custom">{t('city')}</Form.Label>
                       <Form.Select
                         name="city"
                         value={formData.city}
                         onChange={handleChange}
+                        className="form-select-custom"
                         required
                       >
                         {cityOptions.map((option) => (
@@ -830,11 +849,12 @@ const CompanyInfo = () => {
 
                   <div className="row mb-4">
                     <div className="col-md-6 mb-3 mb-md-0">
-                      <Form.Label className="fw-bold">{t('state')}</Form.Label>
+                      <Form.Label className="form-label-custom">{t('state')}</Form.Label>
                       <Form.Select
                         name="state"
                         value={formData.state}
                         onChange={handleChange}
+                        className="form-select-custom"
                         required
                       >
                         {stateOptions.map((option) => (
@@ -845,12 +865,13 @@ const CompanyInfo = () => {
                       </Form.Select>
                     </div>
                     <div className="col-md-6">
-                      <Form.Label className="fw-bold">{t('portalCode')}</Form.Label>
+                      <Form.Label className="form-label-custom">{t('portalCode')}</Form.Label>
                       <Form.Control
                         type="text"
                         name="portalCode"
                         value={formData.portalCode}
                         onChange={handleChange}
+                        className="form-control-custom"
                         required
                       />
                     </div>
@@ -858,7 +879,7 @@ const CompanyInfo = () => {
 
                   <div className="row mb-4">
                     <div className="col-md-6">
-                      <Form.Label className="fw-bold">
+                      <Form.Label className="form-label-custom">
                         {printLanguage === 'both' ? (
                           <>
                             <div>Currency *</div>
@@ -870,6 +891,7 @@ const CompanyInfo = () => {
                         name="currency"
                         value={formData.currency}
                         onChange={handleChange}
+                        className="form-select-custom"
                         required
                       >
                         {currencyOptions.map((option) => (
@@ -882,19 +904,12 @@ const CompanyInfo = () => {
                   </div>
 
                   <div className="d-flex justify-content-end mt-4">
-                    <Button variant="outline-secondary" className="me-3 px-4 py-2" type="button">
+                    <Button className="btn-cancel me-3" type="button">
                       {t('cancel')}
                     </Button>
                     <Button
                       type="submit"
-                      className="px-4 py-2"
-                      style={{
-                        borderRadius: '4px',
-                        backgroundColor: '#002d4d',
-                        borderColor: '#002d4d',
-                        border: 'none',
-                        color: '#fff'
-                      }}
+                      className="btn-save"
                       disabled={loading}
                     >
                       {loading ? (
@@ -913,35 +928,35 @@ const CompanyInfo = () => {
                     </Button>
                   </div>
                 </Form>
-              </div>
+              </Card>
             </Tab.Pane>
 
             {/* INVOICE SETTINGS */}
             <Tab.Pane eventKey="invoice">
-              <div className="p-4 card">
-                <h2 className="mb-4" style={{ fontSize: '20px', fontWeight: '600' }}>
+              <Card className="company-info-card">
+                <h2 className="section-title mb-4">
                   {t('invoiceSettings')}
                 </h2>
 
                 <Form onSubmit={handleSubmit}>
                   {/* Template Selection */}
                   <Form.Group className="mb-4">
-                    <Form.Label className="fw-bold">{t('invoiceTemplate')}</Form.Label>
+                    <Form.Label className="form-label-custom">{t('invoiceTemplate')}</Form.Label>
                     <div className="d-flex gap-2 flex-wrap">
                       <Button
-                        variant={formData.invoiceTemplateId === 'template1' ? 'primary' : 'outline-primary'}
+                        className={`btn-template ${formData.invoiceTemplateId === 'template1' ? 'active' : ''}`}
                         onClick={() => handleTemplateChange('template1')}
                       >
                         {t('salesInvoice')}
                       </Button>
                       <Button
-                        variant={formData.invoiceTemplateId === 'cash_invoice' ? 'primary' : 'outline-primary'}
+                        className={`btn-template ${formData.invoiceTemplateId === 'cash_invoice' ? 'active' : ''}`}
                         onClick={() => handleTemplateChange('cash_invoice')}
                       >
                         {t('cashInvoice')}
                       </Button>
                       <Button
-                        variant={formData.invoiceTemplateId === 'delivery_note' ? 'primary' : 'outline-primary'}
+                        className={`btn-template ${formData.invoiceTemplateId === 'delivery_note' ? 'active' : ''}`}
                         onClick={() => handleTemplateChange('delivery_note')}
                       >
                         {t('deliveryNote')}
@@ -951,7 +966,7 @@ const CompanyInfo = () => {
 
                   {/* Footer Fields */}
                   <Form.Group className="mb-4">
-                    <Form.Label className="fw-bold">{t('footerText')}</Form.Label>
+                    <Form.Label className="form-label-custom">{t('footerText')}</Form.Label>
                     <Form.Control
                       as="textarea"
                       rows={2}
@@ -959,7 +974,7 @@ const CompanyInfo = () => {
                       value={formData.footerTerms}
                       onChange={handleChange}
                       placeholder={t('termsConditions')}
-                      className="mb-2"
+                      className="form-control-custom mb-2"
                     />
                     <Form.Control
                       as="textarea"
@@ -968,9 +983,9 @@ const CompanyInfo = () => {
                       value={formData.footerNote}
                       onChange={handleChange}
                       placeholder={t('note')}
-                      className="mb-2"
+                      className="form-control-custom mb-2"
                     />
-                    <Form.Label className="fw-bold">{t('bankDetails')}</Form.Label>
+                    <Form.Label className="form-label-custom">{t('bankDetails')}</Form.Label>
                     <div className="row g-2">
                       <div className="col-md-6">
                         <Form.Control
@@ -979,6 +994,7 @@ const CompanyInfo = () => {
                           value={formData.bank_name}
                           onChange={handleChange}
                           placeholder="Bank Name"
+                          className="form-control-custom"
                         />
                       </div>
                       <div className="col-md-6">
@@ -988,6 +1004,7 @@ const CompanyInfo = () => {
                           value={formData.account_no}
                           onChange={handleChange}
                           placeholder="Account No."
+                          className="form-control-custom"
                         />
                       </div>
                       <div className="col-md-6">
@@ -997,6 +1014,7 @@ const CompanyInfo = () => {
                           value={formData.account_holder}
                           onChange={handleChange}
                           placeholder="Account Holder"
+                          className="form-control-custom"
                         />
                       </div>
                       <div className="col-md-6">
@@ -1006,6 +1024,7 @@ const CompanyInfo = () => {
                           value={formData.ifsc_code}
                           onChange={handleChange}
                           placeholder="IFSC Code"
+                          className="form-control-custom"
                         />
                       </div>
                     </div>
@@ -1014,7 +1033,7 @@ const CompanyInfo = () => {
                   {/* Currency Subunit Info */}
                   {formData.currency && (
                     <Form.Group className="mb-4">
-                      <Form.Label className="fw-bold">
+                      <Form.Label className="form-label-custom">
                         {printLanguage === 'both' ? (
                           <>
                             <div>Currency Format</div>
@@ -1022,7 +1041,7 @@ const CompanyInfo = () => {
                           </>
                         ) : printLanguage === 'ar' ? 'تنسيق العملة' : 'Currency Format'}
                       </Form.Label>
-                      <div className="alert alert-info mb-0">
+                      <div className="alert alert-info-custom mb-0">
                         {printLanguage === 'ar'
                           ? `العملة: ${getSubunitLabels(formData.currency).major}، الوحدة الفرعية: ${getSubunitLabels(formData.currency).minor}`
                           : `Major Unit: ${getSubunitLabels(formData.currency).major}, Minor Unit: ${getSubunitLabels(formData.currency).minor}`}
@@ -1032,7 +1051,7 @@ const CompanyInfo = () => {
 
                   {/* Customization Options */}
                   <Form.Group className="mb-4">
-                    <Form.Label className="fw-bold">{t('customizeFields')}</Form.Label>
+                    <Form.Label className="form-label-custom">{t('customizeFields')}</Form.Label>
                     <div className="d-flex flex-wrap gap-3">
                       {[
                         { key: 'showDescription', label: t('description') },
@@ -1055,19 +1074,12 @@ const CompanyInfo = () => {
                   </Form.Group>
 
                   <div className="d-flex justify-content-end mt-4">
-                    <Button variant="outline-secondary" className="me-3 px-4 py-2" type="button">
+                    <Button className="btn-cancel me-3" type="button">
                       {t('cancel')}
                     </Button>
                     <Button
                       type="submit"
-                      className="px-4 py-2"
-                      style={{
-                        borderRadius: '4px',
-                        backgroundColor: '#002d4d',
-                        borderColor: '#002d4d',
-                        border: 'none',
-                        color: '#fff'
-                      }}
+                      className="btn-save"
                       disabled={loading}
                     >
                       {loading ? (
@@ -1086,7 +1098,7 @@ const CompanyInfo = () => {
                     </Button>
                   </div>
                 </Form>
-              </div>
+              </Card>
             </Tab.Pane>
           </Tab.Content>
         </Tab.Container>

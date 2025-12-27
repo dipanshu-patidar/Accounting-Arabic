@@ -10,16 +10,20 @@ import {
   Alert,
   Table,
   Modal,
+  Card,
 } from 'react-bootstrap';
 import {
   FaEye,
   FaEdit,
   FaTrash,
+  FaExchangeAlt,
+  FaFile,
 } from "react-icons/fa";
 import axiosInstance from '../../../Api/axiosInstance';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './ContraVoucher.css';
 
 const ContraVoucher = () => {
   // Permission states
@@ -487,42 +491,52 @@ const ContraVoucher = () => {
   // If user doesn't have permission to view contra vouchers, show access denied message
   if (!hasPermission || !contraVoucherPermissions.can_view) {
     return (
-      <div className="p-3">
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
-          <div className="text-center">
+      <Container fluid className="contra-voucher-container py-4">
+        <Card className="contra-voucher-table-card">
+          <Card.Body className="text-center py-5">
             <h3 className="text-danger">Access Denied</h3>
-            <p>You don't have permission to view the Contra Voucher module.</p>
-          </div>
-        </div>
-      </div>
+            <p className="text-muted">You don't have permission to view the Contra Voucher module.</p>
+          </Card.Body>
+        </Card>
+      </Container>
     );
   }
 
   return (
-    <div className="p-3">
+    <Container fluid className="contra-voucher-container py-4">
       {/* Toast Container */}
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
 
-      <div>
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="text-start m-0">Contra Voucher</h2>
-          {contraVoucherPermissions.can_create && (
-            <Button variant="success" size="sm" onClick={handleAddClick}>
-              + Add Contra Voucher
-            </Button>
-          )}
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 className="contra-voucher-title">
+            <FaExchangeAlt className="me-2" />
+            Contra Voucher
+          </h4>
+          <p className="contra-voucher-subtitle mb-0">Manage fund transfers between accounts</p>
         </div>
+        {contraVoucherPermissions.can_create && (
+          <Button className="btn-add-voucher" onClick={handleAddClick}>
+            <FaExchangeAlt className="me-2" />
+            Add Contra Voucher
+          </Button>
+        )}
+      </div>
 
-        {fetchError && <Alert variant="warning">{fetchError}</Alert>}
-        {/* Filter Section */}
-        <div className="card p-3 mb-4">
-          <h5>Filters</h5>
+      {fetchError && <Alert variant="warning">{fetchError}</Alert>}
+      
+      {/* Filter Section */}
+      <Card className="filter-card mb-4">
+        <Card.Body className="p-4">
+          <h5 className="filter-title mb-3">Filters</h5>
           <Row>
             <Col md={4}>
               <Form.Group>
-                <Form.Label>Voucher No</Form.Label>
+                <Form.Label className="filter-label">Voucher No</Form.Label>
                 <Form.Control
                   type="text"
+                  className="filter-input"
                   placeholder="Search voucher number..."
                   value={filters.voucherNo}
                   onChange={(e) => setFilters((prev) => ({ ...prev, voucherNo: e.target.value }))}
@@ -531,9 +545,10 @@ const ContraVoucher = () => {
             </Col>
             <Col md={4}>
               <Form.Group>
-                <Form.Label>From Date</Form.Label>
+                <Form.Label className="filter-label">From Date</Form.Label>
                 <Form.Control
                   type="date"
+                  className="filter-input"
                   value={filters.fromDate}
                   onChange={(e) => setFilters((prev) => ({ ...prev, fromDate: e.target.value }))}
                 />
@@ -541,30 +556,36 @@ const ContraVoucher = () => {
             </Col>
             <Col md={4}>
               <Form.Group>
-                <Form.Label>To Date</Form.Label>
+                <Form.Label className="filter-label">To Date</Form.Label>
                 <Form.Control
                   type="date"
+                  className="filter-input"
                   value={filters.toDate}
                   onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value }))}
                 />
               </Form.Group>
             </Col>
           </Row>
-        </div>
+        </Card.Body>
+      </Card>
 
-        {/* Vouchers Table - Using filteredVouchers now! */}
-        <div className="card p-3">
-          <h5>Existing Contra Vouchers</h5>
-          {tableLoading ? (
-            <div className="text-center my-3">
-              <Spinner animation="border" size="sm" /> Loading...
-            </div>
-          ) : filteredVouchers.length === 0 ? (
-            <Alert variant="info">No contra vouchers found matching the filters.</Alert>
-          ) : (
-            <div className='' style={{ maxHeight: '400px', overflowY: 'auto' }}>
-              <Table striped bordered hover size="sm">
-                <thead>
+      {/* Vouchers Table */}
+      <Card className="contra-voucher-table-card">
+        <Card.Body style={{ padding: 0 }}>
+          <div style={{ overflowX: "auto" }}>
+            {tableLoading ? (
+              <div className="text-center my-5">
+                <Spinner animation="border" variant="primary" className="spinner-custom" />
+                <p className="mt-3">Loading vouchers...</p>
+              </div>
+            ) : filteredVouchers.length === 0 ? (
+              <div className="text-center py-5 empty-state">
+                <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                <p className="text-muted mb-0">No contra vouchers found matching the filters.</p>
+              </div>
+            ) : (
+              <Table className="contra-voucher-table" hover responsive="sm">
+                <thead className="table-header">
                   <tr>
                     <th>Voucher No</th>
                     <th>Date</th>
@@ -579,56 +600,58 @@ const ContraVoucher = () => {
                 <tbody>
                   {filteredVouchers.map((voucher) => (
                     <tr key={voucher.id}>
-                      {/* Display the auto-generated voucher no by default, manual if available */}
-                      <td>{voucher.voucher_no_auto || voucher.voucher_number || '—'}</td>
+                      <td><strong>{voucher.voucher_no_auto || voucher.voucher_number || '—'}</strong></td>
                       <td>{voucher.voucher_date ? voucher.voucher_date.split('T')[0] : '—'}</td>
                       <td>{getAccountDisplayName(voucher.account_from_id)}</td>
                       <td>{getAccountDisplayName(voucher.account_to_id)}</td>
-                      <td>₹{parseFloat(voucher.amount).toFixed(2)}</td>
+                      <td className="amount-cell">₹{parseFloat(voucher.amount || 0).toFixed(2)}</td>
                       <td>{voucher.narration || '—'}</td>
                       <td>
                         {voucher.document ? (
-                          <a
-                            href={getDocumentUrl(voucher.document)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm btn-outline-info"
+                          <Button
+                            size="sm"
+                            className="btn-action btn-view"
+                            onClick={() => window.open(getDocumentUrl(voucher.document), '_blank')}
+                            title="View Document"
                           >
                             <FaEye />
-                          </a>
+                          </Button>
                         ) : (
                           '—'
                         )}
                       </td>
-                      <td>
-                        {contraVoucherPermissions.can_update && (
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleEdit(voucher)}
-                          >
-                            <FaEdit />
-                          </Button>
-                        )}
-                        {contraVoucherPermissions.can_delete && (
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(voucher.id)}
-                          >
-                            <FaTrash />
-                          </Button>
-                        )}
+                      <td className="text-center">
+                        <div className="d-flex gap-2 justify-content-center">
+                          {contraVoucherPermissions.can_update && (
+                            <Button
+                              size="sm"
+                              className="btn-action btn-edit"
+                              onClick={() => handleEdit(voucher)}
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </Button>
+                          )}
+                          {contraVoucherPermissions.can_delete && (
+                            <Button
+                              size="sm"
+                              className="btn-action btn-delete"
+                              onClick={() => handleDelete(voucher.id)}
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* Modal */}
       {contraVoucherPermissions.can_create && (
@@ -639,19 +662,21 @@ const ContraVoucher = () => {
           onExited={handleModalExited}
           size="lg" 
           centered
+          className="contra-voucher-modal"
         >
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="modal-header-custom">
             <Modal.Title>{isEditing ? 'Edit Contra Voucher' : 'Add Contra Voucher'}</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="modal-body-custom">
             {error && <Alert variant="danger">{error}</Alert>}
             <Form onSubmit={handleSubmit}>
               <Row className="mb-3">
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Voucher No (Manual)</Form.Label>
+                    <Form.Label className="form-label-custom">Voucher No (Manual)</Form.Label>
                     <Form.Control
                       type="text"
+                      className="form-control-custom"
                       value={manualVoucherNo}
                       onChange={(e) => setManualVoucherNo(e.target.value)}
                       placeholder="Optional"
@@ -660,9 +685,10 @@ const ContraVoucher = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Voucher Date</Form.Label>
+                    <Form.Label className="form-label-custom">Voucher Date</Form.Label>
                     <Form.Control
                       type="date"
+                      className="form-control-custom"
                       value={voucherDate}
                       onChange={(e) => setVoucherDate(e.target.value)}
                       required
@@ -674,10 +700,11 @@ const ContraVoucher = () => {
               <Row className="mb-3">
                 <Col md={6}>
                   <Form.Group ref={accountFromRef}>
-                    <Form.Label>Account From</Form.Label>
+                    <Form.Label className="form-label-custom">Account From</Form.Label>
                     <div className="position-relative">
                       <Form.Control
                         type="text"
+                        className="form-control-custom"
                         value={accountFromDisplay}
                         readOnly
                         onClick={() => toggleDropdown('accountFromDropdown')}
@@ -711,10 +738,11 @@ const ContraVoucher = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group ref={accountToRef}>
-                    <Form.Label>Account To</Form.Label>
+                    <Form.Label className="form-label-custom">Account To</Form.Label>
                     <div className="position-relative">
                       <Form.Control
                         type="text"
+                        className="form-control-custom"
                         value={accountToDisplay}
                         readOnly
                         onClick={() => toggleDropdown('accountToDropdown')}
@@ -751,9 +779,10 @@ const ContraVoucher = () => {
               <Row className="mb-3">
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Amount</Form.Label>
+                    <Form.Label className="form-label-custom">Amount</Form.Label>
                     <Form.Control
                       type="number"
+                      className="form-control-custom"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="Enter amount"
@@ -765,8 +794,8 @@ const ContraVoucher = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Upload Document (Optional)</Form.Label>
-                    <Form.Control type="file" onChange={handleFileUpload} />
+                    <Form.Label className="form-label-custom">Upload Document (Optional)</Form.Label>
+                    <Form.Control type="file" className="form-control-custom" onChange={handleFileUpload} />
                     {/* Show current document in edit mode */}
                     {isEditing && currentDocumentUrl && !uploadedFile && (
                       <div className="mt-2">
@@ -789,10 +818,11 @@ const ContraVoucher = () => {
               <Row className="mb-3">
                 <Col md={12}>
                   <Form.Group>
-                    <Form.Label>Narration (Optional)</Form.Label>
+                    <Form.Label className="form-label-custom">Narration (Optional)</Form.Label>
                     <Form.Control
                       as="textarea"
                       rows={2}
+                      className="form-control-custom"
                       value={narration}
                       onChange={(e) => setNarration(e.target.value)}
                       placeholder="Enter details..."
@@ -802,13 +832,13 @@ const ContraVoucher = () => {
               </Row>
 
               <div className="d-flex justify-content-end gap-2">
-                <Button variant="secondary" onClick={handleCloseModal}>
+                <Button className="btn-modal-cancel" onClick={handleCloseModal}>
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit" disabled={loading}>
+                <Button className="btn-modal-save" type="submit" disabled={loading}>
                   {loading ? (
                     <>
-                      <Spinner as="span" animation="border" size="sm" className="me-1" />
+                      <Spinner as="span" animation="border" size="sm" className="me-2" />
                       {isEditing ? 'Updating...' : 'Saving...'}
                     </>
                   ) : isEditing ? (
@@ -822,7 +852,7 @@ const ContraVoucher = () => {
           </Modal.Body>
         </Modal>
       )}
-    </div>
+    </Container>
   );
 };
 

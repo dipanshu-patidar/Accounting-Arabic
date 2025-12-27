@@ -1,0 +1,362 @@
+/* Journal Entries Page Container */
+.journal-entries-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.journal-entries-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.journal-entries-title i {
+  color: #505ece;
+}
+
+.journal-entries-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Add Journal Entry Button */
+.btn-add-entry {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-add-entry:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+/* Filter Card */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.filter-input,
+.filter-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Table Card */
+.journal-entries-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+}
+
+.journal-entries-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.journal-entries-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.journal-entries-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.journal-entries-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+.journal-entries-table tbody td.amount-cell {
+  font-weight: 600;
+  color: #28a745;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+}
+
+.btn-view {
+  background-color: #17a2b8;
+}
+
+.btn-edit {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+}
+
+/* Modal Styling */
+.journal-entries-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 75vh;
+}
+
+/* Custom Scrollbar for Modal Body */
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background-color: #505ece;
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background-color: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+.btn-modal-save {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-save:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-close {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-close:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-modal-danger {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-danger:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Modal Form Controls */
+.modal-form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.modal-form-control {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.modal-form-control:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Modal Table */
+.modal-table {
+  margin-bottom: 0;
+}
+
+.modal-table thead {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.modal-table thead th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 0.75rem;
+}
+
+.modal-table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.modal-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+.modal-table .table-active {
+  background-color: rgba(80, 94, 206, 0.1) !important;
+  font-weight: 600;
+}
+
+.btn-remove-entry {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.btn-remove-entry:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+/* Loading Spinner */
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .journal-entries-title {
+    font-size: 1.5rem;
+  }
+
+  .journal-entries-table {
+    font-size: 14px;
+  }
+}
+

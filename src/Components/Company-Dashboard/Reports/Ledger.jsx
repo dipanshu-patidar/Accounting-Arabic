@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaEye, FaPrint } from "react-icons/fa";
-import { Card, Form, Modal, Button, Pagination } from "react-bootstrap";
+import { FaEye, FaPrint, FaBook, FaFile } from "react-icons/fa";
+import { Card, Form, Modal, Button, Pagination, Container, Row, Col, Table, Spinner } from "react-bootstrap";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './Ledger.css';
 
 const Ledger = () => {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -139,227 +140,254 @@ const Ledger = () => {
     setShowModal(true);
   };
 
-  if (loading) {
-    return <div className="p-4">Loading ledger data...</div>;
-  }
-
-  if (error) {
-    return <div className="p-4 text-danger">Error: {error}</div>;
-  }
-
   return (
-    <div className="mt-3 p-2">
-      {/* Summary Cards */}
-      <h5 className="fw-bold mb-3">Ledger Report</h5>
-      <Card className="mb-4">
-        <Card.Body className="p-3">
-          <div className="d-flex flex-wrap gap-2">
-            <div className="bg-secondary-subtle rounded p-2 flex-fill text-center">
-              <small className="text-muted d-block">Opening Balance</small>
-              <strong className="text-primary fs-6">
-                ₹{summary.opening_balance.toLocaleString()}
-              </strong>
-            </div>
-            <div className="bg-danger-subtle rounded p-2 flex-fill text-center">
-              <small className="text-muted d-block">Total Debits</small>
-              <strong className="text-danger fs-6">
-                ₹{summary.total_debits.toLocaleString()}
-              </strong>
-            </div>
-            <div className="bg-success-subtle rounded p-2 flex-fill text-center">
-              <small className="text-muted d-block">Total Credits</small>
-              <strong className="text-success fs-6">
-                ₹{summary.total_credits.toLocaleString()}
-              </strong>
-            </div>
-            <div className="bg-primary-subtle rounded p-2 flex-fill text-center">
-              <small className="text-muted d-block">Closing Balance</small>
-              <strong className="text-primary fs-6">
-                ₹{summary.closing_balance.toLocaleString()}
-              </strong>
-            </div>
-          </div>
-        </Card.Body>
-      </Card>
-
-      {/* Filters */}
-      <div className="d-flex flex-wrap gap-3 mb-4 align-items-end">
+    <Container fluid className="ledger-container py-4">
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <label className="form-label mb-1">From Date</label>
-          <input
-            type="date"
-            className="form-control"
-            value={fromDate}
-            onChange={(e) => {
-              setFromDate(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
-        <div>
-          <label className="form-label mb-1">To Date</label>
-          <input
-            type="date"
-            className="form-control"
-            value={toDate}
-            onChange={(e) => {
-              setToDate(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
-        <div>
-          <label className="form-label mb-1">Voucher Type</label>
-          <Form.Select
-            value={voucherTypeFilter}
-            onChange={(e) => {
-              setVoucherTypeFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">All Types</option>
-            {voucherTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </Form.Select>
-        </div>
-        <div>
-          <label className="form-label mb-1">Voucher No</label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="e.g. INV-20"
-            value={voucherNoFilter}
-            onChange={(e) => {
-              setVoucherNoFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
-        <div className="flex-grow-1">
-          <label className="form-label mb-1">Search</label>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search from/to, narration..."
-            value={searchText}
-            onChange={(e) => {
-              setSearchText(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
+          <h4 className="ledger-title">
+            <FaBook className="me-2" />
+            Ledger Report
+          </h4>
+          <p className="ledger-subtitle mb-0">View and manage your ledger transactions</p>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="table-responsive">
-        <table className="table table-bordered text-center align-middle">
-          <thead className="">
-            <tr>
-              <th>Date</th>
-              <th>Voucher Type</th>
-              <th>Voucher No</th>
-              <th>From/To</th>
-              <th>Debit (₹)</th>
-              <th>Credit (₹)</th>
-              <th>Balance (₹)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentTransactions.length > 0 ? (
-              currentTransactions.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.date}</td>
-                  <td>{t.voucher_type}</td>
-                  <td>{t.voucher_no}</td>
-                  <td className="text-start">{t.from_to}</td>
-                  <td className="text-danger">{t.debit > 0 ? `₹${t.debit.toLocaleString()}` : ""}</td>
-                  <td className="text-success">{t.credit > 0 ? `₹${t.credit.toLocaleString()}` : ""}</td>
-                  <td className={t.balance >= 0 ? "text-primary" : "text-danger"}>
-                    ₹{Math.abs(t.balance).toLocaleString()} {t.balance < 0 ? "(Cr)" : "(Dr)"}
-                  </td>
-                  <td>
-                    <div className="d-flex justify-content-center gap-2">
-                      <Button
-                        variant="outline-info"
-                        size="sm"
-                        onClick={() => handleViewClick(t)}
-                      >
-                        <FaEye />
-                      </Button>
-                      {/* Print can be implemented later */}
-                      {/* <Button variant="outline-warning" size="sm" disabled>
-                        <FaPrint />
-                      </Button> */}
+      {loading ? (
+        <div className="text-center my-5">
+          <Spinner animation="border" variant="primary" className="spinner-custom" />
+          <p className="mt-3">Loading ledger data...</p>
+        </div>
+      ) : error ? (
+        <div className="alert alert-danger" role="alert">
+          Error: {error}
+        </div>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <Card className="summary-card mb-4">
+            <Card.Body>
+              <Row className="g-3">
+                <Col xs={12} md={3}>
+                  <div className="summary-item summary-opening">
+                    <div className="summary-item-label">Opening Balance</div>
+                    <div className="summary-item-value">
+                      ₹{summary.opening_balance.toLocaleString()}
                     </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="8" className="text-center text-muted py-3">
-                  No entries found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+                </Col>
+                <Col xs={12} md={3}>
+                  <div className="summary-item summary-debit">
+                    <div className="summary-item-label">Total Debits</div>
+                    <div className="summary-item-value">
+                      ₹{summary.total_debits.toLocaleString()}
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={12} md={3}>
+                  <div className="summary-item summary-credit">
+                    <div className="summary-item-label">Total Credits</div>
+                    <div className="summary-item-value">
+                      ₹{summary.total_credits.toLocaleString()}
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={12} md={3}>
+                  <div className="summary-item summary-closing">
+                    <div className="summary-item-label">Closing Balance</div>
+                    <div className="summary-item-value">
+                      ₹{summary.closing_balance.toLocaleString()}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="d-flex justify-content-between align-items-center mt-3">
-          <small className="text-muted">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of{" "}
-            {filteredTransactions.length} entries
-          </small>
-          <Pagination size="sm">
-            <Pagination.First onClick={() => handlePageChange(1)} disabled={currentPage === 1} />
-            <Pagination.Prev
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            />
-            {[...Array(Math.min(5, totalPages))].map((_, i) => {
-              let pageNum = currentPage - 2 + i;
-              if (pageNum < 1) pageNum = 1;
-              if (pageNum > totalPages) pageNum = totalPages;
-              return (
-                <Pagination.Item
-                  key={pageNum}
-                  active={pageNum === currentPage}
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum}
-                </Pagination.Item>
-              );
-            })}
-            <Pagination.Next
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            />
-            <Pagination.Last
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-            />
-          </Pagination>
-        </div>
+          {/* Filters */}
+          <Card className="filter-card mb-4">
+            <Card.Body>
+              <Row className="g-3">
+                <Col xs={12} md={2}>
+                  <Form.Label className="filter-label">From Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="filter-input"
+                    value={fromDate}
+                    onChange={(e) => {
+                      setFromDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </Col>
+                <Col xs={12} md={2}>
+                  <Form.Label className="filter-label">To Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="filter-input"
+                    value={toDate}
+                    onChange={(e) => {
+                      setToDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </Col>
+                <Col xs={12} md={2}>
+                  <Form.Label className="filter-label">Voucher Type</Form.Label>
+                  <Form.Select
+                    className="filter-select"
+                    value={voucherTypeFilter}
+                    onChange={(e) => {
+                      setVoucherTypeFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="">All Types</option>
+                    {voucherTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Col>
+                <Col xs={12} md={2}>
+                  <Form.Label className="filter-label">Voucher No</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="filter-input"
+                    placeholder="e.g. INV-20"
+                    value={voucherNoFilter}
+                    onChange={(e) => {
+                      setVoucherNoFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </Col>
+                <Col xs={12} md={4}>
+                  <Form.Label className="filter-label">Search</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="filter-input"
+                    placeholder="Search from/to, narration..."
+                    value={searchText}
+                    onChange={(e) => {
+                      setSearchText(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* Table */}
+          <Card className="ledger-table-card mb-4">
+            <Card.Body>
+              <div className="table-responsive">
+                {currentTransactions.length > 0 ? (
+                  <Table className="ledger-table" hover responsive="sm">
+                    <thead className="table-header">
+                      <tr>
+                        <th>Date</th>
+                        <th>Voucher Type</th>
+                        <th>Voucher No</th>
+                        <th>From/To</th>
+                        <th>Debit (₹)</th>
+                        <th>Credit (₹)</th>
+                        <th>Balance (₹)</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentTransactions.map((t) => (
+                        <tr key={t.id}>
+                          <td>{t.date}</td>
+                          <td>{t.voucher_type}</td>
+                          <td><strong>{t.voucher_no}</strong></td>
+                          <td className="text-start">{t.from_to}</td>
+                          <td className="text-danger">{t.debit > 0 ? `₹${t.debit.toLocaleString()}` : ""}</td>
+                          <td className="text-success">{t.credit > 0 ? `₹${t.credit.toLocaleString()}` : ""}</td>
+                          <td className={t.balance >= 0 ? "text-primary" : "text-danger"}>
+                            ₹{Math.abs(t.balance).toLocaleString()} {t.balance < 0 ? "(Cr)" : "(Dr)"}
+                          </td>
+                          <td>
+                            <div className="d-flex justify-content-center gap-2">
+                              <Button
+                                className="btn-action btn-view"
+                                onClick={() => handleViewClick(t)}
+                                title="View Details"
+                              >
+                                <FaEye />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-5 empty-state">
+                    <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                    <p className="text-muted mb-0">No ledger entries found</p>
+                  </div>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="d-flex justify-content-between align-items-center mt-3">
+              <small className="text-muted">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of{" "}
+                {filteredTransactions.length} entries
+              </small>
+              <Pagination size="sm">
+                <Pagination.First onClick={() => handlePageChange(1)} disabled={currentPage === 1} />
+                <Pagination.Prev
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                />
+                {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                  let pageNum = currentPage - 2 + i;
+                  if (pageNum < 1) pageNum = 1;
+                  if (pageNum > totalPages) pageNum = totalPages;
+                  return (
+                    <Pagination.Item
+                      key={pageNum}
+                      active={pageNum === currentPage}
+                      onClick={() => handlePageChange(pageNum)}
+                    >
+                      {pageNum}
+                    </Pagination.Item>
+                  );
+                })}
+                <Pagination.Next
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                />
+                <Pagination.Last
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                />
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
 
       {/* Voucher Detail Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
-        <Modal.Header closeButton>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg" className="ledger-modal">
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Voucher Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           {selectedTransaction && (
-            <table className="table table-bordered">
+            <Table className="modal-table" bordered>
               <tbody>
                 <tr>
-                  <td width="30%" className="fw-semibold">Date</td>
+                  <td className="fw-semibold">Date</td>
                   <td>{selectedTransaction.date}</td>
                 </tr>
                 <tr>
@@ -402,28 +430,16 @@ const Ledger = () => {
                   </td>
                 </tr>
               </tbody>
-            </table>
+            </Table>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-close" onClick={() => setShowModal(false)}>
             Close
           </Button>
         </Modal.Footer>
       </Modal>
-
-      {/* Page Info */}
-      <Card className="mb-4 p-3 shadow rounded-4 mt-4">
-        <Card.Body>
-          <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
-          <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-            <li>Provides a detailed record of all financial transactions for a specific account or party.</li>
-            <li>Displays both debit and credit entries along with dates and references.</li>
-            <li>Maintains a running balance over a selected time period to track account position.</li>
-          </ul>
-        </Card.Body>
-      </Card>
-    </div>
+    </Container>
   );
 };
 

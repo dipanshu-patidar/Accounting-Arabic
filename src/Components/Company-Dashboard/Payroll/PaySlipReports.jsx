@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Table, Button, Modal, Form, Row, Col,
-  InputGroup, Card
+  InputGroup, Card, Badge, Container, Spinner
 } from 'react-bootstrap';
 import {
   FaEye, FaDownload, FaEnvelope, FaWhatsapp,
-  FaCalendarAlt, FaUser, FaMoneyBillWave
+  FaCalendarAlt, FaUser, FaMoneyBillWave, FaSearch, FaFilter, FaTimes
 } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './PaySlipReports.css';
 
 // Convert "November, 2025" → "Nov 2025"
 const apiMonthToUiMonth = (apiMonth) => {
@@ -56,6 +57,11 @@ const PayslipReports = () => {
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [payslipDetail, setPayslipDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+
+  // Modal cleanup refs (same pattern as Users.jsx)
+  const isCleaningUpRef = useRef(false);
+  const modalKeyRef = useRef(0);
 
   // Filters
   const [monthFilter, setMonthFilter] = useState(''); // "Nov 2025"
@@ -118,6 +124,12 @@ const PayslipReports = () => {
 
   // View Payslip
   const handleViewPayslip = async (payslip) => {
+    // Reset cleanup flag
+    isCleaningUpRef.current = false;
+    
+    // Force modal remount
+    modalKeyRef.current += 1;
+    
     setDetailLoading(true);
     setSelectedPayslip(payslip);
     try {
@@ -132,6 +144,26 @@ const PayslipReports = () => {
     } finally {
       setDetailLoading(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    // Prevent multiple calls
+    if (isCleaningUpRef.current) return;
+    isCleaningUpRef.current = true;
+    
+    // Close modal immediately
+    setShowModal(false);
+    
+    // Force modal remount on next open
+    modalKeyRef.current += 1;
+  };
+  
+  // Handle modal exit - cleanup after animation
+  const handleModalExited = () => {
+    // Reset payslip data after modal fully closed
+    setSelectedPayslip(null);
+    setPayslipDetail(null);
+    isCleaningUpRef.current = false;
   };
 
   const handleDownload = (payslip) => {
@@ -160,329 +192,434 @@ const PayslipReports = () => {
   });
 
 
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading payslip reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const getStatusBadgeClass = (status) => {
+    return status === "Paid" ? "badge-status badge-paid" : "badge-status badge-pending";
+  };
+
   return (
-    <div className="container-fluid mt-4 px-3 px-md-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <h2 className="mb-4 text-center text-md-start" style={{ color: '#023347' }}>Payslip Reports</h2>
+    <Container fluid className="p-4 payslip-reports-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="payslip-reports-title">
+              <i className="fas fa-file-invoice-dollar me-2"></i>
+              Payslip Reports
+            </h3>
+            <p className="payslip-reports-subtitle">View and manage employee payslip reports</p>
+          </Col>
+        </Row>
+      </div>
 
-      {/* Filters */}
-      <Row className="mb-4">
-        <Col xs={12} md={4} className="mb-3 mb-md-0">
-          <InputGroup>
-            <InputGroup.Text style={{ backgroundColor: '#e6f3f5', border: '1px solid #ced4da', color: '#023347' }}>
-              <FaCalendarAlt />
-            </InputGroup.Text>
-            <Form.Select
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              style={{ border: '1px solid #ced4da' }}
-            >
-              <option value="">All Months</option>
-              {uniqueMonths.map(month => (
-                <option key={month} value={month}>{month}</option>
-              ))}
-            </Form.Select>
-          </InputGroup>
-        </Col>
-        <Col xs={12} md={4} className="mb-3 mb-md-0">
-          <InputGroup>
-            <InputGroup.Text style={{ backgroundColor: '#e6f3f5', border: '1px solid #ced4da', color: '#023347' }}>
-              <FaUser />
-            </InputGroup.Text>
-            <Form.Control
-              placeholder="Filter by Employee"
-              value={employeeFilter}
-              onChange={(e) => setEmployeeFilter(e.target.value)}
-              style={{ border: '1px solid #ced4da' }}
-            />
-          </InputGroup>
-        </Col>
-        <Col xs={12} md={4}>
-          <InputGroup>
-            <InputGroup.Text style={{ backgroundColor: '#e6f3f5', border: '1px solid #ced4da', color: '#023347' }}>
-              <FaMoneyBillWave />
-            </InputGroup.Text>
-            <Form.Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ border: '1px solid #ced4da' }}
-            >
-              <option value="">All Statuses</option>
-              <option value="Paid">Paid</option>
-              <option value="Pending">Pending</option>
-            </Form.Select>
-          </InputGroup>
-        </Col>
-      </Row>
+      {/* Filter Card */}
+      <Card className="filter-card">
+        <Card.Header className="d-flex justify-content-between align-items-center bg-white border-0 pb-0">
+          <div className="d-flex align-items-center">
+            <FaFilter className="me-2" style={{ color: '#505ece' }} />
+            <h6 className="mb-0 filter-title">Filters</h6>
+          </div>
+          <Button
+            variant="link"
+            onClick={() => setShowFilters(!showFilters)}
+            className="p-0"
+            style={{ color: '#505ece' }}
+          >
+            {showFilters ? <FaTimes /> : <FaFilter />}
+          </Button>
+        </Card.Header>
+        {showFilters && (
+          <Card.Body className="pt-3">
+            <Row>
+              <Col xs={12} md={4} className="mb-3 mb-md-0">
+                <Form.Group>
+                  <Form.Label className="form-label-custom d-flex align-items-center">
+                    <FaCalendarAlt className="me-1" /> Month
+                  </Form.Label>
+                  <InputGroup className="input-group-custom">
+                    <InputGroup.Text>
+                      <FaCalendarAlt />
+                    </InputGroup.Text>
+                    <Form.Select
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      className="form-select-custom"
+                    >
+                      <option value="">All Months</option>
+                      {uniqueMonths.map(month => (
+                        <option key={month} value={month}>{month}</option>
+                      ))}
+                    </Form.Select>
+                  </InputGroup>
+                </Form.Group>
+              </Col>
+              <Col xs={12} md={4} className="mb-3 mb-md-0">
+                <Form.Group>
+                  <Form.Label className="form-label-custom d-flex align-items-center">
+                    <FaUser className="me-1" /> Employee
+                  </Form.Label>
+                  <InputGroup className="input-group-custom">
+                    <InputGroup.Text>
+                      <FaSearch />
+                    </InputGroup.Text>
+                    <Form.Control
+                      placeholder="Search by Employee"
+                      value={employeeFilter}
+                      onChange={(e) => setEmployeeFilter(e.target.value)}
+                      className="form-control-custom"
+                    />
+                  </InputGroup>
+                </Form.Group>
+              </Col>
+              <Col xs={12} md={4} className="mb-3 mb-md-0">
+                <Form.Group>
+                  <Form.Label className="form-label-custom d-flex align-items-center">
+                    <FaMoneyBillWave className="me-1" /> Status
+                  </Form.Label>
+                  <InputGroup className="input-group-custom">
+                    <InputGroup.Text>
+                      <FaMoneyBillWave />
+                    </InputGroup.Text>
+                    <Form.Select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="form-select-custom"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="Paid">Paid</option>
+                      <option value="Pending">Pending</option>
+                    </Form.Select>
+                  </InputGroup>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col xs={12} className="text-end mt-3">
+                <Button
+                  className="btn-clear-filters"
+                  onClick={() => {
+                    setMonthFilter('');
+                    setEmployeeFilter('');
+                    setStatusFilter('');
+                  }}
+                >
+                  <FaTimes className="me-1" /> Clear Filters
+                </Button>
+              </Col>
+            </Row>
+          </Card.Body>
+        )}
+      </Card>
 
-      {/* Desktop Table */}
-      <div className="d-none d-md-block">
-        <Table striped bordered hover responsive>
-          <thead>
-            <tr>
-              <th>Payslip No</th>
-              <th>Employee Name</th>
-              <th>Department</th>
-              <th>Month</th>
-              <th>Net Salary</th>
-              <th>Payment Mode</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* Table Card */}
+      <Card className="payslip-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
+          {/* Desktop Table */}
+          <div className="d-none d-md-block">
+            <div className="table-responsive">
+              <Table hover responsive className="payslip-table">
+                <thead className="table-header">
+                  <tr>
+                    <th>Payslip No</th>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th>Month</th>
+                    <th>Net Salary</th>
+                    <th>Payment Mode</th>
+                    <th>Status</th>
+                    <th className="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayslips.length > 0 ? (
+                    filteredPayslips.map((payslip) => (
+                      <tr key={payslip.id}>
+                        <td className="fw-semibold">{payslip.payslipNo}</td>
+                        <td className="fw-semibold">{payslip.employeeName}</td>
+                        <td>{payslip.department}</td>
+                        <td>{payslip.monthUi}</td>
+                        <td className="fw-bold text-primary">{formatINR(payslip.netSalary)}</td>
+                        <td>{payslip.paymentMode}</td>
+                        <td>
+                          <Badge className={getStatusBadgeClass(payslip.status)}>
+                            {payslip.status}
+                          </Badge>
+                        </td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            <Button
+                              className="btn-action btn-view"
+                              onClick={() => handleViewPayslip(payslip)}
+                              title="View"
+                            >
+                              <FaEye />
+                            </Button>
+                            <Button
+                              className="btn-action btn-download"
+                              onClick={() => handleDownload(payslip)}
+                              title="Download"
+                            >
+                              <FaDownload />
+                            </Button>
+                            <Button
+                              className="btn-action btn-email"
+                              onClick={() => handleEmail(payslip)}
+                              title="Email"
+                            >
+                              <FaEnvelope />
+                            </Button>
+                            <Button
+                              className="btn-action btn-whatsapp"
+                              onClick={() => handleWhatsApp(payslip)}
+                              title="WhatsApp"
+                            >
+                              <FaWhatsapp />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="text-center text-muted py-4">
+                        No payslips found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="d-md-none p-3">
             {filteredPayslips.length > 0 ? (
               filteredPayslips.map((payslip) => (
-                <tr key={payslip.id}>
-                  <td>{payslip.payslipNo}</td>
-                  <td>{payslip.employeeName}</td>
-                  <td>{payslip.department}</td>
-                  <td>{payslip.monthUi}</td>
-                  <td>{formatINR(payslip.netSalary)}</td>
-                  <td>{payslip.paymentMode}</td>
-                  <td>
-                    <span className={`badge ${payslip.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
-                      {payslip.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="d-flex justify-content-around">
+                <Card key={payslip.id} className="mobile-card mb-3">
+                  <Card.Body className="mobile-card-body">
+                    <div className="d-flex justify-content-between align-items-start mb-3">
+                      <div>
+                        <Card.Title className="h6 mb-1 fw-bold" style={{ color: '#505ece' }}>
+                          {payslip.payslipNo}
+                        </Card.Title>
+                        <Card.Subtitle className="text-muted small">{payslip.employeeName}</Card.Subtitle>
+                      </div>
+                      <Badge className={getStatusBadgeClass(payslip.status)}>
+                        {payslip.status}
+                      </Badge>
+                    </div>
+                    <div className="mb-3">
+                      <div className="mb-2"><strong>Department:</strong> {payslip.department}</div>
+                      <div className="mb-2"><strong>Month:</strong> {payslip.monthUi}</div>
+                      <div className="mb-2"><strong>Net Salary:</strong> <span className="fw-bold text-primary">{formatINR(payslip.netSalary)}</span></div>
+                      <div className="mb-2"><strong>Payment Mode:</strong> {payslip.paymentMode}</div>
+                    </div>
+                    <div className="d-flex justify-content-center gap-2">
                       <Button
-                        variant="light"
-                        size="sm"
+                        className="btn-action btn-view"
                         onClick={() => handleViewPayslip(payslip)}
-                        style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
+                        title="View"
                       >
                         <FaEye />
                       </Button>
                       <Button
-                        variant="light"
-                        size="sm"
+                        className="btn-action btn-download"
                         onClick={() => handleDownload(payslip)}
-                        style={{ color: '#2a8e9c', backgroundColor: '#e6f3f5' }}
+                        title="Download"
                       >
                         <FaDownload />
                       </Button>
                       <Button
-                        variant="light"
-                        size="sm"
+                        className="btn-action btn-email"
                         onClick={() => handleEmail(payslip)}
-                        style={{ color: '#2a8e9c', backgroundColor: '#e6f3f5' }}
+                        title="Email"
                       >
                         <FaEnvelope />
                       </Button>
                       <Button
-                        variant="light"
-                        size="sm"
+                        className="btn-action btn-whatsapp"
                         onClick={() => handleWhatsApp(payslip)}
-                        style={{ color: '#25D366', backgroundColor: '#e6f3f5' }}
+                        title="WhatsApp"
                       >
                         <FaWhatsapp />
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </Card.Body>
+                </Card>
               ))
             ) : (
-              <tr>
-                <td colSpan="8" className="text-center">No payslips found</td>
-              </tr>
+              <div className="text-center text-muted py-4">
+                No payslips found.
+              </div>
             )}
-          </tbody>
-        </Table>
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="d-md-none">
-        {filteredPayslips.length > 0 ? (
-          filteredPayslips.map((payslip) => (
-            <Card key={payslip.id} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-              <Card.Body>
-                <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
-                  <span>{payslip.payslipNo}</span>
-                  <span className={`badge ${payslip.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
-                    {payslip.status}
-                  </span>
-                </Card.Title>
-                <Card.Text>
-                  <div className="mb-2"><strong>Employee:</strong> {payslip.employeeName}</div>
-                  <div className="mb-2"><strong>Department:</strong> {payslip.department}</div>
-                  <div className="mb-2"><strong>Month:</strong> {payslip.monthUi}</div>
-                  <div className="mb-2"><strong>Net Salary:</strong> {formatINR(payslip.netSalary)}</div>
-                  <div className="mb-3"><strong>Payment Mode:</strong> {payslip.paymentMode}</div>
-                  <div className="d-flex justify-content-around">
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => handleViewPayslip(payslip)}
-                      style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                    >
-                      <FaEye />
-                    </Button>
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => handleDownload(payslip)}
-                      style={{ color: '#2a8e9c', backgroundColor: '#e6f3f5' }}
-                    >
-                      <FaDownload />
-                    </Button>
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => handleEmail(payslip)}
-                      style={{ color: '#2a8e9c', backgroundColor: '#e6f3f5' }}
-                    >
-                      <FaEnvelope />
-                    </Button>
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => handleWhatsApp(payslip)}
-                      style={{ color: '#25D366', backgroundColor: '#e6f3f5' }}
-                    >
-                      <FaWhatsapp />
-                    </Button>
-                  </div>
-                </Card.Text>
-              </Card.Body>
-            </Card>
-          ))
-        ) : (
-          <div className="text-center py-4">No payslips found</div>
-        )}
-      </div>
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* Payslip Detail Modal */}
       <Modal
+        key={modalKeyRef.current}
         show={showModal}
-        onHide={() => setShowModal(false)}
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
         size="lg"
         fullscreen="md-down"
+        centered
+        className="payslip-reports-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Payslip Details - {selectedPayslip?.payslipNo}</Modal.Title>
         </Modal.Header>
-        <Modal.Body className="p-3 p-md-4" style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body className="modal-body-custom">
           {detailLoading ? (
-            <div className="text-center py-4">Loading payslip details...</div>
+            <div className="text-center py-4">
+              <Spinner animation="border" className="spinner-custom" />
+              <p className="mt-3 text-muted">Loading payslip details...</p>
+            </div>
           ) : payslipDetail ? (
             <>
               <div className="text-center mb-4">
-                <h4 style={{ color: '#023347' }}>{payslipDetail.companyInfo.name}</h4>
-                <p className="mb-0">{payslipDetail.companyInfo.address}</p>
+                <h4 className="fw-bold" style={{ color: '#505ece' }}>{payslipDetail.companyInfo.name}</h4>
+                <p className="mb-0 text-muted">{payslipDetail.companyInfo.address}</p>
               </div>
 
               <Row className="mb-4">
                 <Col xs={12} md={6} className="mb-3 mb-md-0">
-                  <h5 style={{ color: '#023347' }}>Employee Information</h5>
-                  <p className="mb-1"><strong>Name:</strong> {payslipDetail.employeeInfo.name}</p>
-                  <p className="mb-1"><strong>Department:</strong> {payslipDetail.employeeInfo.department}</p>
-                  <p className="mb-1"><strong>Designation:</strong> {payslipDetail.employeeInfo.designation}</p>
-                  <p className="mb-0"><strong>Employee Code:</strong> {payslipDetail.employeeInfo.employeeCode}</p>
+                  <h5 className="fw-bold" style={{ color: '#505ece' }}><FaUser className="me-2" />Employee Information</h5>
+                  <Table borderless>
+                    <tbody>
+                      <tr><td><strong>Name:</strong></td><td>{payslipDetail.employeeInfo.name}</td></tr>
+                      <tr><td><strong>Department:</strong></td><td>{payslipDetail.employeeInfo.department}</td></tr>
+                      <tr><td><strong>Designation:</strong></td><td>{payslipDetail.employeeInfo.designation}</td></tr>
+                      <tr><td><strong>Employee Code:</strong></td><td>{payslipDetail.employeeInfo.employeeCode}</td></tr>
+                    </tbody>
+                  </Table>
                 </Col>
                 <Col xs={12} md={6}>
-                  <h5 style={{ color: '#023347' }}>Payslip Information</h5>
-                  <p className="mb-1"><strong>Payslip No:</strong> {payslipDetail.payslipInfo.payslipNo}</p>
-                  <p className="mb-1"><strong>Month:</strong> {payslipDetail.payslipInfo.month}</p>
-                  <p className="mb-1"><strong>Payment Mode:</strong> {payslipDetail.payslipInfo.paymentMode}</p>
-                  <p className="mb-0"><strong>Status:</strong> {payslipDetail.payslipInfo.status}</p>
+                  <h5 className="fw-bold" style={{ color: '#505ece' }}><FaCalendarAlt className="me-2" />Payslip Information</h5>
+                  <Table borderless>
+                    <tbody>
+                      <tr><td><strong>Payslip No:</strong></td><td>{payslipDetail.payslipInfo.payslipNo}</td></tr>
+                      <tr><td><strong>Month:</strong></td><td>{payslipDetail.payslipInfo.month}</td></tr>
+                      <tr><td><strong>Payment Mode:</strong></td><td>{payslipDetail.payslipInfo.paymentMode}</td></tr>
+                      <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                          <Badge className={getStatusBadgeClass(payslipDetail.payslipInfo.status)}>
+                            {payslipDetail.payslipInfo.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </Table>
                 </Col>
               </Row>
 
-              <h5 className="mb-3" style={{ color: '#023347' }}>Earnings</h5>
+              <h5 className="mb-3 fw-bold" style={{ color: '#505ece' }}>Earnings</h5>
               <div className="table-responsive mb-4">
-                <Table striped bordered hover>
-                  <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+                <Table hover responsive className="payslip-detail-table">
+                  <thead>
                     <tr>
                       <th>Description</th>
                       <th>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td>Basic Salary</td><td>{formatINR(payslipDetail.earnings.basicSalary)}</td></tr>
-                    <tr><td>Bonus</td><td>{formatINR(payslipDetail.earnings.bonus)}</td></tr>
-                    <tr><td>Allowances</td><td>{formatINR(payslipDetail.earnings.allowances)}</td></tr>
-                    <tr><td>Overtime Pay</td><td>{formatINR(payslipDetail.earnings.overtimePay)}</td></tr>
+                    <tr><td>Basic Salary</td><td className="fw-semibold text-success">{formatINR(payslipDetail.earnings.basicSalary)}</td></tr>
+                    <tr><td>Bonus</td><td className="fw-semibold text-success">{formatINR(payslipDetail.earnings.bonus)}</td></tr>
+                    <tr><td>Allowances</td><td className="fw-semibold text-success">{formatINR(payslipDetail.earnings.allowances)}</td></tr>
+                    <tr><td>Overtime Pay</td><td className="fw-semibold text-success">{formatINR(payslipDetail.earnings.overtimePay)}</td></tr>
                     <tr className="table-primary">
                       <td><strong>Total Earnings</strong></td>
-                      <td><strong>{formatINR(payslipDetail.earnings.totalEarnings)}</strong></td>
+                      <td><strong className="text-success">{formatINR(payslipDetail.earnings.totalEarnings)}</strong></td>
                     </tr>
                   </tbody>
                 </Table>
               </div>
 
-              <h5 className="mb-3" style={{ color: '#023347' }}>Deductions</h5>
+              <h5 className="mb-3 fw-bold" style={{ color: '#505ece' }}>Deductions</h5>
               <div className="table-responsive mb-4">
-                <Table striped bordered hover>
-                  <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+                <Table hover responsive className="payslip-detail-table">
+                  <thead>
                     <tr>
                       <th>Description</th>
                       <th>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td>Tax</td><td>{formatINR(payslipDetail.deductions.Tax)}</td></tr>
-                    <tr><td>Provident Fund</td><td>{formatINR(payslipDetail.deductions.Provident_Fund)}</td></tr>
-                    <tr><td>Insurance</td><td>{formatINR(payslipDetail.deductions.Insurance)}</td></tr>
+                    <tr><td>Tax</td><td className="fw-semibold text-danger">{formatINR(payslipDetail.deductions.Tax)}</td></tr>
+                    <tr><td>Provident Fund</td><td className="fw-semibold text-danger">{formatINR(payslipDetail.deductions.Provident_Fund)}</td></tr>
+                    <tr><td>Insurance</td><td className="fw-semibold text-danger">{formatINR(payslipDetail.deductions.Insurance)}</td></tr>
                     <tr className="table-primary">
                       <td><strong>Total Deductions</strong></td>
-                      <td><strong>{formatINR(payslipDetail.deductions.totalDeductions)}</strong></td>
+                      <td><strong className="text-danger">{formatINR(payslipDetail.deductions.totalDeductions)}</strong></td>
                     </tr>
                   </tbody>
                 </Table>
               </div>
 
-              <div className="text-center mb-4 p-3 rounded" style={{ backgroundColor: '#e6f3f5' }}>
-                <h4 style={{ color: '#023347' }}>
-                  Net Pay: {formatINR(payslipDetail.summary.netSalary)}
+              <div className="summary-card text-center mb-4">
+                <h4 className="fw-bold" style={{ color: '#505ece' }}>
+                  Net Pay: <span className="text-primary">{formatINR(payslipDetail.summary.netSalary)}</span>
                 </h4>
-                <p className="mb-0">{payslipDetail.summary.netSalaryInWords}</p>
+                <p className="mb-0 text-muted">{payslipDetail.summary.netSalaryInWords}</p>
               </div>
 
               <Row className="mb-4">
                 <Col xs={12}>
-                  <h5 style={{ color: '#023347' }}>Bank Information</h5>
-                  <p className="mb-1"><strong>Bank Name:</strong> {payslipDetail.bankInfo.bankName}</p>
-                  <p className="mb-1"><strong>Account Holder:</strong> {payslipDetail.bankInfo.accountHolder}</p>
-                  <p className="mb-1"><strong>Account Number:</strong> ****{payslipDetail.bankInfo.accountNumber.slice(-4)}</p>
-                  <p className="mb-0"><strong>IFSC Code:</strong> {payslipDetail.bankInfo.ifscCode}</p>
+                  <h5 className="fw-bold" style={{ color: '#505ece' }}>Bank Information</h5>
+                  <Table borderless>
+                    <tbody>
+                      <tr><td><strong>Bank Name:</strong></td><td>{payslipDetail.bankInfo.bankName}</td></tr>
+                      <tr><td><strong>Account Holder:</strong></td><td>{payslipDetail.bankInfo.accountHolder}</td></tr>
+                      <tr><td><strong>Account Number:</strong></td><td>****{payslipDetail.bankInfo.accountNumber.slice(-4)}</td></tr>
+                      <tr><td><strong>IFSC Code:</strong></td><td>{payslipDetail.bankInfo.ifscCode}</td></tr>
+                    </tbody>
+                  </Table>
                 </Col>
               </Row>
 
               <div className="d-flex justify-content-between mt-5">
                 <div>
-                  <p className="mb-1">Employee Signature</p>
-                  <div className="border-bottom" style={{ width: '150px', borderColor: '#ced4da' }}></div>
+                  <p className="mb-1 fw-semibold">Employee Signature</p>
+                  <div className="border-bottom" style={{ width: '150px', borderColor: '#e9ecef', borderWidth: '2px' }}></div>
                 </div>
                 <div>
-                  <p className="mb-1">Authorized Signature</p>
-                  <div className="border-bottom" style={{ width: '150px', borderColor: '#ced4da' }}></div>
+                  <p className="mb-1 fw-semibold">Authorized Signature</p>
+                  <div className="border-bottom" style={{ width: '150px', borderColor: '#e9ecef', borderWidth: '2px' }}></div>
                 </div>
               </div>
             </>
           ) : (
-            <div>Error loading payslip details.</div>
+            <div className="text-center text-danger py-4">Error loading payslip details.</div>
           )}
         </Modal.Body>
-        <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
+        <Modal.Footer className="modal-footer-custom">
           <Button
-            variant="secondary"
-            onClick={() => setShowModal(false)}
-            className="w-100 w-md-auto mb-2 mb-md-0"
-            style={{ border: '1px solid #ced4da' }}
+            className="btn-modal-cancel"
+            onClick={handleCloseModal}
           >
             Close
           </Button>
           <Button
-            style={{ backgroundColor: '#023347', border: 'none' }}
+            className="btn-modal-download d-flex align-items-center"
             onClick={() => handleDownload(selectedPayslip)}
-            className="w-100 w-md-auto d-flex justify-content-center align-items-center"
           >
             <FaDownload className="me-1" /> Download PDF
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

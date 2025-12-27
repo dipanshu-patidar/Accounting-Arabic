@@ -1,0 +1,305 @@
+/* Payroll Page Container */
+.payroll-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.payroll-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.payroll-title i {
+  color: #505ece;
+}
+
+.payroll-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Add Payroll Button */
+.btn-add-payroll {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.btn-add-payroll:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-export-pdf {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.btn-export-pdf:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Table Styling */
+.payroll-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+}
+
+.payroll-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.payroll-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.payroll-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.payroll-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Status Badges */
+.badge-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge-paid {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white !important;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+}
+
+.btn-edit {
+  background-color: #ffc107;
+  color: #000 !important;
+}
+
+.btn-edit:hover {
+  background-color: #e0a800;
+  color: #000 !important;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white !important;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+/* Modal Styling */
+.payroll-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  background: white;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+  background: white;
+}
+
+/* Form Controls */
+.form-label-custom {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.form-control-custom:disabled,
+.form-control-custom[readonly] {
+  background-color: #f8f9fa;
+  opacity: 0.8;
+}
+
+/* Modal Buttons */
+.btn-modal-save {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-save:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-modal-delete {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-delete:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Loading Spinner */
+.loading-container {
+  background: #f8f9fa;
+}
+
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .payroll-title {
+    font-size: 1.5rem;
+  }
+
+  .payroll-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+}
+

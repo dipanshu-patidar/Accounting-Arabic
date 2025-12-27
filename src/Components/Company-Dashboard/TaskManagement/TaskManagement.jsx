@@ -9,6 +9,7 @@ import {
   Card,
   Container,
   Badge,
+  Spinner,
 } from 'react-bootstrap';
 import {
   FaEdit,
@@ -20,6 +21,7 @@ import {
 } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './TaskManagement.css';
 
 const TaskManagement = () => {
   const companyId = GetCompanyId();
@@ -237,23 +239,6 @@ const TaskManagement = () => {
     }
   };
 
-  const getPriorityVariant = (priority) => {
-    switch (priority) {
-      case 'High': return 'danger';
-      case 'Medium': return 'warning';
-      case 'Low': return 'success';
-      default: return 'secondary';
-    }
-  };
-
-  const getStatusVariant = (status) => {
-    switch (status) {
-      case 'Completed': return 'success';
-      case 'In Progress': return 'info';
-      case 'Pending': return 'secondary';
-      default: return 'light';
-    }
-  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
@@ -266,48 +251,59 @@ const TaskManagement = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', backgroundColor: '#f0f7f8' }}>
-        <div className="spinner-border" style={{ color: '#023347' }} role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading tasks...</p>
         </div>
       </div>
     );
   }
 
+  const getPriorityBadgeClass = (priority) => {
+    switch (priority) {
+      case 'High': return 'badge-status badge-priority-high';
+      case 'Medium': return 'badge-status badge-priority-medium';
+      case 'Low': return 'badge-status badge-priority-low';
+      default: return 'badge-status';
+    }
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'Completed': return 'badge-status badge-status-completed';
+      case 'In Progress': return 'badge-status badge-status-in-progress';
+      case 'Pending': return 'badge-status badge-status-pending';
+      default: return 'badge-status';
+    }
+  };
+
   return (
-    <Container fluid className="p-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <div className="mb-4 text-center text-md-start">
-        <h2 className="fw-bold mb-2" style={{ color: '#023347' }}>
-          Task & Assignment Management
-        </h2>
-        <p style={{ color: '#2a8e9c', fontSize: '1rem' }} className="text-center">
-          Assign, track, and manage tasks seamlessly across teams.
-        </p>
+    <Container fluid className="p-4 task-management-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="task-management-title">
+              <i className="fas fa-tasks me-2"></i>
+              Task & Assignment Management
+            </h3>
+            <p className="task-management-subtitle">Assign, track, and manage tasks seamlessly across teams</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end mt-3 mt-md-0">
+            <Button className="btn-add-task d-flex align-items-center" onClick={() => openModal()}>
+              <FaPlus className="me-2" /> Add Task
+            </Button>
+          </Col>
+        </Row>
       </div>
 
-      <Card className="shadow border-0" style={{ borderRadius: '15px', backgroundColor: '#e6f3f5' }}>
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold" style={{ color: '#023347' }}>Task List</h5>
-            <Button
-              size="sm"
-              onClick={() => openModal()}
-              style={{
-                backgroundColor: '#023347',
-                border: 'none',
-                borderRadius: '30px',
-                padding: '6px 14px',
-                fontWeight: '600',
-                boxShadow: '0 4px 10px rgba(2, 51, 71, 0.3)',
-              }}
-            >
-              <FaPlus className="me-1" /> Add Task
-            </Button>
-          </div>
-
+      {/* Table Card */}
+      <Card className="task-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
           <div className="table-responsive">
-            <Table hover bordered className="align-middle text-center">
-              <thead>
+            <Table hover responsive className="task-management-table">
+              <thead className="table-header">
                 <tr>
                   <th>Title</th>
                   <th>Assigned To</th>
@@ -315,56 +311,57 @@ const TaskManagement = () => {
                   <th>Due Date</th>
                   <th>Status</th>
                   <th>Created By</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {tasks.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-muted py-4">
-                      No tasks found. Click “Add Task” to create one.
+                    <td colSpan={7} className="text-center text-muted py-4">
+                      No tasks found. Click "Add Task" to create one.
                     </td>
                   </tr>
                 ) : (
                   tasks.map((task) => (
                     <tr key={task.id}>
-                      <td className="fw-bold" style={{ color: '#023347' }}>{task.title}</td>
-                     <td>{task.assignedToName || 'Unassigned'}</td>
+                      <td className="fw-semibold">{task.title}</td>
+                      <td>{task.assignedToName || 'Unassigned'}</td>
                       <td>
-                        <Badge bg={getPriorityVariant(task.priority)}>{task.priority}</Badge>
+                        <Badge className={getPriorityBadgeClass(task.priority)}>
+                          {task.priority}
+                        </Badge>
                       </td>
                       <td>{formatDate(task.dueDate)}</td>
                       <td>
-                        <Badge bg={getStatusVariant(task.status)}>{task.status}</Badge>
+                        <Badge className={getStatusBadgeClass(task.status)}>
+                          {task.status}
+                        </Badge>
                       </td>
                       <td>{task.createdBy}</td>
-                      <td>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          className="me-1"
-                          style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                          onClick={() => openModal(task)}
-                        >
-                          <FaEye size={12} />
-                        </Button>
-                        <Button
-                          size="0sm"
-                          variant="light"
-                          className="me-1"
-                          style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                          onClick={() => openModal(task)}
-                        >
-                          <FaEdit size={12} />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
-                          onClick={() => deleteTask(task.id)}
-                        >
-                          <FaTrash size={12} />
-                        </Button>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button
+                            className="btn-action btn-view"
+                            onClick={() => openModal(task)}
+                            title="View"
+                          >
+                            <FaEye />
+                          </Button>
+                          <Button
+                            className="btn-action btn-edit"
+                            onClick={() => openModal(task)}
+                            title="Edit"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            className="btn-action btn-delete"
+                            onClick={() => deleteTask(task.id)}
+                            title="Delete"
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -383,33 +380,36 @@ const TaskManagement = () => {
         onExited={handleModalExited}
         centered 
         size="lg"
+        className="task-management-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#fff' }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{editingTask ? 'Edit Task' : 'Add New Task'}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#e6f3f5' }}>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Task Title *</Form.Label>
+                  <Form.Label className="form-label-custom">Task Title *</Form.Label>
                   <Form.Control
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
                     placeholder="Enter task title"
+                    className="form-control-custom"
                     required
                   />
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Assign To *</Form.Label>
+                  <Form.Label className="form-label-custom">Assign To *</Form.Label>
                   <Form.Select
                     name="assignedTo"
                     value={formData.assignedTo}
                     onChange={handleInputChange}
+                    className="form-select-custom"
                     required
                   >
                     <option value="">Select Employee</option>
@@ -424,7 +424,7 @@ const TaskManagement = () => {
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
+              <Form.Label className="form-label-custom">Description</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -432,14 +432,20 @@ const TaskManagement = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Enter task details"
+                className="form-control-custom"
               />
             </Form.Group>
 
             <Row>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Priority</Form.Label>
-                  <Form.Select name="priority" value={formData.priority} onChange={handleInputChange}>
+                  <Form.Label className="form-label-custom">Priority</Form.Label>
+                  <Form.Select 
+                    name="priority" 
+                    value={formData.priority} 
+                    onChange={handleInputChange}
+                    className="form-select-custom"
+                  >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
@@ -448,25 +454,27 @@ const TaskManagement = () => {
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Due Date *</Form.Label>
+                  <Form.Label className="form-label-custom">Due Date *</Form.Label>
                   <Form.Control
                     type="date"
                     name="dueDate"
                     value={formData.dueDate}
                     onChange={handleInputChange}
+                    className="form-control-custom"
                     required
                   />
                 </Form.Group>
               </Col>
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Attachment (Optional)</Form.Label>
+                  <Form.Label className="form-label-custom">Attachment (Optional)</Form.Label>
                   <Form.Control
                     type="file"
                     name="attachment"
                     ref={fileInputRef}
                     onChange={handleInputChange}
                     accept=".pdf,.doc,.docx,.jpg,.png"
+                    className="form-control-custom"
                   />
                   {formData.attachmentName && (
                     <small className="text-muted d-block mt-1">
@@ -474,7 +482,7 @@ const TaskManagement = () => {
                       {formData.attachmentName}
                     </small>
                   )}
-                  <Form.Text muted>
+                  <Form.Text className="text-muted">
                     File upload will be linked on save (not implemented in API yet).
                   </Form.Text>
                 </Form.Group>
@@ -482,18 +490,11 @@ const TaskManagement = () => {
             </Row>
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8' }}>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            style={{
-              backgroundColor: '#023347',
-              border: 'none',
-              fontWeight: '600',
-            }}
-          >
+          <Button className="btn-modal-save d-flex align-items-center" onClick={handleSave}>
             <FaSave className="me-2" /> {editingTask ? 'Update' : 'Create'} Task
           </Button>
         </Modal.Footer>

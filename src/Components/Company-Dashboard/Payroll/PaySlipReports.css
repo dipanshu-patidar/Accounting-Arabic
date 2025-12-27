@@ -1,0 +1,404 @@
+/* Payslip Reports Page Container */
+.payslip-reports-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.payslip-reports-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.payslip-reports-title i {
+  color: #505ece;
+}
+
+.payslip-reports-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Search Wrapper */
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+.search-input {
+  padding-left: 45px !important;
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.search-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Filter Card */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+}
+
+.filter-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.filter-title {
+  color: #505ece;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.btn-clear-filters {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-clear-filters:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Input Group Styling */
+.input-group-custom .input-group-text {
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: #495057;
+}
+
+.input-group-custom .form-control,
+.input-group-custom .form-select {
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+
+.input-group-custom .form-control:focus,
+.input-group-custom .form-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.input-group-custom .form-control:focus + .input-group-text,
+.input-group-custom:focus-within .input-group-text {
+  border-color: #505ece;
+}
+
+/* Table Styling */
+.payslip-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+}
+
+.payslip-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.payslip-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.payslip-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.payslip-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Status Badges */
+.badge-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge-paid {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white !important;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+}
+
+.btn-view {
+  background-color: #17a2b8;
+  color: white !important;
+}
+
+.btn-view:hover {
+  background-color: #138496;
+}
+
+.btn-download {
+  background-color: #505ece;
+  color: white !important;
+}
+
+.btn-download:hover {
+  background-color: #3d47b8;
+}
+
+.btn-email {
+  background-color: #17a2b8;
+  color: white !important;
+}
+
+.btn-email:hover {
+  background-color: #138496;
+}
+
+.btn-whatsapp {
+  background-color: #25D366;
+  color: white !important;
+}
+
+.btn-whatsapp:hover {
+  background-color: #1da851;
+}
+
+/* Mobile Card Styling */
+.mobile-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white !important;
+  margin-bottom: 1rem;
+}
+
+.mobile-card-body {
+  padding: 1rem;
+  background: white;
+}
+
+/* Modal Styling */
+.payslip-reports-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  background: white;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background: #505ece;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+  background: white;
+}
+
+/* Payslip Detail Tables */
+.payslip-detail-table {
+  margin-bottom: 1.5rem;
+}
+
+.payslip-detail-table thead {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.payslip-detail-table thead th {
+  color: white !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none !important;
+  padding: 0.75rem;
+}
+
+.payslip-detail-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+.payslip-detail-table tbody .table-primary {
+  background-color: rgba(80, 94, 206, 0.1) !important;
+}
+
+/* Summary Card */
+.summary-card {
+  background: linear-gradient(135deg, rgba(80, 94, 206, 0.1) 0%, rgba(61, 71, 184, 0.1) 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border: 2px solid rgba(80, 94, 206, 0.2);
+}
+
+.summary-card h4 {
+  color: #505ece;
+  font-weight: 700;
+}
+
+/* Modal Buttons */
+.btn-modal-download {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-download:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Loading Spinner */
+.loading-container {
+  background: #f8f9fa;
+}
+
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .payslip-reports-title {
+    font-size: 1.5rem;
+  }
+
+  .payslip-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+}
+

@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './SalaryStructure.css';
 
 const SalaryStructure = () => {
     const [structures, setStructures] = useState([]);
@@ -186,56 +187,59 @@ const SalaryStructure = () => {
 
     // Mobile-friendly component card
     const ComponentCard = ({ component, structureId }) => (
-        <Card className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Body>
-                <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                        <Card.Title className="h6 mb-1" style={{ color: '#023347' }}>
-                            <Badge bg={component.type === 'Earning' ? 'success' : 'danger'} className="me-2">
-                                {component.type}
-                            </Badge>
-                            {component.name}
-                        </Card.Title>
-                        <Card.Text className="mb-1">
-                            <strong>Value:</strong> {component.value}
-                        </Card.Text>
-                        <Card.Text className="mb-0">
-                            <strong>Taxable:</strong> {component.taxable ? 'Yes' : 'No'}
-                        </Card.Text>
+        <div className="component-card">
+            <div className="d-flex justify-content-between align-items-start">
+                <div>
+                    <div className="mb-2">
+                        <span className={component.type === 'Earning' ? 'badge-earning' : 'badge-deduction'}>
+                            {component.type}
+                        </span>
+                        <strong className="ms-2" style={{ color: '#495057' }}>{component.name}</strong>
                     </div>
-                    <div className="d-flex">
-                        <Button
-                            variant="light"
-                            size="sm"
-                            onClick={() => showModalHandler(component, structureId)}
-                            className="me-2"
-                            style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                        >
-                            <FaEdit />
-                        </Button>
-                        <Button
-                            variant="light"
-                            size="sm"
-                            onClick={() => deleteComponent(structureId, component.id)}
-                            style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
-                        >
-                            <FaTrash />
-                        </Button>
+                    <div className="mb-1">
+                        <strong>Value:</strong> <span className="text-primary">{component.value}</span>
+                    </div>
+                    <div>
+                        <strong>Taxable:</strong> {component.taxable ? <span className="text-success">Yes</span> : <span className="text-danger">No</span>}
                     </div>
                 </div>
-            </Card.Body>
-        </Card>
+                <div className="d-flex gap-2">
+                    <Button
+                        className="btn-action btn-edit"
+                        onClick={() => showModalHandler(component, structureId)}
+                        title="Edit"
+                    >
+                        <FaEdit />
+                    </Button>
+                    <Button
+                        className="btn-action btn-delete"
+                        onClick={() => deleteComponent(structureId, component.id)}
+                        title="Delete"
+                    >
+                        <FaTrash />
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 
     return (
-        <Container fluid className="salary-structure-container p-3 p-md-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-            <h2 className="mb-3 mb-md-4" style={{ color: '#023347' }}>Salary Structure Management</h2>
+        <Container fluid className="p-4 salary-structure-container">
+            {/* Header Section */}
+            <div className="mb-4">
+                <h3 className="salary-structure-title">
+                    <i className="fas fa-money-bill-wave me-2"></i>
+                    Salary Structure Management
+                </h3>
+                <p className="salary-structure-subtitle">Create and manage employee salary structures and components</p>
+            </div>
 
-            <Card className="mb-4" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+            {/* Assign Structure Section */}
+            <Card className="assign-section border-0 shadow-sm mb-4">
                 <Card.Body>
-                    <Row className="mb-4">
-                        <Col xs={12} md={8} lg={6} className="ms-auto">
-                            <div className="d-flex flex-column flex-md-row">
+                    <Row>
+                        <Col xs={12} md={10} lg={8} className="ms-auto">
+                            <div className="d-flex flex-column flex-md-row gap-2">
                                 <DropdownButton
                                     variant="outline-primary"
                                     title={selectedStructure ?
@@ -243,8 +247,7 @@ const SalaryStructure = () => {
                                         : 'Select Structure'}
                                     id="structure-dropdown"
                                     onSelect={(e) => setSelectedStructure(e)}
-                                    className="mb-2 mb-md-0 me-md-2 w-100 w-md-auto"
-                                    style={{ borderColor: '#023347', color: '#023347' }}
+                                    className="flex-fill"
                                 >
                                     {structures.map(structure => (
                                         <Dropdown.Item key={structure.id} eventKey={structure.id}>
@@ -260,8 +263,7 @@ const SalaryStructure = () => {
                                         : 'Select Employee'}
                                     id="employee-dropdown"
                                     onSelect={(e) => setSelectedEmployee(e)}
-                                    className="mb-2 mb-md-0 me-md-2 w-100 w-md-auto"
-                                    style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}
+                                    className="flex-fill"
                                 >
                                     {employees.map(employee => (
                                         <Dropdown.Item key={employee.id} eventKey={employee.id}>
@@ -271,97 +273,106 @@ const SalaryStructure = () => {
                                 </DropdownButton>
 
                                 <Button
-                                    style={{ backgroundColor: '#023347', border: 'none' }}
+                                    className="btn-assign d-flex align-items-center justify-content-center"
                                     onClick={assignStructureToEmployee}
-                                    className="d-flex align-items-center justify-content-center w-100 w-md-auto"
                                 >
                                     <FaUserAlt className="me-2" /> Assign
                                 </Button>
                             </div>
                         </Col>
                     </Row>
+                </Card.Body>
+            </Card>
+
+            {/* Structures Table Card */}
+            <Card className="structure-table-card border-0 shadow-lg">
+                <Card.Body className="p-0">
 
                     {/* Desktop Table View */}
                     <div className="d-none d-md-block">
-                        <Table striped bordered hover responsive>
-                            <thead>
+                        <Table hover responsive className="structure-table">
+                            <thead className="table-header">
                                 <tr>
                                     <th>Structure ID</th>
                                     <th>Structure Name</th>
-                                    <th>Actions</th>
+                                    <th className="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {structures.map(structure => (
                                     <React.Fragment key={structure.id}>
                                         <tr>
-                                            <td>{structure.id}</td>
-                                            <td>{structure.name}</td>
-                                            <td>
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    onClick={() => showModalHandler(null, structure.id)}
-                                                    style={{ borderColor: '#023347', color: '#023347' }}
-                                                >
-                                                    Add Component
-                                                </Button>
-                                                <Button
-                                                    variant="outline-secondary"
-                                                    size="sm"
-                                                    className="ms-2"
-                                                    onClick={() => toggleExpandStructure(structure.id)}
-                                                    style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}
-                                                >
-                                                    {expandedStructureId === structure.id ? 'Hide' : 'View'} Components
-                                                </Button>
+                                            <td className="fw-semibold">{structure.id}</td>
+                                            <td className="fw-semibold">{structure.name}</td>
+                                            <td className="text-center">
+                                                <div className="d-flex justify-content-center gap-2">
+                                                    <Button
+                                                        className="btn-add-component"
+                                                        size="sm"
+                                                        onClick={() => showModalHandler(null, structure.id)}
+                                                    >
+                                                        <FaPlus className="me-1" /> Add Component
+                                                    </Button>
+                                                    <Button
+                                                        className="btn-view-components"
+                                                        size="sm"
+                                                        onClick={() => toggleExpandStructure(structure.id)}
+                                                    >
+                                                        {expandedStructureId === structure.id ? <FaChevronUp className="me-1" /> : <FaChevronDown className="me-1" />}
+                                                        {expandedStructureId === structure.id ? 'Hide' : 'View'} Components
+                                                    </Button>
+                                                </div>
                                             </td>
                                         </tr>
 
                                         {expandedStructureId === structure.id && (
                                             <tr>
                                                 <td colSpan={3} className="p-0">
-                                                    <div className="p-3" style={{ backgroundColor: '#e6f3f5' }}>
-                                                        <h5 className="mb-3" style={{ color: '#023347' }}>Components for {structure.name}</h5>
-                                                        <Table striped bordered hover size="sm">
-                                                            <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+                                                    <div className="expanded-section">
+                                                        <h5 className="mb-3 fw-bold" style={{ color: '#505ece' }}>Components for {structure.name}</h5>
+                                                        <Table hover responsive size="sm" className="component-table">
+                                                            <thead>
                                                                 <tr>
                                                                     <th>Type</th>
                                                                     <th>Component Name</th>
                                                                     <th>Amount / %</th>
                                                                     <th>Taxable</th>
-                                                                    <th>Actions</th>
+                                                                    <th className="text-center">Actions</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 {structure.components.map(component => (
                                                                     <tr key={component.id}>
                                                                         <td>
-                                                                            <Badge bg={component.type === 'Earning' ? 'success' : 'danger'}>
+                                                                            <span className={component.type === 'Earning' ? 'badge-earning' : 'badge-deduction'}>
                                                                                 {component.type}
-                                                                            </Badge>
+                                                                            </span>
                                                                         </td>
-                                                                        <td>{component.name}</td>
-                                                                        <td>{component.value}</td>
-                                                                        <td>{component.taxable ? 'Yes' : 'No'}</td>
+                                                                        <td className="fw-semibold">{component.name}</td>
+                                                                        <td className="text-primary fw-semibold">{component.value}</td>
                                                                         <td>
-                                                                            <Button
-                                                                                variant="light"
-                                                                                size="sm"
-                                                                                onClick={() => showModalHandler(component, structure.id)}
-                                                                                style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                                                                            >
-                                                                                <FaEdit />
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="light"
-                                                                                size="sm"
-                                                                                className="ms-2"
-                                                                                onClick={() => deleteComponent(structure.id, component.id)}
-                                                                                style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
-                                                                            >
-                                                                                <FaTrash />
-                                                                            </Button>
+                                                                            {component.taxable ? 
+                                                                                <span className="text-success fw-semibold">Yes</span> : 
+                                                                                <span className="text-danger fw-semibold">No</span>
+                                                                            }
+                                                                        </td>
+                                                                        <td className="text-center">
+                                                                            <div className="d-flex justify-content-center gap-2">
+                                                                                <Button
+                                                                                    className="btn-action btn-edit"
+                                                                                    onClick={() => showModalHandler(component, structure.id)}
+                                                                                    title="Edit"
+                                                                                >
+                                                                                    <FaEdit />
+                                                                                </Button>
+                                                                                <Button
+                                                                                    className="btn-action btn-delete"
+                                                                                    onClick={() => deleteComponent(structure.id, component.id)}
+                                                                                    title="Delete"
+                                                                                >
+                                                                                    <FaTrash />
+                                                                                </Button>
+                                                                            </div>
                                                                         </td>
                                                                     </tr>
                                                                 ))}
@@ -378,29 +389,27 @@ const SalaryStructure = () => {
                     </div>
 
                     {/* Mobile Card View */}
-                    <div className="d-md-none">
+                    <div className="d-md-none p-3">
                         {structures.map(structure => (
-                            <Card key={structure.id} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-                                <Card.Header className="d-flex justify-content-between align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+                            <Card key={structure.id} className="mobile-card">
+                                <Card.Header className="mobile-card-header d-flex justify-content-between align-items-center">
                                     <div>
-                                        <h5 className="mb-0">{structure.name}</h5>
-                                        <small>{structure.id}</small>
+                                        <h5 className="mb-0 fw-bold">{structure.name}</h5>
+                                        <small className="opacity-75">{structure.id}</small>
                                     </div>
-                                    <div>
+                                    <div className="d-flex gap-2">
                                         <Button
-                                            variant="light"
+                                            className="btn-add-component"
                                             size="sm"
                                             onClick={() => showModalHandler(null, structure.id)}
-                                            className="me-2"
-                                            style={{ color: '#023347' }}
                                         >
-                                            Add
+                                            <FaPlus className="me-1" /> Add
                                         </Button>
                                         <Button
                                             variant="light"
                                             size="sm"
                                             onClick={() => toggleExpandStructure(structure.id)}
-                                            style={{ color: '#023347' }}
+                                            style={{ color: 'white', background: 'rgba(255,255,255,0.2)' }}
                                         >
                                             {expandedStructureId === structure.id ? <FaChevronUp /> : <FaChevronDown />}
                                         </Button>
@@ -408,8 +417,8 @@ const SalaryStructure = () => {
                                 </Card.Header>
 
                                 {expandedStructureId === structure.id && (
-                                    <Card.Body className="pt-0" style={{ backgroundColor: '#e6f3f5' }}>
-                                        <h6 className="mt-3 mb-3" style={{ color: '#023347' }}>Components</h6>
+                                    <Card.Body className="mobile-card-body">
+                                        <h6 className="mt-2 mb-3 fw-bold" style={{ color: '#505ece' }}>Components</h6>
                                         {structure.components.map(component => (
                                             <ComponentCard
                                                 key={component.id}
@@ -425,34 +434,41 @@ const SalaryStructure = () => {
                 </Card.Body>
             </Card>
 
-            <Modal show={showModal} onHide={handleCloseModal} size="lg" fullscreen="sm-down">
-                <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+            <Modal 
+                show={showModal} 
+                onHide={handleCloseModal} 
+                size="lg" 
+                fullscreen="sm-down"
+                centered
+                className="salary-structure-modal"
+            >
+                <Modal.Header closeButton className="modal-header-custom">
                     <Modal.Title>
                         {editingComponent ? "Edit Component" : "Add Component"}
                     </Modal.Title>
                 </Modal.Header>
-                <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+                <Modal.Body className="modal-body-custom">
                     <Form>
                         <Form.Group className="mb-3">
-                            <Form.Label>Component Name</Form.Label>
+                            <Form.Label className="form-label-custom">Component Name</Form.Label>
                             <FormControl
                                 name="componentName"
                                 value={formData.componentName}
                                 onChange={handleInputChange}
                                 placeholder="e.g., Basic, HRA, Bonus"
-                                style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                                className="form-control-custom"
                             />
                         </Form.Group>
 
                         <Row>
                             <Col md={6}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Component Type</Form.Label>
+                                    <Form.Label className="form-label-custom">Component Type</Form.Label>
                                     <Form.Select
                                         name="type"
                                         value={formData.type}
                                         onChange={(e) => handleSelectChange('type', e.target.value)}
-                                        style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                                        className="form-select-custom"
                                     >
                                         <option value="Earning">Earning</option>
                                         <option value="Deduction">Deduction</option>
@@ -462,12 +478,12 @@ const SalaryStructure = () => {
 
                             <Col md={6}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Calculation Type</Form.Label>
+                                    <Form.Label className="form-label-custom">Calculation Type</Form.Label>
                                     <Form.Select
                                         name="calculationType"
                                         value={formData.calculationType}
                                         onChange={(e) => handleSelectChange('calculationType', e.target.value)}
-                                        style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                                        className="form-select-custom"
                                     >
                                         <option value="Fixed">Fixed</option>
                                         <option value="Percentage">Percentage</option>
@@ -477,20 +493,24 @@ const SalaryStructure = () => {
                         </Row>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>
+                            <Form.Label className="form-label-custom">
                                 {formData.calculationType === 'Percentage' ? 'Percentage Value' : 'Amount'}
                             </Form.Label>
-                            <InputGroup>
+                            <InputGroup className="input-group-custom">
                                 <FormControl
                                     name="value"
                                     type="number"
                                     value={formData.value}
                                     onChange={handleInputChange}
                                     placeholder={formData.calculationType === 'Percentage' ? 'Enter percentage' : 'Enter amount'}
-                                    style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                                    className="form-control-custom"
+                                    style={{ borderRight: 'none' }}
                                 />
-                                <InputGroup.Text style={{ backgroundColor: '#e6f3f5', border: '1px solid #ced4da' }}>
-                                    {formData.calculationType === 'Percentage' ? <FaPercentage style={{ color: '#2a8e9c' }} /> : <FaMoneyBillWave style={{ color: '#2a8e9c' }} />}
+                                <InputGroup.Text>
+                                    {formData.calculationType === 'Percentage' ? 
+                                        <FaPercentage style={{ color: '#505ece' }} /> : 
+                                        <FaMoneyBillWave style={{ color: '#505ece' }} />
+                                    }
                                 </InputGroup.Text>
                             </InputGroup>
                         </Form.Group>
@@ -499,35 +519,35 @@ const SalaryStructure = () => {
                             <Form.Check
                                 type="checkbox"
                                 name="taxable"
-                                label="Taxable"
+                                label={<span className="fw-semibold">Taxable</span>}
                                 checked={formData.taxable}
                                 onChange={handleInputChange}
+                                style={{ fontSize: '0.95rem' }}
                             />
                         </Form.Group>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>Notes (optional)</Form.Label>
+                            <Form.Label className="form-label-custom">Notes (optional)</Form.Label>
                             <FormControl
                                 as="textarea"
                                 name="notes"
                                 value={formData.notes}
                                 onChange={handleInputChange}
                                 rows={3}
-                                style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                                className="form-control-custom"
                             />
                         </Form.Group>
                     </Form>
                 </Modal.Body>
-                <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
+                <Modal.Footer className="modal-footer-custom">
                     <Button
-                        variant="secondary"
+                        className="btn-modal-cancel"
                         onClick={handleCloseModal}
-                        style={{ backgroundColor: '#6c757d', borderColor: '#6c757d' }}
                     >
                         Cancel
                     </Button>
                     <Button
-                        style={{ backgroundColor: '#023347', border: 'none' }}
+                        className="btn-modal-save"
                         onClick={handleSaveComponent}
                     >
                         Save

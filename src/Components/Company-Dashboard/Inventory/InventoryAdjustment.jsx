@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import { Card, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import axiosInstance from '../../../Api/axiosInstance';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import { CurrencyContext } from '../../../hooks/CurrencyContext';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './InventoryAdjustment.css';
 
 function InventoryAdjustment() {
   const companyId = GetCompanyId();
@@ -494,128 +496,176 @@ function InventoryAdjustment() {
   // If user doesn't have view permission, show access denied message
   if (!hasViewPermission) {
     return (
-      <div className="container py-4">
-        <div className="alert alert-danger text-center">
-          <h4>Access Denied</h4>
+      <div className="p-4 inventory-adjustment-container">
+        <Card className="text-center p-5 border-0 shadow-lg">
+          <h3 className="text-danger">Access Denied</h3>
           <p>You don't have permission to view the Inventory Adjustment module.</p>
-          <button className="btn btn-primary" onClick={() => window.history.back()}>
+          <button className="btn btn-primary mt-3" onClick={() => window.history.back()}>
             Go Back
           </button>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container py-4">
+    <div className="p-4 inventory-adjustment-container">
       {/* Toast Container */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="colored" />
       
-      {/* Page Title */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="text-dark">Inventory Adjustment Records</h3>
-        {hasCreatePermission && (
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setEditingAdjustment(null);
-              setShowModal(true);
-            }}
-            style={{ backgroundColor: "#53b2a5", border: "none", padding: "8px 16px" }}
-          >
-            + Add Inventory Adjustment
-          </button>
-        )}
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="inventory-adjustment-title">
+          <i className="fas fa-adjust me-2"></i>
+          Inventory Adjustment Management
+        </h3>
+        <p className="inventory-adjustment-subtitle">Manage and track all inventory adjustments across warehouses</p>
       </div>
 
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          {/* Search can be added here if needed */}
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start">
+          {hasCreatePermission && (
+            <button
+              className="btn btn-add-adjustment d-flex align-items-center"
+              onClick={() => {
+                setEditingAdjustment(null);
+                setShowModal(true);
+              }}
+            >
+              <i className="fas fa-plus me-2"></i> Add Inventory Adjustment
+            </button>
+          )}
+        </Col>
+      </Row>
+
       {/* Filters */}
-      <div className="card mb-2">
-        <div className="card-body">
-          <h5>Filter Adjustments</h5>
-          <div className="row g-3">
-            <div className="col-md-3">
-              <label>From Date</label>
-              <input type="date" className="form-control" value={filters.fromDate} onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <label>To Date</label>
-              <input type="date" className="form-control" value={filters.toDate} onChange={(e) => setFilters({ ...filters, toDate: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <label>Adjustment Type</label>
-              <select className="form-control" value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })}>
+      <Card className="filter-card">
+        <Card.Body>
+          <h5 className="mb-3 fw-bold">Filter Adjustments</h5>
+          <Row className="g-3">
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">From Date</label>
+              <input type="date" className="form-control filter-input" value={filters.fromDate} onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">To Date</label>
+              <input type="date" className="form-control filter-input" value={filters.toDate} onChange={(e) => setFilters({ ...filters, toDate: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Adjustment Type</label>
+              <select className="form-control filter-select" value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })}>
                 <option value="">All Types</option>
                 <option value="Add Stock">Add Stock</option>
                 <option value="Remove Stock">Remove Stock</option>
                 <option value="Adjust Value">Adjust Value</option>
               </select>
-            </div>
-            <div className="col-md-3">
-              <label>Source Warehouse</label>
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Source Warehouse</label>
               <input
                 type="text"
-                className="form-control"
+                className="form-control filter-input"
                 placeholder="Type warehouse name..."
                 value={filters.sourceWarehouse}
                 onChange={(e) => setFilters({ ...filters, sourceWarehouse: e.target.value })}
               />
-            </div>
-            <div className="col-md-3">
-              <label>Auto Voucher No</label>
-              <input type="text" className="form-control" placeholder="Search by auto voucher..." value={filters.autoVoucherNo} onChange={(e) => setFilters({ ...filters, autoVoucherNo: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <label>Manual Voucher No</label>
-              <input type="text" className="form-control" placeholder="Search by manual voucher..." value={filters.manualVoucherNo} onChange={(e) => setFilters({ ...filters, manualVoucherNo: e.target.value })} />
-            </div>
-            <div className="col-md-6">
-              <label>Search Item</label>
-              <input type="text" className="form-control" placeholder="Search by item name..." value={filters.searchItem} onChange={(e) => setFilters({ ...filters, searchItem: e.target.value })} />
-            </div>
-          </div>
-        </div>
-      </div>
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Auto Voucher No</label>
+              <input type="text" className="form-control filter-input" placeholder="Search by auto voucher..." value={filters.autoVoucherNo} onChange={(e) => setFilters({ ...filters, autoVoucherNo: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Manual Voucher No</label>
+              <input type="text" className="form-control filter-input" placeholder="Search by manual voucher..." value={filters.manualVoucherNo} onChange={(e) => setFilters({ ...filters, manualVoucherNo: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Search Item</label>
+              <input type="text" className="form-control filter-input" placeholder="Search by item name..." value={filters.searchItem} onChange={(e) => setFilters({ ...filters, searchItem: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3} className="d-flex align-items-end">
+              <button
+                className="btn btn-outline-secondary w-100"
+                onClick={() => setFilters({ fromDate: "", toDate: "", type: "", sourceWarehouse: "", searchItem: "", autoVoucherNo: "", manualVoucherNo: "" })}
+              >
+                Clear Filters
+              </button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {/* Adjustments Table */}
-      <div className="card">
-        <div className="card-body">
+      <Card className="inventory-adjustment-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
           {adjustments.length === 0 ? (
-            <p className="text-center text-muted">No inventory adjustments yet.</p>
+            <Alert variant="info" className="m-3">No inventory adjustments yet.</Alert>
           ) : (
             <div className="table-responsive">
-              <table className="table table-bordered table-striped">
-                <thead className="thead-light">
+              <table className="table inventory-adjustment-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
                   <tr>
-                    <th>Auto Voucher No</th>
-                    <th>Manual Voucher No</th>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Source Warehouse</th>
-                    <th>Items</th>
-                    <th>Total Amount</th>
-                    <th>Actions</th>
+                    <th className="py-3">Auto Voucher No</th>
+                    <th className="py-3">Manual Voucher No</th>
+                    <th className="py-3">Date</th>
+                    <th className="py-3">Type</th>
+                    <th className="py-3">Source Warehouse</th>
+                    <th className="py-3">Items</th>
+                    <th className="py-3">Total Amount</th>
+                    <th className="py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAdjustments.map(adjustment => {
                     const warehouseText = [...new Set(adjustment.items.map(i => i.warehouseName))].join(", ") || "Not specified";
+                    const getTypeBadgeClass = (type) => {
+                      if (type === 'Add Stock') return 'badge-type badge-add';
+                      if (type === 'Remove Stock') return 'badge-type badge-remove';
+                      return 'badge-type badge-adjust';
+                    };
                     return (
                       <tr key={adjustment.id}>
-                        <td>{adjustment.voucherNo}</td>
+                        <td className="fw-bold">{adjustment.voucherNo}</td>
                         <td>{adjustment.manualVoucherNo || '-'}</td>
                         <td>{adjustment.voucherDate}</td>
-                        <td>{adjustment.adjustmentType}</td>
-                        <td>{warehouseText}</td>
-                        <td>{adjustment.items.length} item(s)</td>
-                        <td>{symbol}{convertPrice(adjustment.totalAmount)}</td>
                         <td>
-                          <div className="d-flex gap-1">
-                            <button className="btn btn-sm p-2" style={{ backgroundColor: "#53b2a5", borderColor: "#53b2a5", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => setViewAdjustment(adjustment)} title="View Details"><i className="fas fa-eye"></i></button>
+                          <span className={getTypeBadgeClass(adjustment.adjustmentType)}>
+                            {adjustment.adjustmentType}
+                          </span>
+                        </td>
+                        <td>{warehouseText}</td>
+                        <td>
+                          <span className="badge bg-info text-dark">{adjustment.items.length} item(s)</span>
+                        </td>
+                        <td className="fw-bold text-primary">{symbol}{convertPrice(adjustment.totalAmount)}</td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            <button
+                              className="btn btn-sm btn-action btn-view"
+                              onClick={() => setViewAdjustment(adjustment)}
+                              title="View Details"
+                            >
+                              <i className="fas fa-eye"></i>
+                            </button>
                             {hasUpdatePermission && (
-                              <button className="btn btn-sm p-2" style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => handleEditAdjustment(adjustment)} title="Edit Adjustment"><i className="fas fa-edit"></i></button>
+                              <button
+                                className="btn btn-sm btn-action btn-edit"
+                                onClick={() => handleEditAdjustment(adjustment)}
+                                title="Edit Adjustment"
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
                             )}
                             {hasDeletePermission && (
-                              <button className="btn btn-sm p-2" style={{ backgroundColor: "#dc3545", borderColor: "#dc3545", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }} onClick={() => handleDeleteClick(adjustment)} title="Delete Adjustment"><i className="fas fa-trash"></i></button>
+                              <button
+                                className="btn btn-sm btn-action btn-delete"
+                                onClick={() => handleDeleteClick(adjustment)}
+                                title="Delete Adjustment"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -626,40 +676,42 @@ function InventoryAdjustment() {
               </table>
             </div>
           )}
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal show d-block inventory-adjustment-modal" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content ">
-              <div className="modal-header">
+            <div className="modal-content">
+              <div className="modal-header modal-header-custom">
                 <h5 className="modal-title">{editingAdjustment ? 'Edit Inventory Adjustment' : 'New Inventory Adjustment'}</h5>
-                <div>
-                  <button type="button" className="btn btn-primary me-2" onClick={handlePrintModal}><i className="fas fa-print me-1"></i> Print</button>
-                  <button type="button" className="close" onClick={() => { setShowModal(false); setEditingAdjustment(null); resetForm(); }}>&times;</button>
+                <div className="d-flex gap-2">
+                  <button type="button" className="btn btn-modal-print" onClick={handlePrintModal}>
+                    <i className="fas fa-print me-1"></i> Print
+                  </button>
+                  <button type="button" className="btn-close" onClick={() => { setShowModal(false); setEditingAdjustment(null); resetForm(); }}></button>
                 </div>
               </div>
-              <div className="modal-body">
+              <div className="modal-body modal-body-custom">
                 <form onSubmit={handleSubmit}>
-                  <div className="row mb-3">
-                    <div className="col-md-4">
-                      <label>System Voucher No</label>
-                      <input type="text" className="form-control" value={voucherNo} readOnly />
-                    </div>
-                    <div className="col-md-4">
-                      <label>Manual Voucher No</label>
-                      <input type="text" className="form-control" value={manualVoucherNo} onChange={(e) => setManualVoucherNo(e.target.value)} />
-                    </div>
-                    <div className="col-md-4">
-                      <label>Voucher Date</label>
-                      <input type="date" className="form-control" value={voucherDate} onChange={(e) => setVoucherDate(e.target.value)} />
-                    </div>
-                  </div>
+                  <Row className="mb-3">
+                    <Col md={4}>
+                      <label className="form-label-custom">System Voucher No</label>
+                      <input type="text" className="form-control form-control-custom" value={voucherNo} readOnly />
+                    </Col>
+                    <Col md={4}>
+                      <label className="form-label-custom">Manual Voucher No</label>
+                      <input type="text" className="form-control form-control-custom" value={manualVoucherNo} onChange={(e) => setManualVoucherNo(e.target.value)} />
+                    </Col>
+                    <Col md={4}>
+                      <label className="form-label-custom">Voucher Date</label>
+                      <input type="date" className="form-control form-control-custom" value={voucherDate} onChange={(e) => setVoucherDate(e.target.value)} />
+                    </Col>
+                  </Row>
 
                   <div className="mb-4">
-                    <label className="form-label">Adjustment Type</label>
+                    <label className="form-label-custom mb-3">Adjustment Type</label>
                     <div className="d-flex flex-wrap gap-3">
                       {['Add Stock', 'Remove Stock', 'Adjust Value'].map(type => (
                         <div key={type} className="form-check">
@@ -672,11 +724,11 @@ function InventoryAdjustment() {
 
                   {/* Item Selection */}
                   <div className="mb-4">
-                    <label className="form-label">Select Item</label>
+                    <label className="form-label-custom">Select Item</label>
                     <div className="position-relative" ref={itemDropdownRef}>
                       <input
                         type="text"
-                        className="form-control"
+                        className="form-control form-control-custom"
                         placeholder="Search for an item..."
                         value={itemSearch}
                         onChange={(e) => setItemSearch(e.target.value)}
@@ -684,7 +736,7 @@ function InventoryAdjustment() {
                         onClick={() => setShowItemDropdown(true)}
                       />
                       {showItemDropdown && (
-                        <ul className="dropdown-menu show w-100" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                        <ul className="dropdown-menu show w-100" style={{ maxHeight: '200px', overflowY: 'auto', zIndex: 9999 }}>
                           {filteredItems.length > 0 ? (
                             filteredItems.map(item => (
                               <li key={item.id}>
@@ -703,24 +755,24 @@ function InventoryAdjustment() {
 
                   {/* Items Table */}
                   <div className="table-responsive mb-4">
-                    <table className="table table-bordered">
-                      <thead className="table-light">
+                    <table className="table table-bordered table-sm">
+                      <thead style={{ background: "#f8f9fa" }}>
                         <tr>
-                          <th>Item</th>
-                          <th>Source Warehouse</th>
-                          <th>Quantity</th>
-                          <th>Rate</th>
-                          <th>Amount</th>
-                          <th>Actions</th>
-                          <th>Narration</th>
+                          <th className="fw-semibold">Item</th>
+                          <th className="fw-semibold">Source Warehouse</th>
+                          <th className="fw-semibold">Quantity</th>
+                          <th className="fw-semibold">Rate</th>
+                          <th className="fw-semibold">Amount</th>
+                          <th className="fw-semibold">Actions</th>
+                          <th className="fw-semibold">Narration</th>
                         </tr>
                       </thead>
                       <tbody>
                         {rows.map(row => (
                           <tr key={row.id}>
-                            <td><input type="text" className="form-control" value={row.itemName} readOnly /></td>
+                            <td><input type="text" className="form-control form-control-custom" value={row.itemName} readOnly /></td>
                             <td>
-                              <select className="form-select" value={row.warehouse} onChange={(e) => handleFieldChange(row.id, 'warehouse', e.target.value)}>
+                              <select className="form-select form-select-custom" value={row.warehouse} onChange={(e) => handleFieldChange(row.id, 'warehouse', e.target.value)}>
                                 <option value="">Select Warehouse</option>
                                 {allWarehouses.map(wh => (
                                   <option key={wh.id} value={wh.id}>{wh.warehouse_name} ({wh.location})</option>
@@ -730,7 +782,7 @@ function InventoryAdjustment() {
                             <td>
                               <input 
                                 type="number" 
-                                className="form-control" 
+                                className="form-control form-control-custom" 
                                 value={row.quantity} 
                                 onChange={(e) => handleFieldChange(row.id, 'quantity', e.target.value)} 
                                 min="0" 
@@ -740,24 +792,21 @@ function InventoryAdjustment() {
                             <td>
                               <input 
                                 type="number" 
-                                className="form-control" 
+                                className="form-control form-control-custom" 
                                 value={row.rate} 
                                 onChange={(e) => handleFieldChange(row.id, 'rate', e.target.value)} 
                                 min="0" 
                                 step="0.01"
                               />
                             </td>
-                            <td><input type="text" className="form-control" value={row.amount.toFixed(2)} readOnly /></td>
+                            <td><input type="text" className="form-control form-control-custom" value={row.amount.toFixed(2)} readOnly /></td>
                             <td className="text-center">
-                              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => handleRemoveRow(row.id)} title="Remove Item">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-trash" viewBox="0 0 16 16">
-                                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-                                  <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1z" />
-                                </svg>
+                              <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => handleRemoveRow(row.id)} title="Remove Item" style={{ borderRadius: "8px" }}>
+                                <i className="fas fa-trash"></i>
                               </button>
                             </td>
                             <td>
-                              <textarea className="form-control" rows="1" value={row.narration} onChange={(e) => handleRowNarrationChange(row.id, e.target.value)} placeholder="Enter narration..." />
+                              <textarea className="form-control form-control-custom" rows="1" value={row.narration} onChange={(e) => handleRowNarrationChange(row.id, e.target.value)} placeholder="Enter narration..." />
                             </td>
                           </tr>
                         ))}
@@ -765,31 +814,43 @@ function InventoryAdjustment() {
                     </table>
                   </div>
 
-                  <div className="row mb-4">
-                    <div className="col-md-6">
+                  <Row className="mb-4">
+                    <Col md={6}>
                       <div className="mb-3">
-                        <label className="form-label">Additional Note</label>
-                        <textarea className="form-control" rows="3" value={narration} onChange={(e) => setNarration(e.target.value)} placeholder="Enter a general note..." />
+                        <label className="form-label-custom">Additional Note</label>
+                        <textarea className="form-control form-control-custom" rows="3" value={narration} onChange={(e) => setNarration(e.target.value)} placeholder="Enter a general note..." />
                       </div>
-                    </div>
-                    <div className="col-md-6">
+                    </Col>
+                    <Col md={6}>
                       <div className="d-flex flex-column h-100 justify-content-end">
                         <div className="mb-3">
-                          <label className="form-label">Total Value</label>
+                          <label className="form-label-custom">Total Value</label>
                           <div className="input-group">
-                            <span className="input-group-text">{symbol}</span>
-                            <input type="text" className="form-control" value={convertPrice(totalAmount)} readOnly />
+                            <span className="input-group-text" style={{ background: "#f8f9fa", border: "2px solid #e9ecef", borderRight: "none" }}>{symbol}</span>
+                            <input type="text" className="form-control form-control-custom" value={convertPrice(totalAmount)} readOnly style={{ borderLeft: "none" }} />
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </Col>
+                  </Row>
 
-                  <div className="d-flex justify-content-end">
-                    <button type="button" className="btn btn-secondary me-2" onClick={() => { setShowModal(false); setEditingAdjustment(null); resetForm(); }}>Cancel</button>
-                    <button type="submit" className="btn btn-success" disabled={isSubmitting}>
-                      {isSubmitting ? 'Saving...' : (editingAdjustment ? 'Update Adjustment' : 'Save Adjustment')}
-                    </button>
+                  <div className="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <strong className="fs-5">Total: {symbol}{convertPrice(totalAmount)}</strong>
+                    <div className="d-flex gap-2">
+                      <button type="button" className="btn btn-modal-cancel" onClick={() => { setShowModal(false); setEditingAdjustment(null); resetForm(); }}>
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn btn-modal-save" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Spinner animation="border" size="sm" className="me-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          editingAdjustment ? 'Update Adjustment' : 'Save Adjustment'
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -800,17 +861,19 @@ function InventoryAdjustment() {
 
       {/* View Modal */}
       {viewAdjustment && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal show d-block inventory-adjustment-modal" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
-              <div className="modal-header">
+              <div className="modal-header modal-header-custom">
                 <h5 className="modal-title">Inventory Adjustment Details</h5>
-                <div>
-                  <button type="button" className="btn btn-primary me-2" onClick={handlePrintAdjustment}><i className="fas fa-print me-1"></i> Print</button>
-                  <button type="button" className="close" onClick={() => setViewAdjustment(null)}>&times;</button>
+                <div className="d-flex gap-2">
+                  <button type="button" className="btn btn-modal-print" onClick={handlePrintAdjustment}>
+                    <i className="fas fa-print me-1"></i> Print
+                  </button>
+                  <button type="button" className="btn-close" onClick={() => setViewAdjustment(null)}></button>
                 </div>
               </div>
-              <div className="modal-body" id="adjustment-print-content">
+              <div className="modal-body modal-body-custom" id="adjustment-print-content">
                 <div className="row mb-3">
                   <div className="col-md-4"><label><strong>System Voucher No</strong></label><p>{viewAdjustment.voucherNo}</p></div>
                   <div className="col-md-4"><label><strong>Manual Voucher No</strong></label><p>{viewAdjustment.manualVoucherNo || '-'}</p></div>
@@ -821,14 +884,14 @@ function InventoryAdjustment() {
                 </div>
                 <div className="table-responsive mb-4">
                   <table className="table table-bordered">
-                    <thead className="thead-light">
+                    <thead style={{ background: "#f8f9fa" }}>
                       <tr>
-                        <th>Item</th>
-                        <th>Source Warehouse</th>
-                        <th>Quantity</th>
-                        <th>Rate</th>
-                        <th>Amount</th>
-                        <th>Narration</th>
+                        <th className="fw-semibold">Item</th>
+                        <th className="fw-semibold">Source Warehouse</th>
+                        <th className="fw-semibold">Quantity</th>
+                        <th className="fw-semibold">Rate</th>
+                        <th className="fw-semibold">Amount</th>
+                        <th className="fw-semibold">Narration</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -851,9 +914,9 @@ function InventoryAdjustment() {
                     <p className="border p-2 bg-light rounded">{viewAdjustment.narration}</p>
                   </div>
                 )}
-                <div className="d-flex justify-content-between align-items-center">
-                  <h5><strong>Total Amount: {symbol}{convertPrice(viewAdjustment.totalAmount)}</strong></h5>
-                  <button className="btn btn-secondary" onClick={() => setViewAdjustment(null)}>Close</button>
+                <div className="d-flex justify-content-between align-items-center pt-3 border-top">
+                  <h5 className="mb-0"><strong>Total Amount: {symbol}{convertPrice(viewAdjustment.totalAmount)}</strong></h5>
+                  <button className="btn btn-modal-cancel" onClick={() => setViewAdjustment(null)}>Close</button>
                 </div>
               </div>
             </div>
@@ -863,24 +926,29 @@ function InventoryAdjustment() {
 
       {/* Delete Modal */}
       {showDeleteWarning && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal show d-block inventory-adjustment-modal" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
           <div className="modal-dialog">
             <div className="modal-content">
-              <div className="modal-header">
+              <div className="modal-header modal-header-custom">
                 <h5 className="modal-title">Confirm Deletion</h5>
-                <button type="button" className="close" onClick={cancelDelete}>&times;</button>
+                <button type="button" className="btn-close" onClick={cancelDelete}></button>
               </div>
-              <div className="modal-body">
-                <p>Are you sure you want to delete this inventory adjustment?</p>
-                <p><strong>Voucher No:</strong> {adjustmentToDelete?.voucherNo}</p>
-                <p><strong>Date:</strong> {adjustmentToDelete?.voucherDate}</p>
-                <p><strong>Type:</strong> {adjustmentToDelete?.adjustmentType}</p>
-                <p><strong>Total Amount:</strong> {symbol}{convertPrice(adjustmentToDelete?.totalAmount)}</p>
-                <p className="text-danger">This action cannot be undone.</p>
+              <div className="modal-body modal-body-custom text-center py-4">
+                <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className="fas fa-trash" style={{ fontSize: "32px", color: "#F04438" }}></i>
+                </div>
+                <h4 className="fw-bold mb-2">Delete Adjustment</h4>
+                <p className="text-muted mb-3">Are you sure you want to delete this inventory adjustment? This action cannot be undone.</p>
+                <div className="text-start bg-light p-3 rounded">
+                  <p className="mb-1"><strong>Voucher No:</strong> {adjustmentToDelete?.voucherNo}</p>
+                  <p className="mb-1"><strong>Date:</strong> {adjustmentToDelete?.voucherDate}</p>
+                  <p className="mb-1"><strong>Type:</strong> {adjustmentToDelete?.adjustmentType}</p>
+                  <p className="mb-0"><strong>Total Amount:</strong> {symbol}{convertPrice(adjustmentToDelete?.totalAmount)}</p>
+                </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={cancelDelete}>Cancel</button>
-                <button type="button" className="btn btn-danger" onClick={confirmDelete}>Delete</button>
+              <div className="modal-footer modal-footer-custom">
+                <button type="button" className="btn btn-modal-cancel" onClick={cancelDelete}>Cancel</button>
+                <button type="button" className="btn btn-modal-delete" onClick={confirmDelete}>Delete</button>
               </div>
             </div>
           </div>

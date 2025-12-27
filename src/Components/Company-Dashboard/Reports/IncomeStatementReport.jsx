@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Download, Filter } from "lucide-react";
+import { Container, Row, Col, Card, Button, Table, Spinner } from "react-bootstrap";
+import { FaFileInvoiceDollar, FaCalendarAlt, FaFilter, FaFilePdf, FaFileExcel, FaDownload, FaFile } from "react-icons/fa";
+import GetCompanyId from "../../../Api/GetCompanyId";
+import './IncomeStatementReport.css';
 
 // Utility function for currency formatting
 const formatCurrency = (amount) => {
@@ -12,6 +15,7 @@ const formatCurrency = (amount) => {
 };
 
 const IncomeStatementReport = () => {
+  const companyId = GetCompanyId();
   const [dateRange, setDateRange] = useState('current_month');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,27 +74,26 @@ const IncomeStatementReport = () => {
     alert(`Exporting income statement as ${format.toUpperCase()}`);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex justify-between items-center">
+    <Container fluid className="income-statement-container py-4">
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold" style={{color: "#032d45"}}>Income Statement Report</h1>
-          <p className="text-gray-500">Financial performance for {reportData.period}</p>
+          <h4 className="income-statement-title">
+            <FaFileInvoiceDollar className="me-2" />
+            Income Statement Report
+          </h4>
+          <p className="income-statement-subtitle mb-0">
+            Financial performance {reportData ? `for ${reportData.period}` : ''}
+          </p>
         </div>
-        <div className="flex space-x-2">
-          <div className="relative">
+        <div className="d-flex gap-2 flex-wrap mt-2">
+          <div className="position-relative">
+            <FaCalendarAlt className="position-absolute start-0 top-50 translate-middle-y ms-3" style={{ color: '#6c757d', zIndex: 10 }} />
             <select 
               value={dateRange} 
               onChange={(e) => setDateRange(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-md w-[180px] appearance-none bg-[#032d45] text-white"
+              className="filter-select ps-5"
             >
               <option value="current_week">Current Week</option>
               <option value="current_month">Current Month</option>
@@ -98,207 +101,226 @@ const IncomeStatementReport = () => {
               <option value="current_year">Current Year</option>
               <option value="custom">Custom Range</option>
             </select>
-            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           </div>
-          <button className="flex items-center px-3 py-2 border rounded-md text-sm bg-[#032d45] text-white">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </button>
-          <button 
-            className="flex items-center px-3 py-2 border rounded-md text-sm bg-[#032d45] text-white"
+          <Button className="btn-filter" size="sm">
+            <FaFilter /> Filter
+          </Button>
+          <Button 
+            className="btn-export-pdf" 
+            size="sm"
             onClick={() => handleExport('pdf')}
           >
-            <Download className="mr-2 h-4 w-4" />
-            PDF
-          </button>
-          <button 
-            className="flex items-center px-3 py-2 border rounded-md text-sm bg-[#032d45] text-white"
+            <FaFilePdf /> PDF
+          </Button>
+          <Button 
+            className="btn-export-excel" 
+            size="sm"
             onClick={() => handleExport('excel')}
           >
-            <Download className="mr-2 h-4 w-4" />
-            Excel
-          </button>
+            <FaFileExcel /> Excel
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <div className="flex justify-between items-center pb-2">
-            <h3 className="text-sm font-medium">Total Revenue</h3>
-            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Revenue</span>
-          </div>
-          <div className="text-2xl font-bold">{formatCurrency(reportData.revenue.total)}</div>
-          <p className="text-xs text-gray-500 mt-1">
-            +20.1% from last month
-          </p>
+      {loading ? (
+        <div className="text-center my-5">
+          <Spinner animation="border" variant="primary" className="spinner-custom" />
+          <p className="mt-3">Loading income statement data...</p>
         </div>
-        
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <div className="flex justify-between items-center pb-2">
-            <h3 className="text-sm font-medium">Gross Profit</h3>
-            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Profit</span>
-          </div>
-          <div className="text-2xl font-bold">{formatCurrency(reportData.grossProfit)}</div>
-          <p className="text-xs text-gray-500 mt-1">
-            +15.2% from last month
-          </p>
+      ) : !reportData ? (
+        <div className="text-center py-5 empty-state">
+          <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+          <p className="text-muted mb-0">No income statement data available</p>
         </div>
-        
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <div className="flex justify-between items-center pb-2">
-            <h3 className="text-sm font-medium">Net Income</h3>
-            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Income</span>
-          </div>
-          <div className="text-2xl font-bold">{formatCurrency(reportData.netIncome)}</div>
-          <p className="text-xs text-gray-500 mt-1">
-            +18.3% from last month
-          </p>
-        </div>
-      </div>
+      ) : (
+        <>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border shadow-sm">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-medium">Revenue Breakdown</h3>
-          </div>
-          <div className="p-6">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {reportData.revenue.items.map((item, index) => (
-                    <tr key={index}>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.category}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right">{formatCurrency(item.amount)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right">{item.percentage}%</td>
+          {/* Summary Cards */}
+          <Row className="g-3 mb-4">
+            <Col xs={12} md={4}>
+              <Card className="summary-card summary-card-revenue">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="summary-card-label mb-0">Total Revenue</h5>
+                    <span className="summary-card-badge">Revenue</span>
+                  </div>
+                  <div className="summary-card-value">{formatCurrency(reportData.revenue.total)}</div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={12} md={4}>
+              <Card className="summary-card summary-card-profit">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="summary-card-label mb-0">Gross Profit</h5>
+                    <span className="summary-card-badge">Profit</span>
+                  </div>
+                  <div className="summary-card-value">{formatCurrency(reportData.grossProfit)}</div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={12} md={4}>
+              <Card className="summary-card summary-card-income">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="summary-card-label mb-0">Net Income</h5>
+                    <span className="summary-card-badge">Income</span>
+                  </div>
+                  <div className="summary-card-value">{formatCurrency(reportData.netIncome)}</div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Revenue and COGS Tables */}
+          <Row className="g-3 mb-4">
+            <Col xs={12} lg={6}>
+              <Card className="table-card">
+                <Card.Header className="table-card-header">
+                  <h5>Revenue Breakdown</h5>
+                </Card.Header>
+                <Card.Body className="table-card-body">
+                  <div className="table-responsive">
+                    <Table className="income-statement-table" hover>
+                      <thead className="table-header">
+                        <tr>
+                          <th>Category</th>
+                          <th className="text-end">Amount</th>
+                          <th className="text-end">Percentage</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.revenue.items.map((item, index) => (
+                          <tr key={index}>
+                            <td><strong>{item.category}</strong></td>
+                            <td className="amount-cell">{formatCurrency(item.amount)}</td>
+                            <td className="percentage-cell">{item.percentage}%</td>
+                          </tr>
+                        ))}
+                        <tr className="total-row">
+                          <td><strong>Total Revenue</strong></td>
+                          <td className="amount-cell"><strong>{formatCurrency(reportData.revenue.total)}</strong></td>
+                          <td className="percentage-cell"><strong>100%</strong></td>
+                        </tr>
+                      </tbody>
+                    </Table>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col xs={12} lg={6}>
+              <Card className="table-card">
+                <Card.Header className="table-card-header">
+                  <h5>Cost of Goods Sold</h5>
+                </Card.Header>
+                <Card.Body className="table-card-body">
+                  <div className="table-responsive">
+                    <Table className="income-statement-table" hover>
+                      <thead className="table-header">
+                        <tr>
+                          <th>Category</th>
+                          <th className="text-end">Amount</th>
+                          <th className="text-end">Percentage</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.costOfGoodsSold.items.map((item, index) => (
+                          <tr key={index}>
+                            <td><strong>{item.category}</strong></td>
+                            <td className="amount-cell">{formatCurrency(item.amount)}</td>
+                            <td className="percentage-cell">{item.percentage}%</td>
+                          </tr>
+                        ))}
+                        <tr className="total-row">
+                          <td><strong>Total COGS</strong></td>
+                          <td className="amount-cell"><strong>{formatCurrency(reportData.costOfGoodsSold.total)}</strong></td>
+                          <td className="percentage-cell"><strong>100%</strong></td>
+                        </tr>
+                      </tbody>
+                    </Table>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Operating Expenses Table */}
+          <Card className="table-card mb-4">
+            <Card.Header className="table-card-header">
+              <h5>Operating Expenses</h5>
+            </Card.Header>
+            <Card.Body className="table-card-body">
+              <div className="table-responsive">
+                <Table className="income-statement-table" hover>
+                  <thead className="table-header">
+                    <tr>
+                      <th>Category</th>
+                      <th className="text-end">Amount</th>
+                      <th className="text-end">Percentage</th>
                     </tr>
-                  ))}
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-bold">Total Revenue</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-right">{formatCurrency(reportData.revenue.total)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-right">100%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border shadow-sm">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-medium">Cost of Goods Sold</h3>
-          </div>
-          <div className="p-6">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {reportData.costOfGoodsSold.items.map((item, index) => (
-                    <tr key={index}>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.category}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right">{formatCurrency(item.amount)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right">{item.percentage}%</td>
+                  </thead>
+                  <tbody>
+                    {reportData.operatingExpenses.items.map((item, index) => (
+                      <tr key={index}>
+                        <td><strong>{item.category}</strong></td>
+                        <td className="amount-cell">{formatCurrency(item.amount)}</td>
+                        <td className="percentage-cell">{item.percentage}%</td>
+                      </tr>
+                    ))}
+                    <tr className="total-row">
+                      <td><strong>Total Operating Expenses</strong></td>
+                      <td className="amount-cell"><strong>{formatCurrency(reportData.operatingExpenses.total)}</strong></td>
+                      <td className="percentage-cell"><strong>100%</strong></td>
                     </tr>
-                  ))}
-                  <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-bold">Total COGS</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-right">{formatCurrency(reportData.costOfGoodsSold.total)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-right">100%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
 
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-medium">Operating Expenses</h3>
-        </div>
-        <div className="p-6">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {reportData.operatingExpenses.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.category}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-right">{formatCurrency(item.amount)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-right">{item.percentage}%</td>
-                  </tr>
-                ))}
-                <tr>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-bold">Total Operating Expenses</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-right">{formatCurrency(reportData.operatingExpenses.total)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-right">100%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-medium">Income Summary</h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span>Total Revenue</span>
-              <span className="font-medium">{formatCurrency(reportData.revenue.total)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Less: Cost of Goods Sold</span>
-              <span className="font-medium">({formatCurrency(reportData.costOfGoodsSold.total)})</span>
-            </div>
-            <div className="flex justify-between border-t border-b py-2">
-              <span className="font-bold">Gross Profit</span>
-              <span className="font-bold">{formatCurrency(reportData.grossProfit)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Less: Operating Expenses</span>
-              <span className="font-medium">({formatCurrency(reportData.operatingExpenses.total)})</span>
-            </div>
-            <div className="flex justify-between border-t border-b py-2">
-              <span className="font-bold">Operating Income</span>
-              <span className="font-bold">{formatCurrency(reportData.operatingIncome)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Add: Other Income</span>
-              <span className="font-medium">{formatCurrency(reportData.otherIncome)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Less: Other Expenses</span>
-              <span className="font-medium">({formatCurrency(reportData.otherExpenses)})</span>
-            </div>
-            <div className="flex justify-between border-t border-b py-2">
-              <span className="font-bold">Net Income</span>
-              <span className="font-bold">{formatCurrency(reportData.netIncome)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          {/* Income Summary Card */}
+          <Card className="income-summary-card">
+            <Card.Header className="income-summary-header">
+              <h5>Income Summary</h5>
+            </Card.Header>
+            <Card.Body className="income-summary-body">
+              <div className="summary-row">
+                <span className="summary-label">Total Revenue</span>
+                <span className="summary-value">{formatCurrency(reportData.revenue.total)}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">Less: Cost of Goods Sold</span>
+                <span className="summary-value summary-value-negative">({formatCurrency(reportData.costOfGoodsSold.total)})</span>
+              </div>
+              <div className="summary-row summary-row-total">
+                <span className="summary-label">Gross Profit</span>
+                <span className="summary-value summary-value-positive">{formatCurrency(reportData.grossProfit)}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">Less: Operating Expenses</span>
+                <span className="summary-value summary-value-negative">({formatCurrency(reportData.operatingExpenses.total)})</span>
+              </div>
+              <div className="summary-row summary-row-total">
+                <span className="summary-label">Operating Income</span>
+                <span className="summary-value summary-value-positive">{formatCurrency(reportData.operatingIncome)}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">Add: Other Income</span>
+                <span className="summary-value summary-value-positive">{formatCurrency(reportData.otherIncome)}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">Less: Other Expenses</span>
+                <span className="summary-value summary-value-negative">({formatCurrency(reportData.otherExpenses)})</span>
+              </div>
+              <div className="summary-row summary-row-total">
+                <span className="summary-label">Net Income</span>
+                <span className="summary-value summary-value-positive">{formatCurrency(reportData.netIncome)}</span>
+              </div>
+            </Card.Body>
+          </Card>
+        </>
+      )}
+    </Container>
   );
 };
 

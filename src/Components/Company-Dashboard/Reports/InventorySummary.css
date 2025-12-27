@@ -1,0 +1,394 @@
+/* Inventory Summary Page Container */
+.inventory-summary-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.inventory-summary-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.inventory-summary-title i {
+  color: #505ece;
+}
+
+.inventory-summary-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Search and Filter Section */
+.search-filter-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-input {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.filter-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Action Buttons */
+.btn-import {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: white !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-import:hover {
+  background-color: #218838 !important;
+  border-color: #218838 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.btn-export {
+  background-color: #fd7e14 !important;
+  border-color: #fd7e14 !important;
+  color: white !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-export:hover {
+  background-color: #e8650e !important;
+  border-color: #e8650e !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(253, 126, 20, 0.4);
+}
+
+.btn-template {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #343a40 !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-template:hover {
+  background-color: #e0a800 !important;
+  border-color: #e0a800 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+/* Table Card */
+.inventory-summary-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+}
+
+.inventory-summary-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.inventory-summary-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.inventory-summary-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.inventory-summary-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+.inventory-summary-table tbody td.amount-cell {
+  font-weight: 600;
+  color: #28a745;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge.bg-success {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%) !important;
+  color: white !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+  color: white !important;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;
+  color: #343a40 !important;
+}
+
+/* View Details Button */
+.btn-view-details {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white !important;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.875rem;
+}
+
+.btn-view-details:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(80, 94, 206, 0.4);
+  color: white !important;
+}
+
+.btn-view-details:disabled {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  opacity: 0.6;
+}
+
+/* Pagination */
+.page-link {
+  color: #505ece;
+  border-color: #e9ecef;
+}
+
+.page-item.active .page-link {
+  background-color: #505ece;
+  border-color: #505ece;
+}
+
+.page-link:hover {
+  color: #3d47b8;
+  background-color: #f8f9fa;
+  border-color: #e9ecef;
+}
+
+/* Modal Styling */
+.inventory-summary-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 75vh;
+}
+
+/* Custom Scrollbar for Modal Body */
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background-color: #505ece;
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background-color: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+}
+
+.btn-modal-close {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-close:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Modal Cards */
+.modal-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.modal-card .card-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+}
+
+.modal-card .card-body {
+  padding: 1.5rem;
+}
+
+/* List Group */
+.list-group-item {
+  border-radius: 8px !important;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.list-group-item.active {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+}
+
+.list-group-item:hover {
+  background-color: rgba(80, 94, 206, 0.1);
+}
+
+/* Modal Tables */
+.modal-table {
+  margin-bottom: 0;
+}
+
+.modal-table thead {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.modal-table thead th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 0.75rem;
+}
+
+.modal-table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.modal-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+/* Loading Spinner */
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Alert */
+.alert-custom {
+  border-radius: 8px;
+  border: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .inventory-summary-title {
+    font-size: 1.5rem;
+  }
+
+  .inventory-summary-table {
+    font-size: 14px;
+  }
+}
+

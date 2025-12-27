@@ -8,6 +8,8 @@ import {
   Form,
   Button,
   Modal,
+  Spinner,
+  Badge,
 } from "react-bootstrap";
 import {
   FaReceipt,
@@ -20,6 +22,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './Settlement.css';
 
 const emptySettlement = {
   id: null,
@@ -288,63 +291,49 @@ const Settlement = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
-        <div className="spinner-border" style={{ color: "#023347" }} role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading settlement records...</p>
         </div>
       </div>
     );
   }
 
-  const statusBadge = (status) => {
-    return (
-      <span
-        className="badge"
-        style={{
-          backgroundColor: status === "Processed" ? "#28a745" : "#ffc107",
-          color: status === "Processed" ? "#fff" : "#212529",
-          fontWeight: 500,
-        }}
-      >
-        {status}
-      </span>
-    );
+  const getStatusBadgeClass = (status) => {
+    return status === "Processed" ? "badge-status badge-processed" : "badge-status badge-pending";
   };
 
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: "#f0f7f8", minHeight: "100vh" }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: "#e6f3f5" }}>
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h4 className="mb-1" style={{ color: "#023347" }}>
-                <FaReceipt className="me-2" style={{ color: "#2a8e9c" }} />
-                End of Service
-              </h4>
-              <p className="text-muted">Manage employee final settlement</p>
-            </div>
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-secondary"
-                onClick={handlePDF}
-                size="sm"
-                style={{ borderColor: "#023347", color: "#023347" }}
-              >
-                <FaFilePdf className="me-1" /> Export PDF
-              </Button>
-              <Button
-                style={{ backgroundColor: "#023347", border: "none" }}
-                onClick={handleAdd}
-                size="sm"
-              >
-                <FaPlus className="me-1" /> Add Settlement
-              </Button>
-            </div>
-          </div>
+    <Container fluid className="p-4 settlement-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="settlement-title">
+              <i className="fas fa-receipt me-2"></i>
+              End of Service Settlement
+            </h3>
+            <p className="settlement-subtitle">Manage employee final settlements and gratuity payments</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+            <Button className="btn-export-pdf d-flex align-items-center" onClick={handlePDF}>
+              <FaFilePdf className="me-2" /> Export PDF
+            </Button>
+            <Button className="btn-add-settlement d-flex align-items-center" onClick={handleAdd}>
+              <FaPlus className="me-2" /> Add Settlement
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Table Card */}
+      <Card className="settlement-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
 
           <div style={{ overflowX: "auto" }}>
-            <Table hover responsive>
-              <thead>
+            <Table hover responsive className="settlement-table">
+              <thead className="table-header">
                 <tr>
                   <th>Employee</th>
                   <th>Resign Date</th>
@@ -353,44 +342,49 @@ const Settlement = () => {
                   <th>Leave Balance</th>
                   <th>Final Amount</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {settlements.length > 0 ? (
                   settlements.map((s) => (
                     <tr key={s.id}>
-                      <td>{getEmployeeName(s.employeeId)}</td>
+                      <td className="fw-semibold">{getEmployeeName(s.employeeId)}</td>
                       <td>{s.resignDate}</td>
                       <td>{s.lastWorkingDay}</td>
-                      <td>₹{parseFloat(s.gratuityAmount).toLocaleString()}</td>
-                      <td>{s.pendingLeaves} days</td>
-                      <td>₹{parseFloat(s.finalPayableAmount).toLocaleString()}</td>
-                      <td>{statusBadge(s.status)}</td>
+                      <td className="fw-semibold text-success">₹{parseFloat(s.gratuityAmount || 0).toLocaleString()}</td>
                       <td>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          className="me-1"
-                          style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
-                          onClick={() => handleEdit(s)}
-                        >
-                          <FaEdit />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
-                          onClick={() => confirmDelete(s)}
-                        >
-                          <FaTrash />
-                        </Button>
+                        <span className="badge bg-info text-dark">{s.pendingLeaves || 0} days</span>
+                      </td>
+                      <td className="fw-bold text-primary">₹{parseFloat(s.finalPayableAmount).toLocaleString()}</td>
+                      <td>
+                        <Badge className={getStatusBadgeClass(s.status)}>
+                          {s.status}
+                        </Badge>
+                      </td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button
+                            className="btn-action btn-edit"
+                            onClick={() => handleEdit(s)}
+                            title="Edit"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            className="btn-action btn-delete"
+                            onClick={() => confirmDelete(s)}
+                            title="Delete"
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center text-muted">
+                    <td colSpan="8" className="text-center text-muted py-4">
                       No settlement records found.
                     </td>
                   </tr>
@@ -408,20 +402,23 @@ const Settlement = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         size="lg"
+        centered
+        className="settlement-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "white" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{modalType === "edit" ? "Edit Settlement" : "Add Settlement Record"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
+        <Modal.Body className="modal-body-custom">
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Employee *</Form.Label>
+                <Form.Label className="form-label-custom">Employee *</Form.Label>
                 <Form.Select
                   name="employeeId"
                   value={form.employeeId}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select Employee</option>
                   {employees.map((emp) => (
@@ -435,72 +432,77 @@ const Settlement = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Resign Date *</Form.Label>
+                <Form.Label className="form-label-custom">Resign Date *</Form.Label>
                 <Form.Control
                   type="date"
                   name="resignDate"
                   value={form.resignDate}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Last Working Day *</Form.Label>
+                <Form.Label className="form-label-custom">Last Working Day *</Form.Label>
                 <Form.Control
                   type="date"
                   name="lastWorkingDay"
                   value={form.lastWorkingDay}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Pending Leaves (Days)</Form.Label>
+                <Form.Label className="form-label-custom">Pending Leaves (Days)</Form.Label>
                 <Form.Control
                   type="number"
                   name="pendingLeaves"
                   value={form.pendingLeaves}
                   onChange={handleInputChange}
                   min="0"
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Gratuity Amount</Form.Label>
+                <Form.Label className="form-label-custom">Gratuity Amount</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   name="gratuityAmount"
                   value={form.gratuityAmount}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Deductions</Form.Label>
+                <Form.Label className="form-label-custom">Deductions</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   name="deductions"
                   value={form.deductions}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Final Payable Amount *</Form.Label>
+                <Form.Label className="form-label-custom">Final Payable Amount *</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
@@ -508,8 +510,9 @@ const Settlement = () => {
                   value={form.finalPayableAmount}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
-                <Form.Text muted>
+                <Form.Text className="text-muted">
                   (Gratuity + Leave encashment - Deductions)
                 </Form.Text>
               </Form.Group>
@@ -517,11 +520,12 @@ const Settlement = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Status</Form.Label>
+                <Form.Label className="form-label-custom">Status</Form.Label>
                 <Form.Select
                   name="status"
                   value={form.status}
                   onChange={handleInputChange}
+                  className="form-select-custom"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Processed">Processed</option>
@@ -531,23 +535,24 @@ const Settlement = () => {
 
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Notes</Form.Label>
+                <Form.Label className="form-label-custom">Notes</Form.Label>
                 <Form.Control
                   as="textarea"
                   name="notes"
                   value={form.notes}
                   onChange={handleInputChange}
                   rows={3}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
+          <Button className="btn-modal-save" onClick={handleSave}>
             {modalType === "edit" ? "Update" : "Save"} Settlement
           </Button>
         </Modal.Footer>
@@ -560,19 +565,26 @@ const Settlement = () => {
         onHide={handleDeleteModalClose}
         onExited={handleDeleteModalExited}
         centered
+        className="settlement-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#dc3545", color: "white" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Delete Settlement Record</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
-          Are you sure you want to delete settlement for{" "}
-          <strong>{getEmployeeName(settlementToDelete?.employeeId)}</strong>?
+        <Modal.Body className="modal-body-custom text-center py-4">
+          <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FaTrash style={{ fontSize: "32px", color: "#F04438" }} />
+          </div>
+          <h4 className="fw-bold mb-2">Delete Settlement Record</h4>
+          <p className="text-muted mb-3">
+            Are you sure you want to delete settlement for{" "}
+            <strong>{getEmployeeName(settlementToDelete?.employeeId)}</strong>? This action cannot be undone.
+          </p>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={handleDeleteModalClose}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete} style={{ backgroundColor: "#dc3545" }}>
+          <Button className="btn-modal-delete" onClick={handleDelete}>
             Delete
           </Button>
         </Modal.Footer>

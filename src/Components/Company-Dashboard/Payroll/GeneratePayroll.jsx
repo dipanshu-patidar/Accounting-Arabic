@@ -30,6 +30,8 @@ import {
 } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './GeneratePayroll.css';
+import { Spinner } from 'react-bootstrap';
 
 const GeneratePayroll = () => {
   const companyIdRaw = GetCompanyId();
@@ -364,11 +366,11 @@ const GeneratePayroll = () => {
 
   // Mobile Card Component
   const PayrollCard = ({ row }) => (
-    <Card className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-      <Card.Body>
+    <Card className="mobile-card mb-3">
+      <Card.Body className="mobile-card-body">
         <div className="d-flex justify-content-between align-items-start mb-2">
           <div>
-            <Card.Title className="h6 mb-1" style={{ color: '#023347' }}>{row.employeeName}</Card.Title>
+            <Card.Title className="h6 mb-1 fw-bold" style={{ color: '#505ece' }}>{row.employeeName}</Card.Title>
             <Card.Subtitle className="mb-1 text-muted">
               <FaBuilding className="me-1" size={12} />
               {row.department}
@@ -382,97 +384,107 @@ const GeneratePayroll = () => {
         </div>
 
         <div className="mb-2">
-          <Badge bg={row.paymentStatus === 'Paid' ? 'success' : 'warning'}>
+          <Badge className={row.paymentStatus === 'Paid' ? 'badge-status badge-paid' : 'badge-status badge-pending'}>
             {row.paymentStatus}
           </Badge>
           <span className="ms-2 small text-muted">{row.month}</span>
         </div>
 
         <div className="d-flex justify-content-between mb-3">
-          <div><div className="small text-muted">Net Pay</div><div className="fw-bold" style={{ color: '#023347' }}>{formatINR(row.netPay)}</div></div>
+          <div><div className="small text-muted">Net Pay</div><div className="fw-bold text-primary">{formatINR(row.netPay)}</div></div>
         </div>
 
-        <div className="d-flex gap-1 flex-wrap">
+        <div className="d-flex gap-2 flex-wrap">
           <Button
-            variant="light"
-            size="sm"
+            className="btn-action btn-view"
             onClick={() => handleViewPayslip(row.id)}
-            className="d-flex align-items-center"
-            style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
+            title="View"
           >
-            <FaEye className="me-1" />
+            <FaEye />
           </Button>
           {row.paymentStatus === 'Pending' && (
             <Button
-              variant="light"
-              size="sm"
+              className="btn-action btn-approve"
               onClick={() => handleApprovePayment(row.id)}
-              className="d-flex align-items-center"
-              style={{ color: '#28a745', backgroundColor: '#e6f3f5' }}
+              title="Approve"
             >
-              <FaCheck className="me-1" />
+              <FaCheck />
             </Button>
           )}
           <Button
-            variant="light"
-            size="sm"
+            className="btn-action btn-email"
             onClick={() => handleSendEmail(row.employeeName)}
-            className="d-flex align-items-center"
-            style={{ color: '#2a8e9c', backgroundColor: '#e6f3f5' }}
+            title="Email"
           >
-            <FaEnvelope className="me-1" />
+            <FaEnvelope />
           </Button>
           <Button
-            variant="light"
-            size="sm"
+            className="btn-action btn-whatsapp"
             onClick={() => handleSendWhatsApp(row.employeeName)}
-            className="d-flex align-items-center"
-            style={{ color: '#25D366', backgroundColor: '#e6f3f5' }}
+            title="WhatsApp"
           >
-            <FaWhatsapp className="me-1" />
+            <FaWhatsapp />
           </Button>
           <Button
-            variant="light"
-            size="sm"
+            className="btn-action btn-delete"
             onClick={() => handleDeletePayroll(row.id, row.employeeName)}
-            className="d-flex align-items-center"
-            style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
+            title="Delete"
           >
-            <FaTrash className="me-1" />
+            <FaTrash />
           </Button>
         </div>
       </Card.Body>
     </Card>
   );
 
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading payroll data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Container fluid className="p-3 p-md-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-        <Card.Header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-          <h4 className="mb-3 mb-md-0">Payroll Management</h4>
-          <Button style={{ backgroundColor: '#2a8e9c', border: 'none' }} onClick={handleShowModal} className='d-flex justify-content-center align-items-center w-30 w-md-auto'>
-            <FaPlus className="me-2" /> Generate Payroll
-          </Button>
+    <Container fluid className="p-4 generate-payroll-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="generate-payroll-title">
+              <i className="fas fa-money-bill-wave me-2"></i>
+              Payroll Management
+            </h3>
+            <p className="generate-payroll-subtitle">Generate and manage employee payroll records</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end mt-3 mt-md-0">
+            <Button className="btn-generate-payroll d-flex align-items-center" onClick={handleShowModal}>
+              <FaPlus className="me-2" /> Generate Payroll
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Filter Card */}
+      <Card className="filter-card">
+        <Card.Header className="d-flex align-items-center">
+          <FaFilter className="me-2" />
+          <h6 className="mb-0 filter-title">Filters</h6>
         </Card.Header>
         <Card.Body>
-          {/* Filters */}
-          <Card className="mb-4 border-light" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Header className="d-flex align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-              <FaFilter className="me-2" />
-              <h6 className="mb-0">Filters</h6>
-            </Card.Header>
-            <Card.Body>
               <Row>
                 <Col xs={12} sm={6} md={3} className="mb-3 mb-md-0">
                   <Form.Group>
-                    <Form.Label className='d-flex align-items-center'><FaCalendarAlt className="me-1" /> Month</Form.Label>
+                    <Form.Label className="form-label-custom d-flex align-items-center"><FaCalendarAlt className="me-1" /> Month</Form.Label>
                     <Form.Select
                       value={monthFilter}
                       onChange={(e) => setMonthFilter(e.target.value)}
-                      style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                      className="form-select-custom"
                     >
                       <option value="">All Months</option>
-                      {/* Extract unique months from payroll data */}
                       {[...new Set(payrollData.map(p => p.month))].map(month => (
                         <option key={month} value={month}>{month}</option>
                       ))}
@@ -481,11 +493,11 @@ const GeneratePayroll = () => {
                 </Col>
                 <Col xs={12} sm={6} md={3} className="mb-3 mb-md-0">
                   <Form.Group>
-                    <Form.Label className='d-flex align-items-center'><FaBuilding className="me-1" /> Department</Form.Label>
+                    <Form.Label className="form-label-custom d-flex align-items-center"><FaBuilding className="me-1" /> Department</Form.Label>
                     <Form.Select
                       value={departmentFilter}
                       onChange={(e) => setDepartmentFilter(e.target.value)}
-                      style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
+                      className="form-select-custom"
                     >
                       {departments.map(dept => (
                         <option key={dept} value={dept}>{dept}</option>
@@ -497,13 +509,11 @@ const GeneratePayroll = () => {
                   <Form.Group>
                     <Form.Label>&nbsp;</Form.Label>
                     <Button
-                      variant="outline-secondary"
+                      className="btn-clear-filters d-block w-100"
                       onClick={() => {
                         setMonthFilter('');
                         setDepartmentFilter('');
                       }}
-                      className="d-block w-100"
-                      style={{ borderColor: '#ced4da', color: '#023347' }}
                     >
                       Clear Filters
                     </Button>
@@ -513,10 +523,9 @@ const GeneratePayroll = () => {
                   <Form.Group>
                     <Form.Label>&nbsp;</Form.Label>
                     <Button
-                      style={{ backgroundColor: '#2a8e9c', border: 'none' }}
+                      className="btn-bulk-approve d-block w-100 d-flex align-items-center justify-content-center"
                       onClick={handleBulkApprove}
                       disabled={selectedRows.length === 0}
-                      className="d-block w-100 d-flex align-items-center justify-content-center"
                     >
                       <FaCheckCircle className="me-2" />
                       Bulk Approve ({selectedRows.length})
@@ -527,329 +536,338 @@ const GeneratePayroll = () => {
             </Card.Body>
           </Card>
 
-          {/* Desktop Table */}
-          <div className="d-none d-md-block">
-            <div className="table-responsive">
-              <Table striped bordered hover>
-                <thead>
-                  <tr>
-                    <th>
-                      <Form.Check
-                        type="checkbox"
-                        checked={selectedRows.length === filteredPayroll.length && filteredPayroll.length > 0}
-                        onChange={handleSelectAllRows}
-                      />
-                    </th>
-                    <th>Employee Name</th>
-                    <th>Department</th>
-                    <th>Month</th>
-                    <th>Net Pay</th>
-                    <th>Payment Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPayroll.map((row) => (
-                    <tr key={row.id}>
-                      <td>
-                        <Form.Check
-                          type="checkbox"
-                          checked={selectedRows.includes(row.id)}
-                          onChange={() => handleRowSelect(row.id)}
-                        />
-                      </td>
-                      <td>{row.employeeName}</td>
-                      <td>{row.department}</td>
-                      <td>{row.month}</td>
-                      <td>{formatINR(row.netPay)}</td>
-                      <td>
-                        <Badge bg={row.paymentStatus === 'Paid' ? 'success' : 'warning'}>
-                          {row.paymentStatus}
-                        </Badge>
-                      </td>
-                      <td>
-                        <div className="d-flex gap-1">
-                          <Button
-                            variant="light"
-                            size="sm"
-                            onClick={() => handleViewPayslip(row.id)}
-                            title="View Payslip"
-                            style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                          >
-                            <FaEye />
-                          </Button>
-                          {row.paymentStatus === 'Pending' && (
-                            <Button
-                              variant="light"
-                              size="sm"
-                              onClick={() => handleApprovePayment(row.id)}
-                              title="Approve"
-                              style={{ color: '#28a745', backgroundColor: '#e6f3f5' }}
-                            >
-                              <FaCheck />
-                            </Button>
-                          )}
-                          <Button
-                            variant="light"
-                            size="sm"
-                            onClick={() => handleSendEmail(row.employeeName)}
-                            title="Send via Email"
-                            style={{ color: '#2a8e9c', backgroundColor: '#e6f3f5' }}
-                          >
-                            <FaEnvelope />
-                          </Button>
-                          <Button
-                            variant="light"
-                            size="sm"
-                            onClick={() => handleSendWhatsApp(row.employeeName)}
-                            title="Send via WhatsApp"
-                            style={{ color: '#25D366', backgroundColor: '#e6f3f5' }}
-                          >
-                            <FaWhatsapp />
-                          </Button>
-                          <Button
-                            variant="light"
-                            size="sm"
-                            onClick={() => handleDeletePayroll(row.id, row.employeeName)}
-                            title="Delete"
-                            style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }}
-                          >
-                            <FaTrash />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="d-md-none">
-            {filteredPayroll.map((row) => (
-              <PayrollCard key={row.id} row={row} />
-            ))}
-          </div>
-
-          {/* Generate Payroll Modal */}
-          <Modal 
-            key={modalKeyRef.current.main}
-            show={showModal} 
-            onHide={handleCloseModal}
-            onExited={handleModalExited}
-            size="lg" 
-            fullscreen="sm-down"
-          >
-            <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-              <Modal.Title>Generate Payroll</Modal.Title>
-            </Modal.Header>
-            <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label><FaCalendarAlt className="me-1" /> Month</Form.Label>
-                    <Form.Select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
-                    >
-                      {months.map(month => (
-                        <option key={month} value={month}>{month}</option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label><FaCalendarAlt className="me-1" /> Year</Form.Label>
-                    <Form.Select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
-                    >
-                      {years.map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-
-                <Col xs={12}>
-                  <Form.Label className="mt-2 mb-2"><FaUser className="me-1" /> Select Employees</Form.Label>
-                  <Form.Check
-                    type="checkbox"
-                    label="Select All"
-                    checked={selectedEmployees.length === employees.length}
-                    onChange={handleSelectAll}
-                    className="mb-2"
-                  />
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #dee2e6', borderRadius: '4px', padding: '10px', backgroundColor: '#e6f3f5' }}>
-                    {employees.map(employee => (
-                      <Form.Check
-                        key={employee.id}
-                        type="checkbox"
-                        label={`${employee.name} (${employee.department})`}
-                        checked={selectedEmployees.includes(employee.id)}
-                        onChange={() => handleEmployeeSelect(employee.id)}
-                        className="mb-1"
-                      />
-                    ))}
-                  </div>
-                </Col>
-
-                <Col xs={12}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Remarks (Optional)</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                      style={{ border: '1px solid #ced4da', borderRadius: '4px' }}
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col xs={12}>
-                  <div className="d-flex flex-column flex-sm-row justify-content-between mt-3 gap-2">
-                    <Button
-                      variant="outline-primary"
-                      onClick={handlePreview}
-                      className='d-flex justify-content-center align-items-center flex-grow-1'
-                      style={{ borderColor: '#023347', color: '#023347' }}
-                    >
-                      <FaCalculator className="me-2" /> Preview & Calculate
-                    </Button>
-                  </div>
-                </Col>
-
-                {previewData.length > 0 && (
-                  <Col xs={12}>
-                    <h5 className="mt-3 mb-3" style={{ color: '#023347' }}>Preview</h5>
-                    <div className="table-responsive">
-                      <Table striped bordered hover size="sm">
-                        <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
-                          <tr>
-                            <th>Employee Name</th>
-                            <th>Department</th>
-                            <th>Net Pay</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {previewData.map((item) => (
-                            <tr key={item.id}>
-                              <td>{item.employeeName}</td>
-                              <td>{item.department}</td>
-                              <td>{formatINR(item.netPay)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </Table>
-                    </div>
-                  </Col>
-                )}
-              </Row>
-            </Modal.Body>
-            <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-              <Button variant="secondary" onClick={handleCloseModal} style={{ border: '1px solid #ced4da' }}>
-                Cancel
-              </Button>
-              <Button
-                style={{ backgroundColor: '#023347', border: 'none' }}
-                onClick={handleGeneratePayroll}
-                disabled={previewData.length === 0}
-              >
-                Generate Payroll
-              </Button>
-            </Modal.Footer>
-          </Modal>
-
-          {/* Payslip Modal */}
-          <Modal 
-            key={modalKeyRef.current.payslip}
-            show={showPayslipModal} 
-            onHide={handleClosePayslipModal}
-            onExited={handlePayslipModalExited}
-            size="lg" 
-            fullscreen="sm-down"
-          >
-            <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-              <Modal.Title>Payslip Details</Modal.Title>
-            </Modal.Header>
-            <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
-              {currentPayslip && (
-                <>
-                  <Row className="mb-4">
-                    <Col md={6}>
-                      <h5 style={{ color: '#023347' }}><FaUser className="me-2" />Employee Information</h5>
-                      <Table borderless>
-                        <tbody>
-                          <tr><td><strong>Name:</strong></td><td>{currentPayslip.employeeName}</td></tr>
-                          <tr><td><strong>Department:</strong></td><td>{currentPayslip.department}</td></tr>
-                          <tr><td><strong>Designation:</strong></td><td>{currentPayslip.designation || 'N/A'}</td></tr>
-                        </tbody>
-                      </Table>
-                    </Col>
-                    <Col md={6}>
-                      <h5 style={{ color: '#023347' }}><FaCalendarAlt className="me-2" />Pay Period</h5>
-                      <Table borderless>
-                        <tbody>
-                          <tr><td><strong>Month:</strong></td><td>{currentPayslip.month}</td></tr>
-                          <tr>
-                            <td><strong>Payment Status:</strong></td>
+          {/* Table Card */}
+          <Card className="payroll-table-card border-0 shadow-lg">
+            <Card.Body className="p-0">
+              {/* Desktop Table */}
+              <div className="d-none d-md-block">
+                <div className="table-responsive">
+                  <Table hover responsive className="payroll-table">
+                    <thead className="table-header">
+                      <tr>
+                        <th>
+                          <Form.Check
+                            type="checkbox"
+                            checked={selectedRows.length === filteredPayroll.length && filteredPayroll.length > 0}
+                            onChange={handleSelectAllRows}
+                          />
+                        </th>
+                        <th>Employee Name</th>
+                        <th>Department</th>
+                        <th>Month</th>
+                        <th>Net Pay</th>
+                        <th>Payment Status</th>
+                        <th className="text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPayroll.length > 0 ? (
+                        filteredPayroll.map((row) => (
+                          <tr key={row.id}>
                             <td>
-                              <Badge bg={currentPayslip.paymentStatus === 'Paid' ? 'success' : 'warning'}>
-                                {currentPayslip.paymentStatus}
+                              <Form.Check
+                                type="checkbox"
+                                checked={selectedRows.includes(row.id)}
+                                onChange={() => handleRowSelect(row.id)}
+                              />
+                            </td>
+                            <td className="fw-semibold">{row.employeeName}</td>
+                            <td>{row.department}</td>
+                            <td>{row.month}</td>
+                            <td className="fw-bold text-primary">{formatINR(row.netPay)}</td>
+                            <td>
+                              <Badge className={row.paymentStatus === 'Paid' ? 'badge-status badge-paid' : 'badge-status badge-pending'}>
+                                {row.paymentStatus}
                               </Badge>
                             </td>
+                            <td className="text-center">
+                              <div className="d-flex justify-content-center gap-2">
+                                <Button
+                                  className="btn-action btn-view"
+                                  onClick={() => handleViewPayslip(row.id)}
+                                  title="View Payslip"
+                                >
+                                  <FaEye />
+                                </Button>
+                                {row.paymentStatus === 'Pending' && (
+                                  <Button
+                                    className="btn-action btn-approve"
+                                    onClick={() => handleApprovePayment(row.id)}
+                                    title="Approve"
+                                  >
+                                    <FaCheck />
+                                  </Button>
+                                )}
+                                <Button
+                                  className="btn-action btn-email"
+                                  onClick={() => handleSendEmail(row.employeeName)}
+                                  title="Send via Email"
+                                >
+                                  <FaEnvelope />
+                                </Button>
+                                <Button
+                                  className="btn-action btn-whatsapp"
+                                  onClick={() => handleSendWhatsApp(row.employeeName)}
+                                  title="Send via WhatsApp"
+                                >
+                                  <FaWhatsapp />
+                                </Button>
+                                <Button
+                                  className="btn-action btn-delete"
+                                  onClick={() => handleDeletePayroll(row.id, row.employeeName)}
+                                  title="Delete"
+                                >
+                                  <FaTrash />
+                                </Button>
+                              </div>
+                            </td>
                           </tr>
-                        </tbody>
-                      </Table>
-                    </Col>
-                  </Row>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="text-center text-muted py-4">
+                            No payroll records found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </Table>
+                </div>
+              </div>
 
-                  <Row>
-                    <Col xs={12}>
-                      <h5 style={{ color: '#023347' }}><FaMoneyBillWave className="me-2" />Salary Details</h5>
-                      <Table striped bordered>
-                        <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
-                          <tr>
-                            <th>Gross Pay</th>
-                            <th>Deductions</th>
-                            <th>Net Pay</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>{formatINR(currentPayslip.basicPay)}</td>
-                            <td className="text-danger">{formatINR(currentPayslip.deductions)}</td>
-                            <td><strong style={{ color: '#023347' }}>{formatINR(currentPayslip.netPay)}</strong></td>
-                          </tr>
-                        </tbody>
-                      </Table>
-                    </Col>
-                  </Row>
-                </>
-              )}
-            </Modal.Body>
-            <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-              <Button variant="outline-primary" className="d-flex align-items-center" style={{ borderColor: '#023347', color: '#023347' }}>
-                <FaDownload className="me-1" /> Download
-              </Button>
-              <Button variant="outline-info" className="d-flex align-items-center" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}>
-                <FaEnvelope className="me-1" /> Email
-              </Button>
-              <Button variant="outline-success" className="d-flex align-items-center" style={{ borderColor: '#25D366', color: '#25D366' }}>
-                <FaWhatsapp className="me-1" /> WhatsApp
-              </Button>
-              <Button variant="secondary" onClick={handleClosePayslipModal} style={{ border: '1px solid #ced4da' }}>
-                Close
-              </Button>
-            </Modal.Footer>
-          </Modal>
-        </Card.Body>
-      </Card>
+              {/* Mobile Cards */}
+              <div className="d-md-none p-3">
+                {filteredPayroll.length > 0 ? (
+                  filteredPayroll.map((row) => (
+                    <PayrollCard key={row.id} row={row} />
+                  ))
+                ) : (
+                  <div className="text-center text-muted py-4">
+                    No payroll records found.
+                  </div>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+
+      {/* Generate Payroll Modal */}
+      <Modal 
+        key={modalKeyRef.current.main}
+        show={showModal} 
+        onHide={handleCloseModal}
+        onExited={handleModalExited}
+        size="lg" 
+        fullscreen="sm-down"
+        centered
+        className="generate-payroll-modal"
+      >
+        <Modal.Header closeButton className="modal-header-custom">
+          <Modal.Title>Generate Payroll</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="modal-body-custom">
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label className="form-label-custom"><FaCalendarAlt className="me-1" /> Month</Form.Label>
+                <Form.Select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="form-select-custom"
+                >
+                  {months.map(month => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label className="form-label-custom"><FaCalendarAlt className="me-1" /> Year</Form.Label>
+                <Form.Select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="form-select-custom"
+                >
+                  {years.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+
+            <Col xs={12}>
+              <Form.Label className="form-label-custom mt-2 mb-2"><FaUser className="me-1" /> Select Employees</Form.Label>
+              <Form.Check
+                type="checkbox"
+                label="Select All"
+                checked={selectedEmployees.length === employees.length}
+                onChange={handleSelectAll}
+                className="mb-2 fw-semibold"
+              />
+              <div className="employee-selection-list">
+                {employees.map(employee => (
+                  <Form.Check
+                    key={employee.id}
+                    type="checkbox"
+                    label={`${employee.name} (${employee.department})`}
+                    checked={selectedEmployees.includes(employee.id)}
+                    onChange={() => handleEmployeeSelect(employee.id)}
+                    className="mb-1"
+                  />
+                ))}
+              </div>
+            </Col>
+
+            <Col xs={12}>
+              <Form.Group className="mb-3">
+                <Form.Label className="form-label-custom">Remarks (Optional)</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="form-control-custom"
+                />
+              </Form.Group>
+            </Col>
+
+            <Col xs={12}>
+              <div className="d-flex flex-column flex-sm-row justify-content-between mt-3 gap-2">
+                <Button
+                  className="btn-modal-preview d-flex justify-content-center align-items-center flex-grow-1"
+                  onClick={handlePreview}
+                >
+                  <FaCalculator className="me-2" /> Preview & Calculate
+                </Button>
+              </div>
+            </Col>
+
+            {previewData.length > 0 && (
+              <Col xs={12}>
+                <h5 className="mt-3 mb-3 fw-bold" style={{ color: '#505ece' }}>Preview</h5>
+                <div className="table-responsive">
+                  <Table hover responsive size="sm" className="preview-table">
+                    <thead>
+                      <tr>
+                        <th>Employee Name</th>
+                        <th>Department</th>
+                        <th>Net Pay</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewData.map((item) => (
+                        <tr key={item.id}>
+                          <td className="fw-semibold">{item.employeeName}</td>
+                          <td>{item.department}</td>
+                          <td className="fw-bold text-primary">{formatINR(item.netPay)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              </Col>
+            )}
+          </Row>
+        </Modal.Body>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
+            Cancel
+          </Button>
+          <Button
+            className="btn-modal-generate"
+            onClick={handleGeneratePayroll}
+            disabled={previewData.length === 0}
+          >
+            Generate Payroll
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Payslip Modal */}
+      <Modal 
+        key={modalKeyRef.current.payslip}
+        show={showPayslipModal} 
+        onHide={handleClosePayslipModal}
+        onExited={handlePayslipModalExited}
+        size="lg" 
+        fullscreen="sm-down"
+        centered
+        className="generate-payroll-modal"
+      >
+        <Modal.Header closeButton className="modal-header-custom">
+          <Modal.Title>Payslip Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="modal-body-custom">
+          {currentPayslip && (
+            <>
+              <Row className="mb-4">
+                <Col md={6}>
+                  <h5 className="fw-bold" style={{ color: '#505ece' }}><FaUser className="me-2" />Employee Information</h5>
+                  <Table borderless>
+                    <tbody>
+                      <tr><td><strong>Name:</strong></td><td>{currentPayslip.employeeName}</td></tr>
+                      <tr><td><strong>Department:</strong></td><td>{currentPayslip.department}</td></tr>
+                      <tr><td><strong>Designation:</strong></td><td>{currentPayslip.designation || 'N/A'}</td></tr>
+                    </tbody>
+                  </Table>
+                </Col>
+                <Col md={6}>
+                  <h5 className="fw-bold" style={{ color: '#505ece' }}><FaCalendarAlt className="me-2" />Pay Period</h5>
+                  <Table borderless>
+                    <tbody>
+                      <tr><td><strong>Month:</strong></td><td>{currentPayslip.month}</td></tr>
+                      <tr>
+                        <td><strong>Payment Status:</strong></td>
+                        <td>
+                          <Badge className={currentPayslip.paymentStatus === 'Paid' ? 'badge-status badge-paid' : 'badge-status badge-pending'}>
+                            {currentPayslip.paymentStatus}
+                          </Badge>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col xs={12}>
+                  <h5 className="fw-bold" style={{ color: '#505ece' }}><FaMoneyBillWave className="me-2" />Salary Details</h5>
+                  <Table hover responsive className="payslip-details-table">
+                    <thead>
+                      <tr>
+                        <th>Gross Pay</th>
+                        <th>Deductions</th>
+                        <th>Net Pay</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="fw-semibold text-success">{formatINR(currentPayslip.basicPay)}</td>
+                        <td className="fw-semibold text-danger">{formatINR(currentPayslip.deductions)}</td>
+                        <td className="fw-bold text-primary">{formatINR(currentPayslip.netPay)}</td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Col>
+              </Row>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-preview d-flex align-items-center" style={{ borderColor: '#505ece', color: '#505ece' }}>
+            <FaDownload className="me-1" /> Download
+          </Button>
+          <Button className="btn-modal-preview d-flex align-items-center">
+            <FaEnvelope className="me-1" /> Email
+          </Button>
+          <Button className="btn-action btn-whatsapp d-flex align-items-center">
+            <FaWhatsapp className="me-1" /> WhatsApp
+          </Button>
+          <Button className="btn-modal-cancel" onClick={handleClosePayslipModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

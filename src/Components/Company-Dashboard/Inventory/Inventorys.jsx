@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Modal, Button, Form, Row, Col, Card } from "react-bootstrap";
-import { FaEye, FaEdit, FaTrash, FaPlus, FaInfoCircle } from "react-icons/fa";
+import { Modal, Button, Form, Row, Col, Card, Table, Spinner, Alert } from "react-bootstrap";
+import { FaEye, FaEdit, FaTrash, FaPlus, FaInfoCircle, FaSearch, FaFile, FaDownload, FaUpload } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import AddProductModal from "./AddProductModal";
@@ -10,6 +10,7 @@ import axiosInstance from "../../../Api/axiosInstance";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import './Inventorys.css';
 
 const InventoryItems = () => {
   // Permission states
@@ -447,6 +448,10 @@ const InventoryItems = () => {
     reader.readAsBinaryString(file);
   };
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
@@ -473,27 +478,34 @@ const InventoryItems = () => {
     });
   };
 
+  // Pagination
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   // If user doesn't have view permission, show access denied message
   if (!canViewInventory) {
     return (
-      <div className="p-4 mt-2">
-        <div className="text-center p-5">
-          <h3>Access Denied</h3>
+      <div className="p-4 inventory-container">
+        <Card className="text-center p-5 border-0 shadow-lg">
+          <h3 className="text-danger">Access Denied</h3>
           <p>You don't have permission to view Inventory Items.</p>
           <p>Please contact your administrator for access.</p>
-        </div>
+        </Card>
       </div>
     );
   }
 
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ height: "100vh" }}
-      >
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="p-4 inventory-container">
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "60vh" }}>
+          <div className="text-center">
+            <Spinner animation="border" style={{ color: "#505ece" }} />
+            <p className="mt-3 text-muted">Loading inventory items...</p>
+          </div>
         </div>
       </div>
     );
@@ -501,39 +513,65 @@ const InventoryItems = () => {
 
   if (!companyId) {
     return (
-      <div className="alert alert-warning" role="alert">
-        Company ID not found. Please make sure you are logged in to a company.
+      <div className="p-4 inventory-container">
+        <Alert variant="warning" className="text-center">
+          Company ID not found. Please make sure you are logged in to a company.
+        </Alert>
       </div>
     );
   }
 
   return (
     <>
-      <div className="mt-4 p-2">
-        <Row className="align-items-center mb-3">
-          <Col md={4}>
-            <h4 className="fw-bold mb-0 d-flex align-items-center gap-2">
-              <BiTransfer size={40} color="green" />
-              <span>Inventory Product</span>
-            </h4>
+      <div className="p-4 inventory-container">
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
+
+        {/* Header Section */}
+        <div className="mb-4">
+          <h3 className="inventory-title">
+            <i className="fas fa-boxes me-2"></i>
+            Inventory Management
+          </h3>
+          <p className="inventory-subtitle">Manage and track all inventory products and their stock levels</p>
+        </div>
+
+        <Row className="g-3 mb-4 align-items-center">
+          <Col xs={12} md={6}>
+            <div className="search-wrapper">
+              <FaSearch className="search-icon" />
+              <Form.Control
+                className="search-input"
+                type="text"
+                placeholder="Search products by name..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
           </Col>
-          <Col
-            md={8}
-            className="text-md-end d-flex flex-wrap gap-2 justify-content-md-end"
-          >
+          <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
             {canCreateInventory && (
               <Button
-                style={{
-                  backgroundColor: "#00c78c",
-                  border: "none",
-                  color: "#fff",
-                  padding: "6px 16px",
-                }}
+                className="d-flex align-items-center btn-import"
                 onClick={handleImportClick}
               >
-                <i className="fas fa-file-import me-2" /> Import
+                <FaUpload className="me-2" /> Import
               </Button>
             )}
+
             <input
               type="file"
               accept=".xlsx, .xls"
@@ -541,173 +579,178 @@ const InventoryItems = () => {
               onChange={handleImport}
               style={{ display: "none" }}
             />
+
             {canViewInventory && (
               <Button
-                style={{
-                  backgroundColor: "#ff7e00",
-                  border: "none",
-                  color: "#fff",
-                  padding: "6px 16px",
-                }}
+                className="d-flex align-items-center btn-export"
                 onClick={handleExport}
               >
-                <i className="fas fa-file-export me-2" /> Export
+                <FaFile className="me-2" /> Export
               </Button>
             )}
+
             {canCreateInventory && (
               <Button
-                style={{
-                  backgroundColor: "#f6c100",
-                  border: "none",
-                  padding: "6px 16px",
-                }}
+                className="d-flex align-items-center btn-download"
                 onClick={handleDownloadTemplate}
               >
-                <i className="fas fa-download me-2" /> Download Template
+                <FaDownload className="me-2" /> Download
               </Button>
             )}
+
             {canCreateInventory && (
               <Button
+                className="d-flex align-items-center btn-add-product"
                 onClick={() => setShowAdd(true)}
-                style={{
-                  backgroundColor: "#27b2b6",
-                  border: "none",
-                  color: "#fff",
-                  padding: "6px 16px",
-                }}
               >
-                <i className="fa fa-plus me-2"></i> Add Product
+                <FaPlus className="me-2" /> Add Product
               </Button>
             )}
+
             <Button
-              style={{
-                backgroundColor: "#17a2b8",
-                border: "none",
-                color: "#fff",
-                padding: "6px 16px",
-                marginLeft: "8px",
-              }}
+              className="d-flex align-items-center btn-send-all"
               onClick={handleSendAll}
             >
               Send All
             </Button>
+
             {selectedItems.length > 0 && (
-              <Button
-                style={{
-                  backgroundColor: "#28a745",
-                  border: "none",
-                  color: "#fff",
-                }}
-                onClick={() => {
-                  const selectedData = items.filter((item) =>
-                    selectedItems.includes(item.id)
-                  );
-                  toast.success(
-                    `${selectedData.length} item(s) sent successfully!`,
-                    {
-                      toastId: "send-selected-success",
-                      autoClose: 3000
-                    }
-                  );
+              <>
+                <Button
+                  className="d-flex align-items-center btn-send-selected"
+                  onClick={() => {
+                    const selectedData = items.filter((item) =>
+                      selectedItems.includes(item.id)
+                    );
+                    toast.success(
+                      `${selectedData.length} item(s) sent successfully!`,
+                      {
+                        toastId: "send-selected-success",
+                        autoClose: 3000
+                      }
+                    );
+                  }}
+                >
+                  Send Selected ({selectedItems.length})
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() => setSelectedItems([])}
+                >
+                  Clear
+                </Button>
+              </>
+            )}
+          </Col>
+        </Row>
+
+        {/* Filter Section */}
+        <Card className="filter-card">
+          <Row className="g-3">
+            <Col xs={12} sm={6} md={3}>
+              <Form.Label className="fw-semibold mb-2">Category</Form.Label>
+              <Form.Select
+                className="filter-select"
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setCurrentPage(1);
                 }}
               >
-                Send Selected ({selectedItems.length})
-              </Button>
-            )}
-            {selectedItems.length > 0 && (
+                {uniqueCategories.map((cat, idx) => (
+                  <option key={idx} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <Form.Label className="fw-semibold mb-2">Warehouse</Form.Label>
+              <Form.Select
+                className="filter-select"
+                value={selectedWarehouse}
+                onChange={(e) => {
+                  setSelectedWarehouse(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                {uniqueWarehouses.map((wh, idx) => (
+                  <option key={idx} value={wh}>
+                    {wh}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <Form.Label className="fw-semibold mb-2">Quantity Range</Form.Label>
+              <Form.Select
+                className="filter-select"
+                value={quantityRange}
+                onChange={(e) => {
+                  setQuantityRange(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="All">All Quantities</option>
+                <option value="Negative">Negative Quantity</option>
+                <option value="Low Quantity">Low Quantity</option>
+                <option value="0-10">0 - 10</option>
+                <option value="10-50">10 - 50</option>
+                <option value="50-100">50 - 100</option>
+                <option value="100+">100+</option>
+              </Form.Select>
+            </Col>
+            <Col xs={12} sm={6} md={3} className="d-flex align-items-end">
               <Button
                 variant="outline-secondary"
-                size="sm"
-                onClick={() => setSelectedItems([])}
-                className="ms-2"
+                className="w-100"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCategory("All");
+                  setSelectedWarehouse("All");
+                  setQuantityRange("All");
+                  setCurrentPage(1);
+                }}
               >
-                Clear
+                Clear Filters
               </Button>
-            )}
-          </Col>
-        </Row>
+            </Col>
+          </Row>
+        </Card>
 
-        <Row className="mb-3 px-3 py-2 align-items-center g-2">
-          <Col xs={12} sm={3}>
-            <Form.Control
-              type="text"
-              placeholder="Search item..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="rounded-pill"
-            />
-          </Col>
-          <Col xs={12} sm={3}>
-            <Form.Select
-              className="rounded-pill"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              {uniqueCategories.map((cat, idx) => (
-                <option key={idx} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col xs={12} sm={3}>
-            <Form.Select
-              className="rounded-pill"
-              value={selectedWarehouse}
-              onChange={(e) => setSelectedWarehouse(e.target.value)}
-            >
-              {uniqueWarehouses.map((wh, idx) => (
-                <option key={idx} value={wh}>
-                  {wh}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col xs={12} sm={3}>
-            <Form.Select
-              className="rounded-pill"
-              value={quantityRange}
-              onChange={(e) => setQuantityRange(e.target.value)}
-            >
-              <option value="All">All Quantities</option>
-              <option value="Negative">Negative Quantity</option>
-              <option value="Low Quantity">Low Quantity</option>
-              <option value="0-10">0 - 10</option>
-              <option value="10-50">10 - 50</option>
-              <option value="50-100">50 - 100</option>
-              <option value="100+">100+</option>
-            </Form.Select>
-          </Col>
-        </Row>
-
-        <div className="card border rounded-3 p-4">
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0">
-              <thead className="">
-                <tr>
-                  <th>
-                    <Form.Check
-                      type="checkbox"
-                      checked={
-                        selectedItems.length === filteredItems.length &&
-                        filteredItems.length > 0
-                      }
-                      onChange={handleSelectAll}
-                      disabled={filteredItems.length === 0}
-                    />
-                  </th>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th>SKU</th>
-                  <th>Quantity</th>
-                  <th>Warehouse</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredItems.length > 0 ? (
-                  filteredItems.map((item) => (
+        {/* Table Card */}
+        <Card className="inventory-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            {error && <Alert variant="danger" className="m-3">{error}</Alert>}
+            
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="inventory-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
+                  <tr>
+                    <th className="py-3" style={{ width: "50px" }}>
+                      <Form.Check
+                        type="checkbox"
+                        checked={
+                          selectedItems.length === filteredItems.length &&
+                          filteredItems.length > 0
+                        }
+                        onChange={handleSelectAll}
+                        disabled={filteredItems.length === 0}
+                      />
+                    </th>
+                    <th className="py-3">Product</th>
+                    <th className="py-3">Category</th>
+                    <th className="py-3">SKU</th>
+                    <th className="py-3">Quantity</th>
+                    <th className="py-3">Warehouse</th>
+                    <th className="py-3">Status</th>
+                    <th className="py-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedItems.length > 0 ? (
+                    paginatedItems.map((item) => (
                     <tr key={item.id}>
                       <td>
                         <Form.Check
@@ -717,19 +760,17 @@ const InventoryItems = () => {
                         />
                       </td>
                       <td
-                        style={{
-                          color: "#007bff",
-                          fontWeight: "bold",
-                          cursor: "pointer",
-                        }}
-                        className="product-cell"
+                        className="product-name"
                         onClick={(e) => handleProductClick(item, e)}
+                        style={{ cursor: "pointer" }}
                       >
-                        <span className="product-name">{item.itemName}</span>
+                        {item.itemName}
                       </td>
-                      <td>{item.itemCategory}</td>
-                      <td>{item.sku}</td>
-                      <td>{item.quantity}</td>
+                      <td>
+                        <span className="badge bg-info text-dark">{item.itemCategory}</span>
+                      </td>
+                      <td className="fw-bold">{item.sku || "-"}</td>
+                      <td className="fw-bold">{item.quantity || 0}</td>
                       <td>
                         {item.warehouses && item.warehouses.length > 0 ? (
                           <div>
@@ -748,18 +789,19 @@ const InventoryItems = () => {
                         <span
                           className={`badge px-3 py-1 rounded-pill fw-semibold ${
                             item.status === "In Stock"
-                              ? "bg-success text-white"
-                              : "bg-danger text-white"
+                              ? "badge-success"
+                              : "badge-danger"
                           }`}
                         >
                           {item.status}
                         </span>
                       </td>
-                      <td>
-                        <div className="d-flex gap-2">
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2 flex-wrap">
                           <Button
-                            variant="link"
-                            className="text-info p-0"
+                            variant="outline-info"
+                            size="sm"
+                            className="btn-action btn-view"
                             onClick={(e) => {
                               e.stopPropagation();
                               isCleaningUpRef.current = false;
@@ -769,12 +811,13 @@ const InventoryItems = () => {
                             }}
                             title="Quick View"
                           >
-                            <FaEye />
+                            <FaEye size={14} />
                           </Button>
                           {canUpdateInventory && (
                             <Button
-                              variant="link"
-                              className="text-warning p-0"
+                              variant="outline-warning"
+                              size="sm"
+                              className="btn-action btn-edit"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedItem(item);
@@ -782,13 +825,14 @@ const InventoryItems = () => {
                               }}
                               title="Edit"
                             >
-                              <FaEdit />
+                              <FaEdit size={14} />
                             </Button>
                           )}
                           {canDeleteInventory && (
                             <Button
-                              variant="link"
-                              className="text-danger p-0"
+                              variant="outline-danger"
+                              size="sm"
+                              className="btn-action btn-delete"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedItem(item);
@@ -796,45 +840,28 @@ const InventoryItems = () => {
                               }}
                               title="Delete"
                             >
-                              <FaTrash />
+                              <FaTrash size={14} />
                             </Button>
                           )}
                           <Button
-                            variant="none"
-                            className="p-0 text-primary text-decoration-none"
+                            variant="link"
+                            className="btn-link-custom"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Navigate with product ID in URL, not passing item in state
                               navigate(`/company/inventorydetails/${item.id}`);
                             }}
                             title="View Details"
-                            style={{
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "0.875rem",
-                              fontWeight: 500,
-                            }}
                           >
-                            view details
+                            View Details
                           </Button>
                           <Button
-                            variant="none"
-                            className="p-0 text-success text-decoration-none"
+                            variant="link"
+                            className="btn-link-success"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSendItem(item);
                             }}
                             title="Send Item"
-                            style={{
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "0.875rem",
-                              fontWeight: 500,
-                            }}
                           >
                             Send
                           </Button>
@@ -842,39 +869,65 @@ const InventoryItems = () => {
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="text-center">
-                      No items found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap">
-            <small className="text-muted ms-2">
-              Showing 1 to {filteredItems.length} of {filteredItems.length}{" "}
-              results
-            </small>
-            <nav>
-              <ul className="pagination pagination-sm mb-0 flex-wrap">
-                <li className="page-item disabled">
-                  <button className="page-link rounded-start">&laquo;</button>
-                </li>
-                <li className="page-item active">
-                  <button className="page-link">1</button>
-                </li>
-                <li className="page-item">
-                  <button className="page-link">2</button>
-                </li>
-                <li className="page-item">
-                  <button className="page-link rounded-end">&raquo;</button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </div>
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4 text-muted">
+                        No items found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2 px-3 py-3">
+              <span className="small text-muted">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, filteredItems.length)} of{" "}
+                {filteredItems.length} entries
+              </span>
+              <nav>
+                <ul className="pagination pagination-sm mb-0 flex-wrap">
+                  <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                    <button
+                      className="page-link rounded-start"
+                      onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                    >
+                      &laquo;
+                    </button>
+                  </li>
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <li
+                      key={index + 1}
+                      className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                    >
+                      <button
+                        className="page-link"
+                        style={
+                          currentPage === index + 1
+                            ? { backgroundColor: "#505ece", borderColor: "#505ece", color: "white" }
+                            : {}
+                        }
+                        onClick={() => handlePageChange(index + 1)}
+                      >
+                        {index + 1}
+                      </button>
+                    </li>
+                  ))}
+                  <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                    <button
+                      className="page-link rounded-end"
+                      onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                    >
+                      &raquo;
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </Card.Body>
+        </Card>
 
         {/* View Modal */}
         <Modal
@@ -884,11 +937,12 @@ const InventoryItems = () => {
           onExited={handleViewModalExited}
           centered
           size="lg"
+          className="inventory-modal"
         >
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="modal-header-custom">
             <Modal.Title>Item Details</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="modal-body-custom">
             {selectedItem && (
               <>
                 <Row className="mb-3">
@@ -915,31 +969,33 @@ const InventoryItems = () => {
                 {/* Warehouse Information */}
                 <Row className="mb-3">
                   <Col md={12}>
-                    <strong>Warehouse Information:</strong>
+                    <h6 className="fw-bold mb-3">Warehouse Information:</h6>
                     {selectedItem.warehouses &&
                       selectedItem.warehouses.length > 0 ? (
-                      <table className="table table-sm mt-2">
-                        <thead>
-                          <tr>
-                            <th>Warehouse Name</th>
-                            <th>Location</th>
-                            <th>Stock Quantity</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedItem.warehouses.map((warehouse, index) => (
-                            <tr key={index}>
-                              <td>{warehouse.name}</td>
-                              <td>{warehouse.location}</td>
-                              <td>{warehouse.stockQty}</td>
+                      <div className="table-responsive">
+                        <Table className="table-sm table-hover">
+                          <thead style={{ background: "#f8f9fa" }}>
+                            <tr>
+                              <th className="fw-semibold">Warehouse Name</th>
+                              <th className="fw-semibold">Location</th>
+                              <th className="fw-semibold">Stock Quantity</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {selectedItem.warehouses.map((warehouse, index) => (
+                              <tr key={index}>
+                                <td className="fw-semibold">{warehouse.name}</td>
+                                <td>{warehouse.location || "-"}</td>
+                                <td className="fw-bold text-primary">{warehouse.stockQty || 0}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      </div>
                     ) : (
-                      <p className="text-muted mt-2">
+                      <Alert variant="info" className="mt-2">
                         No warehouse information available
-                      </p>
+                      </Alert>
                     )}
                   </Col>
                 </Row>
@@ -975,8 +1031,8 @@ const InventoryItems = () => {
               </>
             )}
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseViewModal}>
+          <Modal.Footer className="modal-footer-custom">
+            <Button variant="secondary" className="btn-modal-cancel" onClick={handleCloseViewModal}>
               Close
             </Button>
           </Modal.Footer>
@@ -987,56 +1043,48 @@ const InventoryItems = () => {
           show={showDelete}
           onHide={() => !isDeleting && setShowDelete(false)}
           centered
+          className="inventory-modal"
         >
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="modal-header-custom">
             <Modal.Title>Confirm Delete</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            Are you sure you want to delete this item? This action cannot be
-            undone.
+          <Modal.Body className="modal-body-custom text-center py-4">
+            <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FaTrash size={32} color="#F04438" />
+            </div>
+            <h4 className="fw-bold mb-2">Delete Item</h4>
+            <p className="text-muted mb-3">Are you sure you want to delete this item? This action cannot be undone.</p>
             {selectedItem && (
-              <div className="mt-2">
-                <strong>{selectedItem.itemName}</strong>
+              <div className="mt-3">
+                <strong className="text-primary">{selectedItem.itemName}</strong>
               </div>
             )}
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="modal-footer-custom">
             <Button
               variant="secondary"
+              className="btn-modal-cancel"
               onClick={() => setShowDelete(false)}
               disabled={isDeleting}
             >
               Cancel
             </Button>
             <Button
-              variant="danger"
+              className="btn-modal-delete"
               onClick={handleDeleteItem}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </Modal.Footer>
         </Modal>
-
-        {/* Page Description */}
-        <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-          <Card.Body>
-            <h5 className="fw-semibold border-bottom pb-2 mb-3">
-              Page Info
-            </h5>
-            <ul
-              className="fs-6 mb-0"
-              style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
-            >
-              <li>
-                An Inventory Product Management Interface displaying product
-                details, status, and actions.
-              </li>
-              <li>Options to import/export data.</li>
-              <li>Ability to manage and maintain records.</li>
-            </ul>
-          </Card.Body>
-        </Card>
       </div>
 
       {/* AddProductModal */}
@@ -1054,19 +1102,6 @@ const InventoryItems = () => {
         onSuccess={refreshProducts}
       />
 
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-      />
     </>
   );
 };

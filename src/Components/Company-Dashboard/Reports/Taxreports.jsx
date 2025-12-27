@@ -6,12 +6,14 @@ import {
   Form,
   Row,
   Table,
+  Spinner,
 } from "react-bootstrap";
 import { FaFilePdf, FaFileExcel } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './Taxreports.css';
 
 const TaxReport = () => {
   const companyId = GetCompanyId();
@@ -88,79 +90,82 @@ const TaxReport = () => {
   }, [companyId]);
 
   const renderFilterSection = (type) => (
-    <Card className="p-3 rounded-4 mb-3 border">
-      <Row className="g-3 align-items-center">
-        <Col md={3}>
-          <Form.Group className="d-flex flex-column">
-            <Form.Label className="fw-semibold mb-1">Choose Date</Form.Label>
-            <DatePicker
-              selectsRange
-              startDate={startDate}
-              endDate={endDate}
-              onChange={(update) => setDateRange(update)}
-              isClearable={true}
-              className="form-control"
-              dateFormat="dd/MM/yyyy"
-              disabled // Backend doesn't support filtering yet
-            />
-          </Form.Group>
-        </Col>
+    <Card className="filter-card border-0 shadow-lg mb-3">
+      <Card.Body>
+        <Row className="g-3 align-items-end">
+          <Col md={3}>
+            <Form.Group className="d-flex flex-column">
+              <Form.Label className="filter-label">Choose Date</Form.Label>
+              <DatePicker
+                selectsRange
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(update) => setDateRange(update)}
+                isClearable={true}
+                className="form-control filter-date"
+                dateFormat="dd/MM/yyyy"
+                disabled // Backend doesn't support filtering yet
+              />
+            </Form.Group>
+          </Col>
 
-        <Col md={3}>
-          <Form.Group className="d-flex flex-column">
-            <Form.Label className="fw-semibold mb-1">
-              {type === "purchase" ? "Vendor" : "Customer"}
-            </Form.Label>
-            <Form.Select disabled>
-              <option>All</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
+          <Col md={3}>
+            <Form.Group className="d-flex flex-column">
+              <Form.Label className="filter-label">
+                {type === "purchase" ? "Vendor" : "Customer"}
+              </Form.Label>
+              <Form.Select className="filter-select" disabled>
+                <option>All</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
 
-        <Col md={3}>
-          <Form.Group className="d-flex flex-column">
-            <Form.Label className="fw-semibold mb-1">Payment Method</Form.Label>
-            <Form.Select disabled>
-              <option>All</option>
-              <option>Cash</option>
-              <option>Stripe</option>
-              <option>Paypal</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
+          <Col md={3}>
+            <Form.Group className="d-flex flex-column">
+              <Form.Label className="filter-label">Payment Method</Form.Label>
+              <Form.Select className="filter-select" disabled>
+                <option>All</option>
+                <option>Cash</option>
+                <option>Stripe</option>
+                <option>Paypal</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
 
-        <Col md={3} className="d-flex align-items-end">
-          <Button className="w-100" style={{ backgroundColor: "#53b2a5", border: "none" }} disabled>
-            Generate Report
-          </Button>
-        </Col>
-      </Row>
+          <Col md={3} className="d-flex align-items-end">
+            <Button className="w-100 btn-generate-report" disabled>
+              Generate Report
+            </Button>
+          </Col>
+        </Row>
+      </Card.Body>
     </Card>
   );
 
   const currentData = activeTab === "purchase" ? purchaseData : salesData;
 
   return (
-    <div className="p-4 mt-4">
+    <div className="p-4 tax-report-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="tax-report-title">
+          <i className="fas fa-file-invoice-dollar me-2"></i>
+          Tax Report
+        </h3>
+        <p className="tax-report-subtitle">View and analyze tax reports for purchases and sales</p>
+      </div>
+
       {/* Tab Buttons */}
-      <div className="d-flex gap-2 mb-3">
+      <div className="tab-buttons-wrapper">
         <Button
-          style={{
-            backgroundColor: activeTab === "purchase" ? "#53b2a5" : "transparent",
-            border: activeTab === "purchase" ? "none" : "1px solid #ccc",
-            color: activeTab === "purchase" ? "#fff" : "#333",
-          }}
+          className={`tab-button ${activeTab === "purchase" ? "tab-button-active" : ""}`}
           onClick={() => setActiveTab("purchase")}
         >
           Purchase Tax
         </Button>
 
         <Button
-          style={{
-            backgroundColor: activeTab === "sales" ? "#53b2a5" : "transparent",
-            border: activeTab === "sales" ? "none" : "1px solid #ccc",
-            color: activeTab === "sales" ? "#fff" : "#333",
-          }}
+          className={`tab-button ${activeTab === "sales" ? "tab-button-active" : ""}`}
           onClick={() => setActiveTab("sales")}
         >
           Sales Tax
@@ -168,93 +173,78 @@ const TaxReport = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-5">Loading tax report...</div>
+        <div className="loading-container">
+          <Spinner animation="border" style={{ color: "#505ece" }} />
+        </div>
       ) : error ? (
-        <div className="text-center py-5 text-danger">{error}</div>
+        <div className="error-container">
+          <h5 className="text-danger">{error}</h5>
+        </div>
       ) : (
-        <Card className="rounded-4 p-4 border">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold mb-0">
-              {activeTab === "purchase" ? "Purchase Tax Report" : "Sales Tax Report"}
-            </h5>
-            <div className="d-flex gap-2">
-              <Button variant="outline-danger" size="sm">
-                <FaFilePdf />
-              </Button>
-              <Button variant="outline-success" size="sm">
-                <FaFileExcel />
-              </Button>
+        <Card className="tax-report-table-card border-0 shadow-lg">
+          <Card.Body>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h5 className="fw-bold mb-0">
+                {activeTab === "purchase" ? "Purchase Tax Report" : "Sales Tax Report"}
+              </h5>
+              <div className="d-flex gap-2">
+                <Button className="btn-export-pdf d-flex align-items-center">
+                  <FaFilePdf className="me-2" />
+                  <span>PDF ملف</span>
+                </Button>
+                <Button className="btn-export-excel d-flex align-items-center">
+                  <FaFileExcel className="me-2" />
+                  <span>Excel ملف</span>
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {renderFilterSection(activeTab)}
+            {renderFilterSection(activeTab)}
 
-          <Table hover responsive className="mb-0 border">
-            <thead className="text-dark fw-semibold">
-              <tr>
-                <th>Reference</th>
-                <th>{activeTab === "purchase" ? "Vendor" : "Customer"}</th>
-                <th>{activeTab === "purchase" ? "Vendor (Arabic)" : "Customer (Arabic)"}</th>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Payment Method</th>
-                <th>Discount</th>
-                <th>Tax Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentData.length > 0 ? (
-                currentData.map((row, idx) => (
-                  <tr key={idx}>
-                    <td>{row.reference}</td>
-                    <td>{activeTab === "purchase" ? row.vendor : row.customer}</td>
-                    <td
-                      className="text-end"
-                      style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}
-                    >
-                      {activeTab === "purchase" ? row.vendorArabic : row.customerArabic}
-                    </td>
-                    <td>{row.date}</td>
-                    <td>{row.amount}</td>
-                    <td>{row.payment}</td>
-                    <td>{row.discount}</td>
-                    <td>{row.tax}</td>
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="tax-report-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
+                  <tr>
+                    <th className="py-3">Reference</th>
+                    <th className="py-3">{activeTab === "purchase" ? "Vendor" : "Customer"}</th>
+                    <th className="py-3">{activeTab === "purchase" ? "Vendor (Arabic)" : "Customer (Arabic)"}</th>
+                    <th className="py-3">Date</th>
+                    <th className="py-3">Amount</th>
+                    <th className="py-3">Payment Method</th>
+                    <th className="py-3">Discount</th>
+                    <th className="py-3">Tax Amount</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="text-center text-muted py-3">
-                    No records found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-
-          {/* Pagination (static) */}
-          <div className="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
-            <span className="small text-muted">
-              Showing 1 to {currentData.length} of {currentData.length} results
-            </span>
-            <nav>
-              <ul className="pagination pagination-sm mb-0 flex-wrap">
-                <li className="page-item disabled">
-                  <button className="page-link rounded-start">&laquo;</button>
-                </li>
-                <li className="page-item active">
-                  <button
-                    className="page-link"
-                    style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa", color: "#fff" }}
-                  >
-                    1
-                  </button>
-                </li>
-                <li className="page-item disabled">
-                  <button className="page-link rounded-end">&raquo;</button>
-                </li>
-              </ul>
-            </nav>
-          </div>
+                </thead>
+                <tbody>
+                  {currentData.length > 0 ? (
+                    currentData.map((row, idx) => (
+                      <tr key={idx}>
+                        <td><strong>{row.reference}</strong></td>
+                        <td>{activeTab === "purchase" ? row.vendor : row.customer}</td>
+                        <td
+                          className="text-end"
+                          style={{ fontFamily: "'Segoe UI', Arial, sans-serif", direction: "rtl" }}
+                        >
+                          {activeTab === "purchase" ? row.vendorArabic : row.customerArabic}
+                        </td>
+                        <td>{row.date}</td>
+                        <td className="fw-bold">₹{row.amount}</td>
+                        <td>{row.payment}</td>
+                        <td>₹{row.discount}</td>
+                        <td className="fw-bold text-danger">₹{row.tax}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="text-center text-muted py-4">
+                        No records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </Card.Body>
         </Card>
       )}
     </div>

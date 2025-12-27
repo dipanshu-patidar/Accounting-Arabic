@@ -31,6 +31,7 @@ import {
 import { format } from 'date-fns';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './EmployeeManagement.css';
 
 // Hardcoded since API doesn't expose /departments or /designations
 const DEPARTMENTS = ['IT', 'HR', 'Finance', 'Marketing', 'Operations', 'Sales'];
@@ -336,14 +337,14 @@ const generateEmployeeCode = () => {
   };
 
   const EmployeeCard = ({ employee }) => (
-    <Card className="mb-3 border-0 shadow-sm" style={{ backgroundColor: '#e6f3f5' }}>
+    <Card className="mobile-card">
       <Card.Body>
         <div className="d-flex justify-content-between align-items-start mb-2">
           <div>
-            <Card.Title className="mb-1" style={{ color: '#023347' }}>{employee.fullName}</Card.Title>
+            <Card.Title className="mb-1" style={{ color: '#505ece' }}>{employee.fullName}</Card.Title>
             <Card.Subtitle className="text-muted">{employee.employeeCode}</Card.Subtitle>
           </div>
-          <Badge bg={employee.status === 'Active' ? 'success' : 'danger'} pill>
+          <Badge className={employee.status === 'Active' ? 'badge-status badge-active' : 'badge-status badge-inactive'}>
             {employee.status}
           </Badge>
         </div>
@@ -351,44 +352,53 @@ const generateEmployeeCode = () => {
         <div className="mb-2"><span className="text-muted small">Designation:</span> {employee.designation}</div>
         <div className="mb-2"><span className="text-muted small">Joining Date:</span> {format(new Date(employee.joiningDate), 'MM/dd/yyyy')}</div>
         <div className="mb-3"><span className="text-muted small">Salary:</span> ${parseFloat(employee.baseSalary).toLocaleString()}</div>
-        <div className="d-flex justify-content-end">
-          <Button variant="light" size="sm" className="me-2" style={{ color: '#023347', backgroundColor: '#e6f3f5' }} onClick={() => handleViewEmployee(employee)}><FaEye /></Button>
-          <Button variant="light" size="sm" className="me-2" style={{ color: '#023347', backgroundColor: '#e6f3f5' }} onClick={() => handleOpenModal(employee)}><FaEdit /></Button>
-          <Button variant="light" size="sm" style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }} onClick={() => handleDelete(employee.id)}><FaTrash /></Button>
+        <div className="d-flex justify-content-end gap-2">
+          <Button className="btn-action btn-view" onClick={() => handleViewEmployee(employee)} title="View"><FaEye /></Button>
+          <Button className="btn-action btn-edit" onClick={() => handleOpenModal(employee)} title="Edit"><FaEdit /></Button>
+          <Button className="btn-action btn-delete" onClick={() => handleDelete(employee.id)} title="Delete"><FaTrash /></Button>
         </div>
       </Card.Body>
     </Card>
   );
 
   return (
-    <Container fluid className="py-4 px-3 px-md-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 className="mb-3 mb-md-0" style={{ color: '#023347', fontWeight: '600' }}>Employee Management</h2>
-        <div className="d-flex flex-column flex-sm-row gap-2">
-          <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={() => handleOpenModal()} className="d-flex align-items-center">
-            <FaPlus className="me-2" /> Add Employee
-          </Button>
-          <Button style={{ backgroundColor: '#2a8e9c', border: 'none' }} onClick={handleImportCSV} className="d-flex align-items-center">
-            <FaFileUpload className="me-2" /> Import CSV
-          </Button>
-        </div>
+    <Container fluid className="p-4 employee-management-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="employee-management-title">
+              <i className="fas fa-users me-2"></i>
+              Employee Management
+            </h3>
+            <p className="employee-management-subtitle">Manage employee information, departments, and payroll details</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+            <Button className="btn-add-employee d-flex align-items-center" onClick={() => handleOpenModal()}>
+              <FaPlus className="me-2" /> Add Employee
+            </Button>
+            <Button className="btn-import-csv d-flex align-items-center" onClick={handleImportCSV}>
+              <FaFileUpload className="me-2" /> Import CSV
+            </Button>
+          </Col>
+        </Row>
       </div>
 
       {/* Stats */}
       <Row className="mb-4">
         {[
-          { icon: <FaUsers />, title: 'Total Employees', value: stats.totalEmployees, bg: '#023347' },
-          { icon: <FaUser />, title: 'Active Employees', value: stats.activeEmployees, bg: '#2a8e9c' },
+          { icon: <FaUsers />, title: 'Total Employees', value: stats.totalEmployees, bg: '#505ece' },
+          { icon: <FaUser />, title: 'Active Employees', value: stats.activeEmployees, bg: '#28a745' },
           { icon: <FaUserSlash />, title: 'Inactive Employees', value: stats.inactiveEmployees, bg: '#dc3545' },
           { icon: <FaMoneyBillWave />, title: 'Total Payroll', value: `$${stats.totalPayroll.toLocaleString()}`, bg: '#fd7e14' }
         ].map((item, i) => (
           <Col xs={6} md={3} className="mb-3" key={i}>
-            <Card className="h-100 border-0 shadow-sm" style={{ backgroundColor: '#e6f3f5' }}>
+            <Card className="stats-card">
               <Card.Body className="d-flex align-items-center">
-                <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" style={{ backgroundColor: item.bg, color: '#fff', width: '40px', height: '40px' }}>{item.icon}</div>
+                <div className="stats-icon me-3" style={{ backgroundColor: item.bg }}>{item.icon}</div>
                 <div>
-                  <Card.Title as="h4" className="mb-0" style={{ color: '#023347' }}>{item.value}</Card.Title>
-                  <Card.Text className="text-muted mb-0 small">{item.title}</Card.Text>
+                  <div className="stats-value">{item.value}</div>
+                  <div className="stats-label">{item.title}</div>
                 </div>
               </Card.Body>
             </Card>
@@ -398,10 +408,10 @@ const generateEmployeeCode = () => {
 
       {/* Desktop Table */}
       <div className="d-none d-md-block">
-        <Card className="border-0 shadow-sm" style={{ backgroundColor: '#e6f3f5' }}>
+        <Card className="employee-table-card">
           <Card.Body className="p-0">
-            <Table responsive hover className="mb-0">
-              <thead>
+            <Table responsive hover className="employee-table mb-0">
+              <thead className="table-header">
                 <tr>
                   <th>Employee ID</th>
                   <th>Full Name</th>
@@ -417,20 +427,24 @@ const generateEmployeeCode = () => {
               <tbody>
                 {employees.map(emp => (
                   <tr key={emp.id}>
-                    <td>{emp.employeeCode}</td>
+                    <td className="fw-bold">{emp.employeeCode}</td>
                     <td>{emp.fullName}</td>
                     <td>{emp.department}</td>
                     <td>{emp.designation}</td>
                     <td>{format(new Date(emp.joiningDate), 'MM/dd/yyyy')}</td>
                     <td>{emp.salaryType}</td>
-                    <td>${parseFloat(emp.baseSalary).toLocaleString()}</td>
+                    <td className="fw-semibold">${parseFloat(emp.baseSalary).toLocaleString()}</td>
                     <td>
-                      <Badge bg={emp.status === 'Active' ? 'success' : 'danger'} pill>{emp.status}</Badge>
+                      <Badge className={emp.status === 'Active' ? 'badge-status badge-active' : 'badge-status badge-inactive'}>
+                        {emp.status}
+                      </Badge>
                     </td>
                     <td className="text-center">
-                      <Button variant="light" size="sm" className="me-1" style={{ color: '#023347', backgroundColor: '#e6f3f5' }} onClick={() => handleViewEmployee(emp)}><FaEye /></Button>
-                      <Button variant="light" size="sm" className="me-1" style={{ color: '#023347', backgroundColor: '#e6f3f5' }} onClick={() => handleOpenModal(emp)}><FaEdit /></Button>
-                      <Button variant="light" size="sm" style={{ color: '#dc3545', backgroundColor: '#e6f3f5' }} onClick={() => handleDelete(emp.id)}><FaTrash /></Button>
+                      <div className="d-flex justify-content-center gap-2">
+                        <Button className="btn-action btn-view" onClick={() => handleViewEmployee(emp)} title="View"><FaEye /></Button>
+                        <Button className="btn-action btn-edit" onClick={() => handleOpenModal(emp)} title="Edit"><FaEdit /></Button>
+                        <Button className="btn-action btn-delete" onClick={() => handleDelete(emp.id)} title="Delete"><FaTrash /></Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -453,43 +467,47 @@ const generateEmployeeCode = () => {
         onExited={handleModalExited}
         size="lg" 
         centered
+        className="employee-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#fff' }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{currentEmployee ? 'Edit Employee' : 'Add New Employee'}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Row className="mb-3">
               <Form.Group as={Col} md={6} controlId="employeeCode">
-                <Form.Label>Employee Code *</Form.Label>
+                <Form.Label className="form-label-custom">Employee Code *</Form.Label>
                 <Form.Control
                   type="text"
                   name="employeeCode"
                   value={formData.employeeCode}
                   onChange={handleInputChange}
                   required
-                  disabled={!currentEmployee} // Auto on create → disable; editable on edit
+                  className="form-control-custom"
+                  disabled={!currentEmployee}
                 />
               </Form.Group>
               <Form.Group as={Col} md={6} controlId="fullName">
-                <Form.Label>Full Name *</Form.Label>
+                <Form.Label className="form-label-custom">Full Name *</Form.Label>
                 <Form.Control
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Row>
             <Row className="mb-3">
               <Form.Group as={Col} md={6} controlId="department">
-                <Form.Label>Department *</Form.Label>
+                <Form.Label className="form-label-custom">Department *</Form.Label>
                 <Form.Select
                   name="department"
                   value={formData.department}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select</option>
                   {DEPARTMENTS.map((name) => (
@@ -498,12 +516,13 @@ const generateEmployeeCode = () => {
                 </Form.Select>
               </Form.Group>
               <Form.Group as={Col} md={6} controlId="designation">
-                <Form.Label>Designation *</Form.Label>
+                <Form.Label className="form-label-custom">Designation *</Form.Label>
                 <Form.Select
                   name="designation"
                   value={formData.designation}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select</option>
                   {DESIGNATIONS.map((name) => (
@@ -514,21 +533,23 @@ const generateEmployeeCode = () => {
             </Row>
             <Row className="mb-3">
               <Form.Group as={Col} md={6} controlId="joiningDate">
-                <Form.Label>Joining Date *</Form.Label>
+                <Form.Label className="form-label-custom">Joining Date *</Form.Label>
                 <Form.Control
                   type="date"
                   name="joiningDate"
                   value={format(formData.joiningDate, 'yyyy-MM-dd')}
                   onChange={handleDateChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
               <Form.Group as={Col} md={6} controlId="salaryType">
-                <Form.Label>Salary Type</Form.Label>
+                <Form.Label className="form-label-custom">Salary Type</Form.Label>
                 <Form.Select
                   name="salaryType"
                   value={formData.salaryType}
                   onChange={handleInputChange}
+                  className="form-select-custom"
                 >
                   <option value="Monthly">Monthly</option>
                   <option value="Hourly">Hourly</option>
@@ -537,7 +558,7 @@ const generateEmployeeCode = () => {
             </Row>
             <Row className="mb-3">
               <Form.Group as={Col} md={6} controlId="baseSalary">
-                <Form.Label>Basic Salary *</Form.Label>
+                <Form.Label className="form-label-custom">Basic Salary *</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
@@ -545,35 +566,39 @@ const generateEmployeeCode = () => {
                   value={formData.baseSalary}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
               <Form.Group as={Col} md={6} controlId="bankAccount">
-                <Form.Label>Bank Account Number</Form.Label>
+                <Form.Label className="form-label-custom">Bank Account Number</Form.Label>
                 <Form.Control
                   type="text"
                   name="bankAccount"
                   value={formData.bankAccount}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Row>
             <Row className="mb-3">
               <Form.Group as={Col} md={6} controlId="ifscBranch">
-                <Form.Label>IFSC / Branch</Form.Label>
+                <Form.Label className="form-label-custom">IFSC / Branch</Form.Label>
                 <Form.Control
                   type="text"
                   name="ifscBranch"
                   value={formData.ifscBranch}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
               <Form.Group as={Col} md={6} controlId="taxId">
-                <Form.Label>Tax ID (PAN/VAT)</Form.Label>
+                <Form.Label className="form-label-custom">Tax ID (PAN/VAT)</Form.Label>
                 <Form.Control
                   type="text"
                   name="taxId"
                   value={formData.taxId}
                   onChange={handleInputChange}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Row>
@@ -592,9 +617,9 @@ const generateEmployeeCode = () => {
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
-          <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleSubmit}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>Cancel</Button>
+          <Button className="btn-modal-save" onClick={handleSubmit}>
             {currentEmployee ? 'Update' : 'Add'} Employee
           </Button>
         </Modal.Footer>
@@ -608,63 +633,64 @@ const generateEmployeeCode = () => {
         onExited={handleViewModalExited}
         size="lg" 
         centered
+        className="employee-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#fff' }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Employee Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+        <Modal.Body className="modal-body-custom">
           {viewEmployee && (
             <div>
               <Row className="mb-3">
                 <Col md={6} className="d-flex align-items-center mb-3">
-                  <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px', backgroundColor: '#e6f3f5' }}>
-                    <FaUser size={30} style={{ color: '#023347' }} />
+                  <div className="me-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px', backgroundColor: 'rgba(80, 94, 206, 0.1)' }}>
+                    <FaUser size={30} style={{ color: '#505ece' }} />
                   </div>
                   <div>
-                    <h4 className="mb-0" style={{ color: '#023347' }}>{viewEmployee.fullName}</h4>
-                    <Badge bg={viewEmployee.status === 'Active' ? 'success' : 'danger'} pill>
+                    <h4 className="mb-0" style={{ color: '#505ece' }}>{viewEmployee.fullName}</h4>
+                    <Badge className={viewEmployee.status === 'Active' ? 'badge-status badge-active' : 'badge-status badge-inactive'}>
                       {viewEmployee.status}
                     </Badge>
                   </div>
                 </Col>
                 <Col md={6} className="d-flex justify-content-md-end align-items-center">
-                  <div className="text-center p-3 me-2 rounded" style={{ minWidth: '100px', backgroundColor: '#e6f3f5' }}>
+                  <div className="text-center p-3 me-2 rounded" style={{ minWidth: '100px', backgroundColor: '#f8f9fa', border: '2px solid #e9ecef' }}>
                     <div className="text-muted small">Employee ID</div>
-                    <div className="fw-bold" style={{ color: '#023347' }}>{viewEmployee.employeeCode}</div>
+                    <div className="fw-bold" style={{ color: '#505ece' }}>{viewEmployee.employeeCode}</div>
                   </div>
-                  <div className="text-center p-3 rounded" style={{ minWidth: '100px', backgroundColor: '#e6f3f5' }}>
+                  <div className="text-center p-3 rounded" style={{ minWidth: '100px', backgroundColor: '#f8f9fa', border: '2px solid #e9ecef' }}>
                     <div className="text-muted small">Salary</div>
-                    <div className="fw-bold" style={{ color: '#023347' }}>${parseFloat(viewEmployee.baseSalary).toLocaleString()}</div>
+                    <div className="fw-bold" style={{ color: '#505ece' }}>${parseFloat(viewEmployee.baseSalary).toLocaleString()}</div>
                   </div>
                 </Col>
               </Row>
               <hr />
               <Row>
                 <Col md={6}>
-                  <h5 className="mb-3" style={{ color: '#023347' }}>Employment</h5>
+                  <h5 className="mb-3" style={{ color: '#505ece' }}>Employment</h5>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaBuilding /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaBuilding /></div>
                     <div>
                       <div className="text-muted small">Department</div>
                       <div className="fw-bold">{viewEmployee.department}</div>
                     </div>
                   </div>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaBriefcase /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaBriefcase /></div>
                     <div>
                       <div className="text-muted small">Designation</div>
                       <div className="fw-bold">{viewEmployee.designation}</div>
                     </div>
                   </div>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaCalendarAlt /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaCalendarAlt /></div>
                     <div>
                       <div className="text-muted small">Joining Date</div>
                       <div className="fw-bold">{format(new Date(viewEmployee.joiningDate), 'MMMM dd, yyyy')}</div>
                     </div>
                   </div>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaDollarSign /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaDollarSign /></div>
                     <div>
                       <div className="text-muted small">Salary Type</div>
                       <div className="fw-bold">{viewEmployee.salaryType}</div>
@@ -672,30 +698,30 @@ const generateEmployeeCode = () => {
                   </div>
                 </Col>
                 <Col md={6}>
-                  <h5 className="mb-3" style={{ color: '#023347' }}>Financial</h5>
+                  <h5 className="mb-3" style={{ color: '#505ece' }}>Financial</h5>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaDollarSign /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaDollarSign /></div>
                     <div>
                       <div className="text-muted small">Base Salary</div>
                       <div className="fw-bold">${parseFloat(viewEmployee.baseSalary).toLocaleString()}</div>
                     </div>
                   </div>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaUniversity /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaUniversity /></div>
                     <div>
                       <div className="text-muted small">Bank Account</div>
                       <div className="fw-bold">{viewEmployee.bankAccount}</div>
                     </div>
                   </div>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaInfoCircle /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaInfoCircle /></div>
                     <div>
                       <div className="text-muted small">IFSC / Branch</div>
                       <div className="fw-bold">{viewEmployee.ifscBranch}</div>
                     </div>
                   </div>
                   <div className="mb-3 d-flex">
-                    <div className="me-3" style={{ color: '#2a8e9c' }}><FaIdCard /></div>
+                    <div className="me-3" style={{ color: '#505ece' }}><FaIdCard /></div>
                     <div>
                       <div className="text-muted small">Tax ID</div>
                       <div className="fw-bold">{viewEmployee.taxId}</div>
@@ -706,17 +732,14 @@ const generateEmployeeCode = () => {
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={handleCloseViewModal}>Close</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseViewModal}>Close</Button>
           <Button
-            style={{ backgroundColor: '#023347', border: 'none' }}
+            className="btn-modal-save"
             onClick={() => {
-              // Close view modal first
               handleCloseViewModal();
-              // Then open edit modal after a brief delay to ensure view modal is closed
               setTimeout(() => {
                 if (viewEmployee) {
-                  // Convert viewEmployee to the format expected by handleOpenModal
                   const employeeForEdit = {
                     id: viewEmployee.id,
                     fullName: viewEmployee.fullName,

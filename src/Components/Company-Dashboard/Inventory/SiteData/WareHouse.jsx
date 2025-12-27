@@ -8,8 +8,9 @@ import {
   Col,
   Card,
   Alert,
+  Spinner,
 } from "react-bootstrap";
-import { FaArrowRight, FaBoxes, FaEdit, FaTrash } from "react-icons/fa";
+import { FaArrowRight, FaBoxes, FaEdit, FaTrash, FaSearch, FaFile, FaDownload, FaUpload } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { BiTransfer } from "react-icons/bi";
@@ -18,6 +19,7 @@ import AddProductModal from "../AddProductModal";
 import axiosInstance from "../../../../Api/axiosInstance";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './WareHouse.css';
 
 const WareHouse = () => {
   // Permission states
@@ -355,11 +357,6 @@ const WareHouse = () => {
   };
 
   // --- Pagination & Import/Export ---
-  const totalPages = Math.ceil(warehouses.length / itemsPerPage);
-  const currentItems = warehouses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   const handleImport = (e) => {
     if (!canCreateWarehouses) {
@@ -578,9 +575,9 @@ const WareHouse = () => {
   // If user doesn't have view permission, show access denied message
   if (!canViewWarehouses) {
     return (
-      <div className="p-4 mt-2">
-        <Card className="text-center p-5">
-          <h3>Access Denied</h3>
+      <div className="p-4 warehouse-container">
+        <Card className="text-center p-5 border-0 shadow-lg">
+          <h3 className="text-danger">Access Denied</h3>
           <p>You don't have permission to view Warehouses.</p>
           <p>Please contact your administrator for access.</p>
         </Card>
@@ -588,34 +585,68 @@ const WareHouse = () => {
     );
   }
 
+  // Filter warehouses based on location filter
+  const filteredWarehouses = warehouses.filter(warehouse => 
+    !filterLocation || 
+    warehouse.location?.toLowerCase().includes(filterLocation.toLowerCase()) ||
+    warehouse.name?.toLowerCase().includes(filterLocation.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredWarehouses.length / itemsPerPage);
+  const currentItems = filteredWarehouses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <>
-      <div className="p-3">
-        <div className="d-flex justify-content-between flex-wrap gap-2 mb-3">
-          <h4 className="fw-semibold d-flex align-items-center gap-2">
-            <span>Manage Warehouses</span>
-          </h4>
+      <div className="p-4 warehouse-container">
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
 
-          <Form.Control
-            type="text"
-            placeholder="Filter by location"
-            value={filterLocation}
-            onChange={(e) => {
-              setFilterLocation(e.target.value);
-              setCurrentPage(1);
-            }}
-            style={{ maxWidth: "300px" }}
-          />
+        {/* Header Section */}
+        <div className="mb-4">
+          <h3 className="warehouse-title">
+            <i className="fas fa-warehouse me-2"></i>
+            Warehouse Management
+          </h3>
+          <p className="warehouse-subtitle">Manage and track all warehouses and their inventory</p>
+        </div>
 
-          <div className="d-flex gap-2 flex-wrap">
+        <Row className="g-3 mb-4 align-items-center">
+          <Col xs={12} md={6}>
+            <div className="search-wrapper">
+              <FaSearch className="search-icon" />
+              <Form.Control
+                className="search-input"
+                type="text"
+                placeholder="Search by warehouse name or location..."
+                value={filterLocation}
+                onChange={(e) => {
+                  setFilterLocation(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+          </Col>
+          <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
             {canCreateWarehouses && (
-              <button
-                className="btn rounded-pill text-white"
-                style={{ backgroundColor: "#28a745", borderColor: "#28a745" }}
+              <Button
+                className="d-flex align-items-center btn-import"
                 onClick={() => document.getElementById("excelImport").click()}
               >
-                <i className="fas fa-file-import me-2" /> Import
-              </button>
+                <FaUpload className="me-2" /> Import
+              </Button>
             )}
 
             <input
@@ -628,64 +659,69 @@ const WareHouse = () => {
 
             {canViewWarehouses && (
               <Button
-                className="rounded-pill text-white"
-                style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
+                className="d-flex align-items-center btn-export"
                 onClick={handleExport}
               >
-                <i className="fas fa-file-export me-2" /> Export
+                <FaFile className="me-2" /> Export
               </Button>
             )}
 
             {canCreateWarehouses && (
               <Button
-                className="rounded-pill text-white"
-                style={{ backgroundColor: "#ffc107", borderColor: "#ffc107" }}
+                className="d-flex align-items-center btn-download"
                 onClick={handleDownloadTemplate}
               >
-                <i className="fas fa-download me-2" /> Download
+                <FaDownload className="me-2" /> Download
               </Button>
             )}
 
             {canCreateWarehouses && (
               <Button
-                className="set_btn text-white fw-semibold"
-                style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
+                className="d-flex align-items-center btn-add-warehouse"
                 onClick={() => handleModalShow()}
                 disabled={loading}
               >
                 <i className="fa fa-plus me-2"></i> Create Warehouse
               </Button>
             )}
-          </div>
-        </div>
+          </Col>
+        </Row>
 
-        <div className="border shadow p-4 rounded-4">
-          {loading ? (
-            <div className="text-center py-4">Loading warehouses...</div>
-          ) : error ? (
-            <Alert variant="danger">{error}</Alert>
-          ) : warehouses.length === 0 ? (
-            <Alert variant="info">No warehouses found for this company.</Alert>
-          ) : (
-            <>
-              <div className="table-responsive mt-3">
-                <Table bordered striped hover>
-                  <thead className="">
-                    <tr>
-                      <th>#</th>
-                      <th>Warehouse Name</th>
-                      <th>Total Stocks</th>
-                      <th>Location</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentItems.length > 0 ? (
-                      currentItems.map((w, index) => (
+        {/* Table Card */}
+        <Card className="warehouse-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            {loading ? (
+              <div className="text-center py-5">
+                <Spinner animation="border" style={{ color: "#505ece" }} />
+                <p className="mt-2 text-muted">Loading warehouses...</p>
+              </div>
+            ) : error ? (
+              <Alert variant="danger" className="m-3">{error}</Alert>
+            ) : filteredWarehouses.length === 0 ? (
+              <Alert variant="info" className="m-3">
+                {warehouses.length === 0 
+                  ? "No warehouses found for this company." 
+                  : "No warehouses match the current filter."}
+              </Alert>
+            ) : (
+              <>
+                <div style={{ overflowX: "auto" }}>
+                  <Table responsive className="warehouse-table align-middle" style={{ fontSize: 16 }}>
+                    <thead className="table-header">
+                      <tr>
+                        <th className="py-3">#</th>
+                        <th className="py-3">Warehouse Name</th>
+                        <th className="py-3">Total Stocks</th>
+                        <th className="py-3">Location</th>
+                        <th className="py-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentItems.map((w, index) => (
                         <tr key={w.id}>
                           <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                           <td
-                            className="text-primary"
+                            className="text-primary fw-bold"
                             style={{ cursor: "pointer" }}
                             onClick={() => {
                               localStorage.setItem("warehouseName", w.name);
@@ -695,107 +731,104 @@ const WareHouse = () => {
                           >
                             <u>{w.name}</u>
                           </td>
-                          <td>{w.totalStocks}</td>
-                          <td>{w.location}</td>
-                          <td>
-                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                          <td className="fw-bold">{w.totalStocks || 0}</td>
+                          <td>{w.location || "-"}</td>
+                          <td className="text-center">
+                            <div className="d-flex justify-content-center gap-2">
                               {canUpdateWarehouses && (
                                 <Button
-                                  variant="link"
-                                  className="text-warning p-0"
+                                  variant="outline-warning"
+                                  size="sm"
+                                  className="btn-action btn-edit"
                                   onClick={() => handleModalShow(w)}
                                   title="Edit"
                                   disabled={loading}
                                 >
-                                  <FaEdit size={18} />
+                                  <FaEdit size={14} />
                                 </Button>
                               )}
                               {canDeleteWarehouses && (
                                 <Button
-                                  variant="link"
-                                  className="text-danger p-0"
+                                  variant="outline-danger"
+                                  size="sm"
+                                  className="btn-action btn-delete"
                                   onClick={() => handleDelete(w.id)}
                                   title="Delete"
                                   disabled={loading}
                                 >
-                                  <FaTrash size={18} />
+                                  <FaTrash size={14} />
                                 </Button>
                               )}
                             </div>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="text-center">
-                          No warehouses match the current filter.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </Table>
-              </div>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
 
-              <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2 px-2">
-                <span className="small">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                  {Math.min(currentPage * itemsPerPage, warehouses.length)} of{" "}
-                  {warehouses.length} entries
-                </span>
-                <nav>
-                  <ul className="pagination pagination-sm mb-0 flex-wrap">
-                    <li
-                      className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-                    >
-                      <button
-                        className="page-link rounded-start"
-                        onClick={() =>
-                          currentPage > 1 && setCurrentPage(currentPage - 1)
-                        }
-                      >
-                        &laquo;
-                      </button>
-                    </li>
-                    {Array.from({ length: totalPages }, (_, index) => (
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2 px-3 py-3">
+                  <span className="small text-muted">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                    {Math.min(currentPage * itemsPerPage, filteredWarehouses.length)} of{" "}
+                    {filteredWarehouses.length} entries
+                  </span>
+                  <nav>
+                    <ul className="pagination pagination-sm mb-0 flex-wrap">
                       <li
-                        key={index + 1}
-                        className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                        className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
                       >
                         <button
-                          className="page-link"
-                          style={
-                            currentPage === index + 1
-                              ? {
-                                  backgroundColor: "#3daaaa",
-                                  borderColor: "#3daaaa",
-                                }
-                              : {}
+                          className="page-link rounded-start"
+                          onClick={() =>
+                            currentPage > 1 && setCurrentPage(currentPage - 1)
                           }
-                          onClick={() => handlePageChange(index + 1)}
                         >
-                          {index + 1}
+                          &laquo;
                         </button>
                       </li>
-                    ))}
-                    <li
-                      className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
-                    >
-                      <button
-                        className="page-link rounded-end"
-                        onClick={() =>
-                          currentPage < totalPages &&
-                          setCurrentPage(currentPage + 1)
-                        }
+                      {Array.from({ length: totalPages }, (_, index) => (
+                        <li
+                          key={index + 1}
+                          className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                        >
+                          <button
+                            className="page-link"
+                            style={
+                              currentPage === index + 1
+                                ? {
+                                    backgroundColor: "#505ece",
+                                    borderColor: "#505ece",
+                                    color: "white"
+                                  }
+                                : {}
+                            }
+                            onClick={() => handlePageChange(index + 1)}
+                          >
+                            {index + 1}
+                          </button>
+                        </li>
+                      ))}
+                      <li
+                        className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
                       >
-                        &raquo;
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-            </>
-          )}
-        </div>
+                        <button
+                          className="page-link rounded-end"
+                          onClick={() =>
+                            currentPage < totalPages &&
+                            setCurrentPage(currentPage + 1)
+                          }
+                        >
+                          &raquo;
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                </div>
+              </>
+            )}
+          </Card.Body>
+        </Card>
 
         {/* Add/Edit Warehouse Modal with Full Address Fields */}
         <Modal 
@@ -805,13 +838,14 @@ const WareHouse = () => {
           onExited={handleModalExited}
           size="lg"
           centered
+          className="warehouse-modal"
         >
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="modal-header-custom">
             <Modal.Title>
               {editId ? "Edit Warehouse" : "Create Warehouse"}
             </Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="modal-body-custom">
             {modalError && (
               <Alert
                 variant="danger"
@@ -825,9 +859,10 @@ const WareHouse = () => {
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Warehouse Name *</Form.Label>
+                    <Form.Label className="form-label-custom">Warehouse Name *</Form.Label>
                     <Form.Control
                       type="text"
+                      className="form-control-custom"
                       value={warehouseName}
                       onChange={(e) => setWarehouseName(e.target.value)}
                       required
@@ -837,9 +872,10 @@ const WareHouse = () => {
                 </Col>
                 <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Location *</Form.Label>
+                    <Form.Label className="form-label-custom">Location *</Form.Label>
                     <Form.Control
                       type="text"
+                      className="form-control-custom"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       required
@@ -850,9 +886,10 @@ const WareHouse = () => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Address Line 1</Form.Label>
+                <Form.Label className="form-label-custom">Address Line 1</Form.Label>
                 <Form.Control
                   type="text"
+                  className="form-control-custom"
                   value={addressLine1}
                   onChange={(e) => setAddressLine1(e.target.value)}
                   placeholder="Street address, P.O. box, company name, etc."
@@ -860,9 +897,10 @@ const WareHouse = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Address Line 2</Form.Label>
+                <Form.Label className="form-label-custom">Address Line 2</Form.Label>
                 <Form.Control
                   type="text"
+                  className="form-control-custom"
                   value={addressLine2}
                   onChange={(e) => setAddressLine2(e.target.value)}
                   placeholder="Apartment, suite, unit, building, floor, etc."
@@ -872,9 +910,10 @@ const WareHouse = () => {
               <Row>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>City</Form.Label>
+                    <Form.Label className="form-label-custom">City</Form.Label>
                     <Form.Control
                       type="text"
+                      className="form-control-custom"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="City"
@@ -883,9 +922,10 @@ const WareHouse = () => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>State / Province</Form.Label>
+                    <Form.Label className="form-label-custom">State / Province</Form.Label>
                     <Form.Control
                       type="text"
+                      className="form-control-custom"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       placeholder="State"
@@ -894,9 +934,10 @@ const WareHouse = () => {
                 </Col>
                 <Col md={4}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Postal Code</Form.Label>
+                    <Form.Label className="form-label-custom">Postal Code</Form.Label>
                     <Form.Control
                       type="text"
+                      className="form-control-custom"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
                       placeholder="Pincode"
@@ -906,32 +947,32 @@ const WareHouse = () => {
               </Row>
 
               <Form.Group className="mb-3">
-                <Form.Label>Country</Form.Label>
+                <Form.Label className="form-label-custom">Country</Form.Label>
                 <Form.Control
                   type="text"
+                  className="form-control-custom"
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                   placeholder="Country"
                 />
               </Form.Group>
 
-              <div className="d-flex justify-content-end">
-                <Button variant="secondary" onClick={handleCloseModal}>
-                  Close
+              <Modal.Footer className="modal-footer-custom">
+                <Button variant="secondary" className="btn-modal-cancel" onClick={handleCloseModal}>
+                  Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="ms-2"
-                  style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
+                  className="btn-modal-save"
                   disabled={saving}
                 >
                   {saving ? (
                     <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
+                      <Spinner
+                        animation="border"
+                        size="sm"
+                        className="me-2"
+                      />
                       {editId ? "Updating..." : "Creating..."}
                     </>
                   ) : editId ? (
@@ -940,7 +981,7 @@ const WareHouse = () => {
                     "Create"
                   )}
                 </Button>
-              </div>
+              </Modal.Footer>
             </Form>
           </Modal.Body>
         </Modal>
@@ -970,40 +1011,7 @@ const WareHouse = () => {
             fetchWarehouses();
           }}
         />
-
-        {/* Page Description */}
-        <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-          <Card.Body>
-            <h5 className="fw-semibold border-bottom pb-2 mb-3">
-              Page Info
-            </h5>
-            <ul
-              className=" fs-6 mb-0"
-              style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}
-            >
-              <li>
-                This page allows users to manage multiple warehouses by viewing,
-                adding, editing, deleting, importing, and exporting warehouse
-                details along with stock and location information.
-              </li>
-            </ul>
-          </Card.Body>
-        </Card>
       </div>
-      
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-      />
     </>
   );
 };

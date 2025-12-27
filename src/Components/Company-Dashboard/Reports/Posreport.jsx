@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Card, Modal, Button, Table, Form, Row, Col } from "react-bootstrap";
+import { Card, Modal, Button, Table, Form, Row, Col, Container, Spinner } from "react-bootstrap";
+import { FaCashRegister, FaFile, FaEye } from "react-icons/fa";
 import axiosInstance from "../../../Api/axiosInstance";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import { CurrencyContext } from "../../../hooks/CurrencyContext";
+import './Posreport.css';
 
 const PosReport = () => {
   const companyId = GetCompanyId();
@@ -111,41 +113,63 @@ const PosReport = () => {
   };
 
   return (
-    <div className="container my-4">
-      {/* Header */}
-      <div className="mb-4">
-        <h4 className="fw-bold">POS Report</h4>
-        <p className="text-muted">Daily invoice transactions summary</p>
+    <Container fluid className="pos-report-container py-4">
+      {/* Header Section */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 className="pos-report-title">
+            <FaCashRegister className="me-2" />
+            POS Report
+          </h4>
+          <p className="pos-report-subtitle mb-0">Daily invoice transactions summary</p>
+        </div>
       </div>
 
-      {/* Summary Boxes */}
-      <div className="row g-3 mb-4">
-        {[
-          { label: "Total Invoices", value: summary.totalInvoices, border: "info" },
-          { label: "Total Amount", value: `${symbol} ${convertPrice(summary.totalAmount.toFixed(2))}`, border: "success" },
-          { label: "Total GST", value: `${symbol} ${convertPrice(summary.totalGST.toFixed(2))}`, border: "warning" },
-        ].map((item, idx) => (
-          <div className="col-12 col-md-4" key={idx}>
-            <div
-              className={`shadow-sm rounded p-3 bg-white border border-${item.border} d-flex align-items-center justify-content-between`}
-            >
+      {/* Summary Cards */}
+      <Row className="g-3 mb-4">
+        <Col xs={12} md={4}>
+          <Card className="summary-card summary-card-invoices">
+            <Card.Body className="d-flex align-items-center justify-content-between">
               <div>
-                <small className="text-muted">{item.label}</small>
-                <h5 className="fw-bold">{item.value}</h5>
+                <div className="card-label">Total Invoices</div>
+                <div className="card-value">{summary.totalInvoices}</div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col xs={12} md={4}>
+          <Card className="summary-card summary-card-amount">
+            <Card.Body className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="card-label">Total Amount</div>
+                <div className="card-value">{symbol} {convertPrice(summary.totalAmount.toFixed(2))}</div>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col xs={12} md={4}>
+          <Card className="summary-card summary-card-gst">
+            <Card.Body className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="card-label">Total GST</div>
+                <div className="card-value">{symbol} {convertPrice(summary.totalGST.toFixed(2))}</div>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
       {/* Filters */}
-      <Card className="mb-4 shadow-sm">
-        <Card.Body>
+      <Card className="filter-card mb-4">
+        <Card.Body className="p-4">
           <Row className="g-3">
             <Col md={3}>
               <Form.Group>
-                <Form.Label>Payment Status</Form.Label>
+                <Form.Label className="filter-label">Payment Status</Form.Label>
                 <Form.Select
+                  className="filter-select"
                   value={paymentStatusFilter}
                   onChange={(e) => setPaymentStatusFilter(e.target.value)}
                 >
@@ -160,9 +184,10 @@ const PosReport = () => {
 
             <Col md={3}>
               <Form.Group>
-                <Form.Label>Product Name</Form.Label>
+                <Form.Label className="filter-label">Product Name</Form.Label>
                 <Form.Control
                   type="text"
+                  className="filter-input"
                   placeholder="Search product..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
@@ -173,9 +198,10 @@ const PosReport = () => {
             {/* Date fields are kept for UI but ignored in filtering (API has no date) */}
             <Col md={3}>
               <Form.Group>
-                <Form.Label>From Date</Form.Label>
+                <Form.Label className="filter-label">From Date</Form.Label>
                 <Form.Control
                   type="date"
+                  className="filter-input"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
                   disabled
@@ -184,9 +210,10 @@ const PosReport = () => {
             </Col>
             <Col md={3}>
               <Form.Group>
-                <Form.Label>To Date</Form.Label>
+                <Form.Label className="filter-label">To Date</Form.Label>
                 <Form.Control
                   type="date"
+                  className="filter-input"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
                   disabled
@@ -196,7 +223,7 @@ const PosReport = () => {
           </Row>
 
           <div className="d-flex justify-content-end mt-3">
-            <Button variant="outline-secondary" size="sm" onClick={clearFilters}>
+            <Button className="btn-clear-filters" size="sm" onClick={clearFilters}>
               Clear Filters
             </Button>
           </div>
@@ -204,105 +231,95 @@ const PosReport = () => {
       </Card>
 
       {/* Table */}
-      <div className="bg-white rounded p-3 shadow-sm">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="fw-bold mb-0">Transaction Details</h5>
-        </div>
+      <Card className="pos-report-table-card">
+        <Card.Body>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="fw-bold mb-0" style={{ color: '#505ece' }}>Transaction Details</h5>
+          </div>
 
-        <div className="table-responsive">
-          <Table bordered hover className="align-middle">
-            <thead className="">
-              <tr>
-                <th>Invoice No</th>
-                <th>Product</th>
-                <th>Payment Type</th>
-                <th>Amount</th>
-                <th>GST</th>
-                <th>Total</th>
-                <th>Time</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.length > 0 ? (
-                filteredData.map((item, i) => (
-                  <tr key={i}>
-                    <td>{item.invoiceNo}</td>
-                    <td>{item.product}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadge(item.paymentType)}`}>
-                        {item.paymentType}
-                      </span>
-                    </td>
-                    <td>{symbol} {convertPrice(item.amount.toFixed(2))}</td>
-                    <td>{symbol} {convertPrice(item.gst.toFixed(2))}</td>
-                    <td>{symbol} {convertPrice(item.total.toFixed(2))}</td>
-                    <td>{item.time}</td>
-                    <td>
-                      <Button
-                        size="sm"
-                        variant="outline-primary"
-                        onClick={() => {
-                          setSelectedInvoice(item);
-                          setShowModal(true);
-                        }}
-                      >
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center text-muted py-3">
-                    No data available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-        </div>
+          <div className="table-responsive">
+            {filteredData.length > 0 ? (
+              <>
+                <Table className="pos-report-table" hover responsive="sm">
+                  <thead className="table-header">
+                    <tr>
+                      <th>Invoice No</th>
+                      <th>Product</th>
+                      <th>Payment Type</th>
+                      <th>Amount</th>
+                      <th>GST</th>
+                      <th>Total</th>
+                      <th>Time</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((item, i) => (
+                      <tr key={i}>
+                        <td><strong>{item.invoiceNo}</strong></td>
+                        <td>{item.product}</td>
+                        <td>
+                          <span className={`badge status-badge ${getStatusBadge(item.paymentType)}`}>
+                            {item.paymentType}
+                          </span>
+                        </td>
+                        <td>{symbol} {convertPrice(item.amount.toFixed(2))}</td>
+                        <td>{symbol} {convertPrice(item.gst.toFixed(2))}</td>
+                        <td className="amount-cell">{symbol} {convertPrice(item.total.toFixed(2))}</td>
+                        <td>{item.time}</td>
+                        <td>
+                          <Button
+                            size="sm"
+                            className="btn-view"
+                            onClick={() => {
+                              setSelectedInvoice(item);
+                              setShowModal(true);
+                            }}
+                          >
+                            <FaEye className="me-1" />
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
 
-        <div className="d-flex justify-content-between mt-3 px-2">
-          <span className="small text-muted">
-            Showing {filteredData.length} of {posData.length} invoices
-          </span>
-        </div>
-
-        {/* Info Card */}
-        <Card className="mb-4 p-3 shadow rounded-4 mt-2">
-          <Card.Body>
-            <h5 className="fw-semibold border-bottom pb-2 mb-3 text-primary">Page Info</h5>
-            <ul className="text-muted fs-6 mb-0" style={{ listStyleType: "disc", paddingLeft: "1.5rem" }}>
-              <li>Displays POS invoices from the backend API.</li>
-              <li>Shows product, payment type, amount, GST, and total.</li>
-              <li>Supports filtering by payment type and product name.</li>
-              <li>Displays summary: total invoices, total amount, and total GST.</li>
-              <li>Time field is shown as provided by the system (no full date available).</li>
-            </ul>
-          </Card.Body>
-        </Card>
-      </div>
+                <div className="d-flex justify-content-between mt-3 px-2">
+                  <span className="small text-muted">
+                    Showing {filteredData.length} of {posData.length} invoices
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-5 empty-state">
+                <FaFile style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+                <p className="text-muted mb-0">No POS data available</p>
+              </div>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* View Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
-        <Modal.Header closeButton>
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered className="pos-report-modal">
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Invoice Details - {selectedInvoice?.invoiceNo}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           {selectedInvoice ? (
             <Table bordered>
               <tbody>
                 <tr><td><strong>Invoice No</strong></td><td>{selectedInvoice.invoiceNo}</td></tr>
                 <tr><td><strong>Product</strong></td><td>{selectedInvoice.product}</td></tr>
                 <tr><td><strong>Payment Type</strong></td><td>
-                  <span className={`badge ${getStatusBadge(selectedInvoice.paymentType)}`}>
+                  <span className={`badge status-badge ${getStatusBadge(selectedInvoice.paymentType)}`}>
                     {selectedInvoice.paymentType}
                   </span>
                 </td></tr>
                 <tr><td><strong>Amount (Excl. GST)</strong></td><td>{symbol} {convertPrice(selectedInvoice.amount.toFixed(2))}</td></tr>
                 <tr><td><strong>GST</strong></td><td>{symbol} {convertPrice(selectedInvoice.gst.toFixed(2))}</td></tr>
-                <tr><td><strong>Total</strong></td><td>{symbol} {convertPrice(selectedInvoice.total.toFixed(2))}</td></tr>
+                <tr><td><strong>Total</strong></td><td className="amount-cell">{symbol} {convertPrice(selectedInvoice.total.toFixed(2))}</td></tr>
                 <tr><td><strong>Time</strong></td><td>{selectedInvoice.time}</td></tr>
               </tbody>
             </Table>
@@ -310,11 +327,11 @@ const PosReport = () => {
             <p>No invoice selected.</p>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-close" onClick={() => setShowModal(false)}>Close</Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

@@ -26,6 +26,7 @@ import {
   FiCheckSquare,
   FiX
 } from 'react-icons/fi';
+import './PayrollSettings.css';
 
 const PayrollSettings = () => {
   // State for Company Payroll Info
@@ -113,14 +114,18 @@ const PayrollSettings = () => {
   };
   
   return (
-    <Container fluid className="py-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-      <div className="d-flex align-items-center mb-4">
-        <FiSettings className="me-2" size={24} style={{ color: '#023347' }} />
-        <h2 className="mb-0" style={{ color: '#023347' }}>Payroll Settings</h2>
+    <Container fluid className="p-4 payroll-settings-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="payroll-settings-title">
+          <i className="fas fa-cog me-2"></i>
+          Payroll Settings
+        </h3>
+        <p className="payroll-settings-subtitle">Configure payroll information, templates, and notification settings</p>
       </div>
-      
+
       {showAlert && (
-        <Alert variant={alertVariant} onClose={() => setShowAlert(false)} dismissible>
+        <Alert variant={alertVariant} onClose={() => setShowAlert(false)} dismissible className="alert-custom">
           {alertMessage}
         </Alert>
       )}
@@ -128,52 +133,52 @@ const PayrollSettings = () => {
       <Row>
         <Col lg={6}>
           {/* Company Payroll Info */}
-          <Card className="mb-4 shadow-sm" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Header className="d-flex align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+          <Card className="settings-card">
+            <Card.Header className="card-header-custom">
               <FiDollarSign className="me-2" />
-              <h5 className="mb-0">Company Payroll Info</h5>
+              <h5>Company Payroll Info</h5>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="card-body-custom">
               <Form>
                 <Form.Group className="mb-3">
-                  <Form.Label>Default Pay Cycle</Form.Label>
+                  <Form.Label className="form-label-custom">Default Pay Cycle</Form.Label>
                   <Dropdown>
-                    <Dropdown.Toggle variant="outline-secondary" id="pay-cycle-dropdown" className="w-100 text-start" style={{ borderColor: '#ced4da', color: '#023347' }}>
+                    <Dropdown.Toggle variant="outline-secondary" id="pay-cycle-dropdown" className="dropdown-toggle-custom">
                       {payCycle}
                     </Dropdown.Toggle>
-                    <Dropdown.Menu className="w-100">
-                      <Dropdown.Item onClick={() => setPayCycle('Weekly')}>Weekly</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setPayCycle('Bi-Weekly')}>Bi-Weekly</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setPayCycle('Monthly')}>Monthly</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setPayCycle('Quarterly')}>Quarterly</Dropdown.Item>
+                    <Dropdown.Menu className="dropdown-menu-custom">
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setPayCycle('Weekly')}>Weekly</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setPayCycle('Bi-Weekly')}>Bi-Weekly</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setPayCycle('Monthly')}>Monthly</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setPayCycle('Quarterly')}>Quarterly</Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
                 </Form.Group>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Default Bank Account</Form.Label>
+                  <Form.Label className="form-label-custom">Default Bank Account</Form.Label>
                   <Form.Control 
                     type="text" 
                     placeholder="Enter bank account number"
                     value={bankAccount}
                     onChange={(e) => setBankAccount(e.target.value)}
-                    style={{ border: '1px solid #ced4da' }}
+                    className="form-control-custom"
                   />
                 </Form.Group>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Default Currency</Form.Label>
+                  <Form.Label className="form-label-custom">Default Currency</Form.Label>
                   <Dropdown>
-                    <Dropdown.Toggle variant="outline-secondary" id="currency-dropdown" className="w-100 text-start" style={{ borderColor: '#ced4da', color: '#023347' }}>
+                    <Dropdown.Toggle variant="outline-secondary" id="currency-dropdown" className="dropdown-toggle-custom">
                       {currency}
                     </Dropdown.Toggle>
-                    <Dropdown.Menu className="w-100">
-                      <Dropdown.Item onClick={() => setCurrency('USD')}>USD - US Dollar</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setCurrency('EUR')}>EUR - Euro</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setCurrency('GBP')}>GBP - British Pound</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setCurrency('JPY')}>JPY - Japanese Yen</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setCurrency('CAD')}>CAD - Canadian Dollar</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setCurrency('AUD')}>AUD - Australian Dollar</Dropdown.Item>
+                    <Dropdown.Menu className="dropdown-menu-custom">
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setCurrency('USD')}>USD - US Dollar</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setCurrency('EUR')}>EUR - Euro</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setCurrency('GBP')}>GBP - British Pound</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setCurrency('JPY')}>JPY - Japanese Yen</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setCurrency('CAD')}>CAD - Canadian Dollar</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setCurrency('AUD')}>AUD - Australian Dollar</Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
                 </Form.Group>
@@ -182,21 +187,21 @@ const PayrollSettings = () => {
           </Card>
           
           {/* Tax Configuration */}
-          <Card className="mb-4 shadow-sm" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Header className="d-flex align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+          <Card className="settings-card">
+            <Card.Header className="card-header-custom">
               <FiFileText className="me-2" />
-              <h5 className="mb-0">Tax Configuration</h5>
+              <h5>Tax Configuration</h5>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="card-body-custom">
               <Form>
                 <Form.Group className="mb-3">
-                  <Form.Label>Add Tax Slab / Percentage</Form.Label>
+                  <Form.Label className="form-label-custom">Add Tax Slab / Percentage</Form.Label>
                   <Form.Control 
                     type="text" 
                     placeholder="e.g., 10% for income up to $50,000"
                     value={taxSlab}
                     onChange={(e) => setTaxSlab(e.target.value)}
-                    style={{ border: '1px solid #ced4da' }}
+                    className="form-control-custom"
                   />
                 </Form.Group>
                 
@@ -204,7 +209,11 @@ const PayrollSettings = () => {
                   <Form.Check 
                     type="switch"
                     id="pf-switch"
-                    label="Enable PF (Provident Fund)"
+                    label={
+                      <span className="form-check-label">
+                        Enable PF (Provident Fund)
+                      </span>
+                    }
                     checked={pfEnabled}
                     onChange={(e) => setPfEnabled(e.target.checked)}
                   />
@@ -214,7 +223,11 @@ const PayrollSettings = () => {
                   <Form.Check 
                     type="switch"
                     id="insurance-switch"
-                    label="Enable Insurance"
+                    label={
+                      <span className="form-check-label">
+                        Enable Insurance
+                      </span>
+                    }
                     checked={insuranceEnabled}
                     onChange={(e) => setInsuranceEnabled(e.target.checked)}
                   />
@@ -224,7 +237,11 @@ const PayrollSettings = () => {
                   <Form.Check 
                     type="switch"
                     id="other-deductions-switch"
-                    label="Enable Other Deductions"
+                    label={
+                      <span className="form-check-label">
+                        Enable Other Deductions
+                      </span>
+                    }
                     checked={otherDeductionsEnabled}
                     onChange={(e) => setOtherDeductionsEnabled(e.target.checked)}
                   />
@@ -236,23 +253,21 @@ const PayrollSettings = () => {
         
         <Col lg={6}>
           {/* Payslip Template Settings */}
-          <Card className="mb-4 shadow-sm" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Header className="d-flex align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+          <Card className="settings-card">
+            <Card.Header className="card-header-custom">
               <FiFileText className="me-2" />
-              <h5 className="mb-0">Payslip Template Settings</h5>
+              <h5>Payslip Template Settings</h5>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="card-body-custom">
               <Form>
                 <Form.Group className="mb-3">
-                  <Form.Label>Upload Company Logo</Form.Label>
+                  <Form.Label className="form-label-custom">Upload Company Logo</Form.Label>
                   <div className="d-flex align-items-center">
                     <Button 
-                      variant="outline-primary" 
-                      className="me-3 d-flex justify-content-center align-items-center"
-                      style={{ borderColor: '#023347', color: '#023347' }}
+                      className="btn-upload"
                       onClick={() => document.getElementById('logo-upload').click()}
                     >
-                      <FiUpload className="me-1" /> Upload
+                      <FiUpload /> Upload
                     </Button>
                     <Form.Control 
                       type="file" 
@@ -262,33 +277,33 @@ const PayrollSettings = () => {
                       onChange={handleLogoUpload}
                     />
                     {logo && (
-                      <Image src={logo} alt="Company Logo" height="40" />
+                      <Image src={logo} alt="Company Logo" height="40" className="logo-preview" />
                     )}
                   </div>
                 </Form.Group>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Select Layout</Form.Label>
+                  <Form.Label className="form-label-custom">Select Layout</Form.Label>
                   <Dropdown>
-                    <Dropdown.Toggle variant="outline-secondary" id="layout-dropdown" className="w-100 text-start" style={{ borderColor: '#ced4da', color: '#023347' }}>
+                    <Dropdown.Toggle variant="outline-secondary" id="layout-dropdown" className="dropdown-toggle-custom">
                       {layout}
                     </Dropdown.Toggle>
-                    <Dropdown.Menu className="w-100">
-                      <Dropdown.Item onClick={() => setLayout('Simple')}>Simple</Dropdown.Item>
-                      <Dropdown.Item onClick={() => setLayout('Detailed')}>Detailed</Dropdown.Item>
+                    <Dropdown.Menu className="dropdown-menu-custom">
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setLayout('Simple')}>Simple</Dropdown.Item>
+                      <Dropdown.Item className="dropdown-item-custom" onClick={() => setLayout('Detailed')}>Detailed</Dropdown.Item>
                     </Dropdown.Menu>
                   </Dropdown>
                 </Form.Group>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Add Footer Notes</Form.Label>
+                  <Form.Label className="form-label-custom">Add Footer Notes</Form.Label>
                   <Form.Control 
                     as="textarea" 
                     rows={3}
                     placeholder="Enter footer notes for payslips"
                     value={footerNotes}
                     onChange={(e) => setFooterNotes(e.target.value)}
-                    style={{ border: '1px solid #ced4da' }}
+                    className="form-control-custom"
                   />
                 </Form.Group>
                 
@@ -296,7 +311,11 @@ const PayrollSettings = () => {
                   <Form.Check 
                     type="checkbox"
                     id="digital-signature-check"
-                    label="Include Digital Signature"
+                    label={
+                      <span className="form-check-label">
+                        Include Digital Signature
+                      </span>
+                    }
                     checked={digitalSignature}
                     onChange={(e) => setDigitalSignature(e.target.checked)}
                   />
@@ -306,20 +325,20 @@ const PayrollSettings = () => {
           </Card>
           
           {/* Notification Settings */}
-          <Card className="mb-4 shadow-sm" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Header className="d-flex align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+          <Card className="settings-card">
+            <Card.Header className="card-header-custom">
               <FiBell className="me-2" />
-              <h5 className="mb-0">Notification Settings</h5>
+              <h5>Notification Settings</h5>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="card-body-custom">
               <Form>
                 <Form.Group className="mb-3">
                   <Form.Check 
                     type="switch"
                     id="email-switch"
                     label={
-                      <span>
-                        <FiMail className="me-1" /> Enable Email Send
+                      <span className="form-check-label">
+                        <FiMail /> Enable Email Send
                       </span>
                     }
                     checked={emailEnabled}
@@ -332,8 +351,8 @@ const PayrollSettings = () => {
                     type="switch"
                     id="whatsapp-switch"
                     label={
-                      <span>
-                        <FiMessageSquare className="me-1" /> Enable WhatsApp Send
+                      <span className="form-check-label">
+                        <FiMessageSquare /> Enable WhatsApp Send
                       </span>
                     }
                     checked={whatsappEnabled}
@@ -342,14 +361,14 @@ const PayrollSettings = () => {
                 </Form.Group>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Default Message Template</Form.Label>
+                  <Form.Label className="form-label-custom">Default Message Template</Form.Label>
                   <Form.Control 
                     as="textarea" 
                     rows={3}
                     placeholder="Enter default message template"
                     value={messageTemplate}
                     onChange={(e) => setMessageTemplate(e.target.value)}
-                    style={{ border: '1px solid #ced4da' }}
+                    className="form-control-custom"
                   />
                   <Form.Text className="text-muted">
                     Use {'{month}'} as a placeholder for the month name.
@@ -362,20 +381,27 @@ const PayrollSettings = () => {
       </Row>
       
       {/* Action Buttons */}
-      <Card className="shadow-sm" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-        <Card.Body>
-          <div className="d-flex flex-wrap gap-2">
-            <Button style={{ backgroundColor: '#023347', border: 'none' }} onClick={handleSaveSettings} className='d-flex justify-content-center align-items-center'>
-              <FiSave className="me-1" /> Save Settings
-            </Button>
-            <Button variant="outline-info" onClick={handlePreviewPayslip} className='d-flex justify-content-center align-items-center' style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}>
-              <FiEye className="me-1" /> Preview Payslip Template
-            </Button>
-            <Button variant="outline-warning" onClick={handleResetDefaults} className='d-flex justify-content-center align-items-center' style={{ borderColor: '#fd7e14', color: '#fd7e14' }}>
-              <FiRefreshCw className="me-1" /> Reset Defaults
-            </Button>
-          </div>
-        </Card.Body>
+      <Card className="action-buttons-card">
+        <div className="d-flex flex-wrap justify-content-end gap-3">
+          <Button className="btn-reset btn-action" onClick={handleResetDefaults}>
+            <span>
+              {/* <FiRefreshCw className="d-block mx-auto mb-1" /> */}
+              Reset<br />defaults
+            </span>
+          </Button>
+          <Button className="btn-preview btn-action" onClick={handlePreviewPayslip}>
+            <span>
+              {/* <FiEye className="d-block mx-auto mb-1" /> */}
+              Payslip<br />settings
+            </span>
+          </Button>
+          <Button className="btn-save btn-action" onClick={handleSaveSettings}>
+            <span>
+              {/* <FiSave className="d-block mx-auto mb-1" /> */}
+              Save<br />settings
+            </span>
+          </Button>
+        </div>
       </Card>
       
       {/* Preview Payslip Modal */}
@@ -384,16 +410,14 @@ const PayrollSettings = () => {
         onHide={() => setShowPreviewModal(false)}
         size="lg"
         centered
+        className="payroll-settings-modal"
       >
-        <Modal.Header className="d-flex justify-content-between align-items-center" style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-          <Modal.Title>© Preview Payslip Template</Modal.Title>
-          <Button variant="light" onClick={() => setShowPreviewModal(false)}>
-            <FiX />
-          </Button>
+        <Modal.Header closeButton className="modal-header-custom">
+          <Modal.Title>Preview Payslip Template</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
-          <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-            <Card.Header className="d-flex justify-content-between align-items-center" style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+        <Modal.Body className="modal-body-custom">
+          <Card className="preview-card">
+            <Card.Header className="preview-card-header d-flex justify-content-between align-items-center">
               <div className="d-flex align-items-center">
                 {logo ? (
                   <Image src={logo} alt="Company Logo" height="40" className="me-3" />
@@ -503,9 +527,9 @@ const PayrollSettings = () => {
               
               <Row>
                 <Col>
-                  <div className="d-flex justify-content-between align-items-center p-3 rounded" style={{ backgroundColor: '#e6f3f5' }}>
-                    <h5 className="mb-0" style={{ color: '#023347' }}>Net Salary</h5>
-                    <h4 className="mb-0" style={{ color: '#023347' }}>
+                  <div className="summary-box d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">Net Salary</h5>
+                    <h4 className="mb-0 fw-bold text-primary">
                       {pfEnabled && insuranceEnabled && otherDeductionsEnabled 
                         ? '5,800.00' 
                         : pfEnabled && insuranceEnabled 
@@ -535,12 +559,12 @@ const PayrollSettings = () => {
             </Card.Body>
           </Card>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#f0f7f8', border: 'none' }}>
-          <Button variant="secondary" onClick={() => setShowPreviewModal(false)} style={{ border: '1px solid #ced4da' }}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={() => setShowPreviewModal(false)}>
             Close
           </Button>
-          <Button style={{ backgroundColor: '#023347', border: 'none' }}>
-            Download Sample
+          <Button className="btn-modal-download">
+            <FiUpload className="me-1" /> Download Sample
           </Button>
         </Modal.Footer>
       </Modal>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Card, Button, Table, Modal, Form, Badge } from "react-bootstrap";
+import { Card, Button, Table, Modal, Form, Badge, Container, Spinner, Alert } from "react-bootstrap";
 import {
   FaLifeRing,
   FaEnvelope,
@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './SupportTickets.css';
 
 const SupportTickets = () => {
   const companyIdRaw = GetCompanyId();
@@ -141,109 +142,120 @@ const SupportTickets = () => {
     }
   };
 
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case "Open": return "badge-status badge-open";
+      case "In Progress": return "badge-status badge-in-progress";
+      case "Resolved": return "badge-status badge-resolved";
+      default: return "badge-status";
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen p-6" style={{ backgroundColor: "#f0f7f8" }}>
-        <div className="text-center py-5">Loading support tickets...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen p-6" style={{ backgroundColor: "#f0f7f8" }}>
-        <div className="text-center py-5 text-danger">{error}</div>
-      </div>
+      <Container fluid className="p-4 loading-container" style={{ minHeight: '100vh' }}>
+        <div className="text-center py-5">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading support tickets...</p>
+        </div>
+      </Container>
     );
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: "#f0f7f8" }}>
-      <Card
-        className="shadow-lg rounded-2xl p-4"
-        style={{
-          borderColor: "#2a8e9c",
-          backgroundColor: "#e6f3f5",
-        }}
-      >
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2
-            className="text-xl font-bold d-flex align-items-center gap-2"
-            style={{ color: "#023347" }}
-          >
-            <FaLifeRing className="text-2xl" style={{ color: "#2a8e9c" }} />
-            Support Tickets
-          </h2>
-          <Button
-            onClick={handleShow}
-            style={{
-              backgroundColor: "#2a8e9c",
-              border: "none",
-              fontWeight: "600",
-            }}
-          >
-            <FaPlus className="me-2" /> New Ticket
-          </Button>
-        </div>
+    <Container fluid className="p-4 support-tickets-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="support-tickets-title">
+          <i className="fas fa-life-ring me-2"></i>
+          Support Tickets
+        </h3>
+        <p className="support-tickets-subtitle">
+          Create and manage support tickets for assistance
+        </p>
+      </div>
 
-        <Table striped bordered hover responsive className="text-sm">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Subject</th>
-              <th>Message</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.length > 0 ? (
-              tickets.map((t) => (
-                <tr key={t.id} className="text-center">
-                  <td>{t.id}</td>
-                  <td className="font-weight-bold">{t.subject}</td>
-                  <td className="text-muted">{t.message}</td>
-                  <td>
-                    {t.status === "Open" ? (
-                      <Badge bg="warning" text="dark">Open</Badge>
-                    ) : t.status === "In Progress" ? (
-                      <Badge bg="info">In Progress</Badge>
-                    ) : (
-                      <Badge bg="success">Resolved</Badge>
-                    )}
-                  </td>
-                  <td>{t.date}</td>
-                  <td>
-                    {t.status !== "Resolved" && (
-                      <Button
-                        size="sm"
-                        variant="outline-primary"
-                        className="me-1"
-                        onClick={() => handleUpdateStatus(t.id, t.status)}
-                      >
-                        <FaSync /> Update
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      onClick={() => handleDelete(t.id)}
-                    >
-                      <FaTrash />
-                    </Button>
-                  </td>
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="danger" className="error-alert mb-3">
+          {error}
+        </Alert>
+      )}
+
+      {/* Action Bar */}
+      <div className="d-flex justify-content-end mb-3">
+        <Button
+          onClick={handleShow}
+          className="btn-add-ticket"
+        >
+          <FaPlus /> New Ticket
+        </Button>
+      </div>
+
+      {/* Table Card */}
+      <Card className="support-tickets-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
+          <div className="table-responsive">
+            <Table hover responsive className="support-tickets-table">
+              <thead className="table-header">
+                <tr>
+                  <th>ID</th>
+                  <th>Subject</th>
+                  <th>Message</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th className="text-center">Actions</th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="text-center text-muted">
-                  No tickets available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
+              </thead>
+              <tbody>
+                {tickets.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center text-muted py-4">
+                      <div className="empty-state">
+                        <i className="fas fa-ticket-alt"></i>
+                        <p>No tickets available</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  tickets.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.id}</td>
+                      <td className="subject-cell">{t.subject}</td>
+                      <td className="message-cell" title={t.message}>{t.message}</td>
+                      <td>
+                        <Badge className={getStatusBadgeClass(t.status)}>
+                          {t.status}
+                        </Badge>
+                      </td>
+                      <td className="date-cell">{t.date}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          {t.status !== "Resolved" && (
+                            <Button
+                              className="btn-action btn-update"
+                              onClick={() => handleUpdateStatus(t.id, t.status)}
+                              title="Update Status"
+                            >
+                              <FaSync />
+                            </Button>
+                          )}
+                          <Button
+                            className="btn-action btn-delete"
+                            onClick={() => handleDelete(t.id)}
+                            title="Delete Ticket"
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
       </Card>
 
       {/* Create Ticket Modal */}
@@ -253,31 +265,34 @@ const SupportTickets = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         centered
+        className="support-tickets-modal"
       >
-        <Modal.Header
-          closeButton
-          style={{ backgroundColor: "#023347", color: "white" }}
-        >
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title className="d-flex align-items-center">
             <FaEnvelope className="me-2" /> Submit New Ticket
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
-          <Modal.Body style={{ backgroundColor: "#e6f3f5" }}>
-            {error && <div className="text-danger mb-2">{error}</div>}
+          <Modal.Body className="modal-body-custom">
+            {error && (
+              <Alert variant="danger" className="error-alert mb-3">
+                {error}
+              </Alert>
+            )}
             <Form.Group className="mb-3">
-              <Form.Label>Subject</Form.Label>
+              <Form.Label className="form-label-custom">Subject</Form.Label>
               <Form.Control
                 type="text"
                 name="subject"
                 placeholder="Enter subject"
                 value={newTicket.subject}
                 onChange={handleChange}
+                className="form-control-custom"
                 required
               />
             </Form.Group>
             <Form.Group>
-              <Form.Label>Message</Form.Label>
+              <Form.Label className="form-label-custom">Message</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={4}
@@ -285,27 +300,22 @@ const SupportTickets = () => {
                 placeholder="Describe your issue..."
                 value={newTicket.message}
                 onChange={handleChange}
+                className="form-control-custom"
                 required
               />
             </Form.Group>
           </Modal.Body>
-          <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-            <Button variant="secondary" onClick={handleCloseModal}>
+          <Modal.Footer className="modal-footer-custom">
+            <Button className="btn-modal-cancel" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              style={{
-                backgroundColor: "#2a8e9c",
-                border: "none",
-              }}
-            >
-              <FaPaperPlane className="me-2" /> Submit
+            <Button type="submit" className="btn-modal-submit">
+              <FaPaperPlane /> Submit
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

@@ -1,0 +1,383 @@
+/* Salary Structure Page Container */
+.salary-structure-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.salary-structure-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.salary-structure-title i {
+  color: #505ece;
+}
+
+.salary-structure-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Table Card */
+.structure-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+}
+
+/* Table Styling */
+.structure-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.structure-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.structure-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+.structure-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Component Table Styling */
+.component-table {
+  margin-bottom: 0;
+}
+
+.component-table thead {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.component-table thead th {
+  color: white !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none !important;
+  padding: 0.75rem;
+}
+
+.component-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white !important;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+}
+
+.btn-edit {
+  background-color: #ffc107;
+  color: #000 !important;
+}
+
+.btn-edit:hover {
+  background-color: #e0a800;
+  color: #000 !important;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white !important;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.btn-add-component {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-add-component:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-view-components {
+  background-color: #17a2b8 !important;
+  border-color: #17a2b8 !important;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-view-components:hover {
+  background-color: #138496 !important;
+  border-color: #138496 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+}
+
+.btn-assign {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-assign:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+/* Dropdown Styling */
+.dropdown-toggle-custom {
+  background-color: white;
+  border: 2px solid #e9ecef;
+  color: #495057;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dropdown-toggle-custom:hover,
+.dropdown-toggle-custom:focus {
+  border-color: #505ece;
+  color: #505ece;
+}
+
+/* Mobile Card Styling */
+.mobile-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white !important;
+  margin-bottom: 1rem;
+}
+
+.mobile-card-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  padding: 1rem;
+}
+
+.mobile-card-body {
+  padding: 1rem;
+  background: white;
+}
+
+.component-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-left: 4px solid #505ece;
+}
+
+/* Status Badges */
+.badge-earning {
+  background-color: #28a745;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.badge-deduction {
+  background-color: #dc3545;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* Modal Styling */
+.salary-structure-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  background: white;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+  background: white;
+}
+
+/* Form Controls */
+.form-label-custom {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.input-group-custom .input-group-text {
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+
+.input-group-custom .form-control:focus + .input-group-text {
+  border-color: #505ece;
+}
+
+/* Modal Buttons */
+.btn-modal-save {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-save:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Assign Section */
+.assign-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Expanded Component Section */
+.expanded-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .salary-structure-title {
+    font-size: 1.5rem;
+  }
+
+  .structure-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+}
+

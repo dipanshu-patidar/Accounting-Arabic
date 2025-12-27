@@ -1,0 +1,308 @@
+/* Purchase Report Page Container */
+.purchase-report-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.purchase-report-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.purchase-report-title i {
+  color: #505ece;
+}
+
+.purchase-report-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Summary Cards */
+.summary-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  padding: 1.5rem;
+  background: white !important;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card .card-icon {
+  font-size: 2.5rem;
+  opacity: 0.8;
+}
+
+.summary-card .card-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.summary-card .card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #343a40;
+}
+
+.summary-card-total .card-value {
+  color: #28a745;
+}
+
+.summary-card-paid .card-value {
+  color: #17a2b8;
+}
+
+.summary-card-pending .card-value {
+  color: #ffc107;
+}
+
+.summary-card-overdue .card-value {
+  color: #dc3545;
+}
+
+/* Filter Card */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.filter-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.filter-input,
+.filter-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+/* Generate Button */
+.btn-generate {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  height: 45px;
+}
+
+.btn-generate:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+/* Table Card */
+.purchase-report-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+}
+
+.purchase-report-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.purchase-report-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.purchase-report-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.purchase-report-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+.purchase-report-table tbody td.amount-cell {
+  font-weight: 600;
+  color: #505ece;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.badge.bg-success {
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%) !important;
+  color: white !important;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;
+  color: #343a40 !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+  color: white !important;
+}
+
+.badge.bg-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+  color: white !important;
+}
+
+.status-badge:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+/* Export Buttons */
+.btn-export-pdf {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export-pdf:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.btn-export-excel {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export-excel:hover {
+  background-color: #218838 !important;
+  border-color: #218838 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+/* Pagination */
+.page-link {
+  color: #505ece;
+  border-color: #e9ecef;
+}
+
+.page-item.active .page-link {
+  background-color: #505ece;
+  border-color: #505ece;
+}
+
+.page-link:hover {
+  color: #3d47b8;
+  background-color: #f8f9fa;
+  border-color: #e9ecef;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+/* Loading Spinner */
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .purchase-report-title {
+    font-size: 1.5rem;
+  }
+
+  .purchase-report-table {
+    font-size: 14px;
+  }
+
+  .summary-card {
+    margin-bottom: 1rem;
+  }
+}
+

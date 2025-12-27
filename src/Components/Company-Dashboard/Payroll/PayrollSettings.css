@@ -1,0 +1,460 @@
+/* Payroll Settings Page Container */
+.payroll-settings-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.payroll-settings-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.payroll-settings-title i {
+  color: #505ece;
+}
+
+.payroll-settings-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Settings Card Styling */
+.settings-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  border: none;
+}
+
+.settings-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.card-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.25rem 1.5rem;
+}
+
+.card-header-custom h5 {
+  color: white;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.card-header-custom i {
+  color: white;
+}
+
+.card-body-custom {
+  padding: 1.5rem;
+  background: white;
+}
+
+/* Form Controls */
+.form-label-custom {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+  outline: none;
+}
+
+.form-control-custom::placeholder {
+  color: #adb5bd;
+}
+
+textarea.form-control-custom {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Dropdown Styling */
+.dropdown-toggle-custom {
+  width: 100%;
+  text-align: left;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px 15px;
+  background-color: white;
+  color: #495057;
+  transition: all 0.3s ease;
+}
+
+.dropdown-toggle-custom:hover,
+.dropdown-toggle-custom:focus {
+  border-color: #505ece;
+  background-color: white;
+  color: #495057;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.dropdown-toggle-custom::after {
+  float: right;
+  margin-top: 8px;
+}
+
+.dropdown-menu-custom {
+  width: 100%;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+}
+
+.dropdown-item-custom {
+  padding: 10px 15px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item-custom:hover {
+  background-color: rgba(80, 94, 206, 0.1);
+  color: #505ece;
+}
+
+.dropdown-item-custom.active {
+  background-color: #505ece;
+  color: white;
+}
+
+/* Switch/Toggle Styling */
+.form-check-input:checked {
+  background-color: #505ece;
+  border-color: #505ece;
+}
+
+.form-check-input:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.25);
+}
+
+.form-check-label {
+  color: #495057;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.form-check-label i {
+  margin-right: 6px;
+  color: #6c757d;
+}
+
+/* Upload Button */
+.btn-upload {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-upload:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-upload i {
+  margin-right: 8px;
+}
+
+/* Action Buttons Container */
+.action-buttons-card {
+  background: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.btn-save {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white !important;
+  padding: 12px 28px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  white-space: normal;
+  line-height: 1.5;
+  min-height: 70px;
+  min-width: 120px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-save:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-preview {
+  background-color: #17a2b8 !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+  padding: 12px 28px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  white-space: normal;
+  line-height: 1.5;
+  min-height: 70px;
+  min-width: 120px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-preview:hover {
+  background-color: #138496 !important;
+  border-color: #138496 !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+}
+
+.btn-reset {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: white !important;
+  padding: 12px 28px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  white-space: normal;
+  line-height: 1.5;
+  min-height: 70px;
+  min-width: 120px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-reset:hover {
+  background-color: #e0a800 !important;
+  border-color: #e0a800 !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+}
+
+.btn-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  width: auto;
+}
+
+.btn-action i {
+  margin-bottom: 4px;
+}
+
+.btn-action span {
+  display: block;
+}
+
+/* Modal Styling */
+.payroll-settings-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  background: white;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background: #505ece;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+  background: white;
+}
+
+/* Preview Card */
+.preview-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-card-header {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+}
+
+.preview-table {
+  margin-bottom: 0;
+}
+
+.preview-table thead {
+  background: rgba(80, 94, 206, 0.1);
+}
+
+.preview-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.preview-table td {
+  padding: 0.75rem;
+}
+
+/* Summary Box */
+.summary-box {
+  background: linear-gradient(135deg, rgba(80, 94, 206, 0.1) 0%, rgba(61, 71, 184, 0.1) 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid rgba(80, 94, 206, 0.2);
+}
+
+.summary-box h5 {
+  color: #505ece;
+  font-weight: 700;
+}
+
+/* Modal Buttons */
+.btn-modal-download {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-download:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Alert Styling */
+.alert-custom {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Logo Preview */
+.logo-preview {
+  margin-left: 1rem;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .payroll-settings-title {
+    font-size: 1.5rem;
+  }
+
+  .card-body-custom {
+    padding: 1rem;
+  }
+
+  .action-buttons-card {
+    padding: 1rem;
+  }
+
+  .btn-action {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+

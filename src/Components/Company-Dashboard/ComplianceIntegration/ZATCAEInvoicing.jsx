@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Table, Button, Modal, Form, Row, Col, Card, Container, Badge, Alert
+  Table, Button, Modal, Form, Row, Col, Card, Container, Badge, Alert, Spinner
 } from 'react-bootstrap';
 import { FaFileInvoice, FaSave, FaPlusCircle, FaEdit, FaSyncAlt } from 'react-icons/fa';
+import './ZATCAEInvoicing.css';
 
 const ZATCAEInvoicing = () => {
   const [invoices, setInvoices] = useState([]);
@@ -134,106 +135,55 @@ const ZATCAEInvoicing = () => {
     alert(message);
   };
 
-  const getStatusVariant = (status) => {
+  const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'Synced': return 'success';
-      case 'Rejected': return 'danger';
-      case 'Submitted': return 'info';
-      case 'Draft': return 'secondary';
-      default: return 'light';
+      case 'Synced': return 'badge-status badge-synced';
+      case 'Rejected': return 'badge-status badge-rejected';
+      case 'Submitted': return 'badge-status badge-submitted';
+      case 'Draft': return 'badge-status badge-draft';
+      default: return 'badge-status';
     }
   };
 
+  const getResponseAlertClass = (response) => {
+    if (response === 'Success') return 'zatca-response-alert zatca-response-success';
+    if (response === 'Pending Verification') return 'zatca-response-alert zatca-response-info';
+    return 'zatca-response-alert zatca-response-danger';
+  };
+
   return (
-    <Container
-      fluid
-      className="p-3 p-md-4"
-      style={{
-        backgroundColor: '#f0f7f8',
-        minHeight: '100vh',
-        fontFamily: 'Segoe UI, sans-serif',
-        color: '#023347',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          textAlign: 'center',
-          marginBottom: '25px',
-        }}
-      >
-        <h2
-          style={{
-            color: '#023347',
-            fontWeight: '700',
-            marginBottom: '8px',
-          }}
-        >
+    <Container fluid className="p-4 zatca-invoicing-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="zatca-title">
+          <i className="fas fa-file-invoice me-2"></i>
           ZATCA E-Invoicing Dashboard
-        </h2>
-        <p style={{ color: '#2a8e9c', fontSize: '0.95rem' }}>
-          Manage, monitor, and sync your invoices with ZATCA compliance standards.
+        </h3>
+        <p className="zatca-subtitle">
+          Manage, monitor, and sync your invoices with ZATCA compliance standards
         </p>
       </div>
 
-      {/* Card */}
-      <Card
-        className="shadow-lg border-0 mx-auto"
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '20px',
-          maxWidth: '100%',
-          padding: '15px',
-        }}
-      >
-        <Card.Body>
+      {/* Table Card */}
+      <Card className="zatca-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
           {/* Action Bar */}
-          <div
-            className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3"
-            style={{ gap: '10px' }}
-          >
-            <h5 className="fw-bold" style={{ color: '#023347' }}>
+          <div className="action-bar p-3">
+            <h5 className="action-bar-title mb-0">
               Invoices List
             </h5>
             <Button
               onClick={() => openModal()}
-              style={{
-                backgroundColor: '#023347',
-                border: 'none',
-                borderRadius: '50px',
-                fontWeight: 600,
-                padding: '0.5rem 1.3rem',
-                boxShadow: '0 5px 12px rgba(2,51,71,0.25)',
-                transition: 'all 0.3s ease',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#2a8e9c';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#023347';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-              className='d-flex justify-content-center align-items-center'
+              className="btn-add-invoice"
             >
-              <FaPlusCircle className="me-2" /> New Invoice
+              <FaPlusCircle /> New Invoice
             </Button>
           </div>
 
           {/* Table */}
           <div className="table-responsive">
-            <Table
-              bordered
-              hover
-              className="shadow-sm align-middle text-nowrap"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                fontSize: '0.9rem',
-              }}
-            >
-              <thead>
+            <Table hover responsive className="zatca-table">
+              <thead className="table-header">
                 <tr>
                   <th>ID</th>
                   <th>Customer</th>
@@ -242,84 +192,58 @@ const ZATCAEInvoicing = () => {
                   <th>Total</th>
                   <th>Status</th>
                   <th>ZATCA Response</th>
-                  <th className="text-end">Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((inv) => (
-                  <tr key={inv.id}>
-                    <td>{inv.id}</td>
-                    <td>{inv.customer}</td>
-                    <td>{inv.date}</td>
-                    <td>{inv.type}</td>
-                    <td>{inv.total}</td>
-                    <td>
-                      <Badge bg={getStatusVariant(inv.status)}>{inv.status}</Badge>
-                    </td>
-                    <td>
-                      <Alert
-                        variant={
-                          inv.zatcaResponse === 'Success'
-                            ? 'success'
-                            : inv.zatcaResponse === 'Pending Verification'
-                            ? 'info'
-                            : 'danger'
-                        }
-                        style={{
-                          padding: '2px 8px',
-                          margin: '0',
-                          fontSize: '0.8rem',
-                          borderRadius: '8px',
-                          display: 'inline-block',
-                        }}
-                      >
-                        {inv.zatcaResponse}
-                      </Alert>
-                    </td>
-                    <td
-                      className="text-end"
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline-info"
-                        style={{
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#023347',
-                          backgroundColor: '#ffff',
-                          borderColor: '#2a8e9c'
-                        }}
-                        onClick={() => openModal(inv)}
-                      >
-                        <FaEdit size={12} className="me-1" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline-success"
-                        style={{
-                          borderRadius: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#023347',
-                          backgroundColor: '#ffff',
-                          borderColor: '#2a8e9c'
-                        }}
-                        onClick={() => syncToZATCA(inv.id)}
-                      >
-                        <FaSyncAlt size={12} className="me-1" />
-                      </Button>
+                {invoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center text-muted py-4">
+                      <div className="empty-state">
+                        <i className="fas fa-file-invoice"></i>
+                        <p>No invoices available</p>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  invoices.map((inv) => (
+                    <tr key={inv.id}>
+                      <td className="fw-semibold">{inv.id}</td>
+                      <td>{inv.customer}</td>
+                      <td>{inv.date}</td>
+                      <td>{inv.type}</td>
+                      <td className="fw-semibold">{inv.total}</td>
+                      <td>
+                        <Badge className={getStatusBadgeClass(inv.status)}>
+                          {inv.status}
+                        </Badge>
+                      </td>
+                      <td>
+                        <span className={getResponseAlertClass(inv.zatcaResponse)}>
+                          {inv.zatcaResponse}
+                        </span>
+                      </td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button
+                            className="btn-action btn-edit"
+                            onClick={() => openModal(inv)}
+                            title="Edit Invoice"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            className="btn-action btn-sync"
+                            onClick={() => syncToZATCA(inv.id)}
+                            title="Sync to ZATCA"
+                          >
+                            <FaSyncAlt />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </Table>
           </div>
@@ -333,41 +257,38 @@ const ZATCAEInvoicing = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         centered
+        className="zatca-modal"
       >
-        <Modal.Header
-          closeButton
-          style={{
-            backgroundColor: '#023347',
-            color: '#fff',
-            borderBottom: 'none',
-          }}
-        >
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>
             {editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: '#e6f3f5' }}>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Row>
               <Col xs={12} md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Customer</Form.Label>
+                  <Form.Label className="form-label-custom">Customer</Form.Label>
                   <Form.Control
                     type="text"
                     name="customer"
                     value={formData.customer}
                     onChange={handleInputChange}
+                    className="form-control-custom"
+                    placeholder="Enter customer name"
                   />
                 </Form.Group>
               </Col>
               <Col xs={12} md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Date</Form.Label>
+                  <Form.Label className="form-label-custom">Date</Form.Label>
                   <Form.Control
                     type="date"
                     name="date"
                     value={formData.date}
                     onChange={handleInputChange}
+                    className="form-control-custom"
                   />
                 </Form.Group>
               </Col>
@@ -375,11 +296,12 @@ const ZATCAEInvoicing = () => {
             <Row>
               <Col xs={12} md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Type</Form.Label>
+                  <Form.Label className="form-label-custom">Type</Form.Label>
                   <Form.Select
                     name="type"
                     value={formData.type}
                     onChange={handleInputChange}
+                    className="form-select-custom"
                   >
                     <option>Standard</option>
                     <option>Simplified</option>
@@ -388,22 +310,25 @@ const ZATCAEInvoicing = () => {
               </Col>
               <Col xs={12} md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Total (SAR)</Form.Label>
+                  <Form.Label className="form-label-custom">Total (SAR)</Form.Label>
                   <Form.Control
                     type="text"
                     name="total"
                     value={formData.total}
                     onChange={handleInputChange}
+                    className="form-control-custom"
+                    placeholder="Enter total amount"
                   />
                 </Form.Group>
               </Col>
             </Row>
             <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
+              <Form.Label className="form-label-custom">Status</Form.Label>
               <Form.Select
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
+                className="form-select-custom"
               >
                 <option>Draft</option>
                 <option>Submitted</option>
@@ -412,34 +337,25 @@ const ZATCAEInvoicing = () => {
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Label>ZATCA Response</Form.Label>
+              <Form.Label className="form-label-custom">ZATCA Response</Form.Label>
               <Form.Control
                 as="textarea"
-                rows={2}
+                rows={3}
                 name="zatcaResponse"
                 value={formData.zatcaResponse}
                 onChange={handleInputChange}
+                className="form-control-custom"
+                placeholder="Enter ZATCA response or remarks"
               />
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: '#e6f3f5', borderTop: 'none' }}>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button
-            style={{
-              backgroundColor: '#023347',
-              border: 'none',
-              borderRadius: '8px',
-              transition: 'all 0.3s ease',
-            }}
-            className='d-flex justify-content-center align-items-center'
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#2a8e9c')}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#023347')}
-            onClick={handleSaveInvoice}
-          >
-            <FaSave className="me-2" /> Save
+          <Button className="btn-modal-save" onClick={handleSaveInvoice}>
+            <FaSave /> Save
           </Button>
         </Modal.Footer>
       </Modal>

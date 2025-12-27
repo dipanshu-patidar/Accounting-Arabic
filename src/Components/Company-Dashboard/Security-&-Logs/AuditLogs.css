@@ -1,0 +1,222 @@
+/* Audit Logs Page Container */
+.audit-logs-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.audit-logs-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.audit-logs-title i {
+  color: #505ece;
+}
+
+.audit-logs-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Filter Card Styling */
+.filter-card {
+  background: white !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Search Bar Styling */
+.search-input-group {
+  max-width: 400px;
+}
+
+.search-input-group .input-group-text {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white !important;
+  border-radius: 8px 0 0 8px;
+}
+
+.search-input-group .form-control {
+  border: 2px solid #e9ecef;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.search-input-group .form-control:focus {
+  border-color: #505ece;
+  border-left: none;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+  outline: none;
+}
+
+.search-input-group .form-control:focus + .input-group-text,
+.search-input-group .form-control:focus ~ .input-group-text {
+  border-color: #505ece;
+}
+
+/* Export Button */
+.btn-export {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Security Info Banner */
+.security-banner {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 15px rgba(80, 94, 206, 0.2);
+}
+
+.security-banner i {
+  font-size: 1.5rem;
+  color: white;
+}
+
+.security-banner p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* Table Card Styling */
+.audit-logs-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+}
+
+.audit-logs-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+  text-align: center;
+}
+
+.audit-logs-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.audit-logs-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.audit-logs-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+  text-align: center;
+}
+
+.audit-logs-table tbody td.user-cell {
+  font-weight: 600;
+  color: #495057;
+}
+
+.audit-logs-table tbody td.action-cell {
+  color: #495057;
+}
+
+.audit-logs-table tbody td.timestamp-cell {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.audit-logs-table tbody td.ip-cell {
+  font-family: 'Courier New', monospace;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+/* Loading Spinner */
+.loading-container {
+  background: #f8f9fa;
+}
+
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .audit-logs-title {
+    font-size: 1.5rem;
+  }
+
+  .audit-logs-table {
+    font-size: 14px;
+  }
+
+  .search-input-group {
+    max-width: 100%;
+  }
+
+  .security-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+

@@ -1,0 +1,445 @@
+/* Payroll Reports Page Container */
+.payroll-reports-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.payroll-reports-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.payroll-reports-title i {
+  color: #505ece;
+}
+
+.payroll-reports-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Filter Card */
+.filter-card {
+  background: white;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+}
+
+.filter-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.filter-title {
+  color: #505ece;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+/* Export Buttons */
+.btn-export-pdf {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-export-pdf:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.btn-export-excel {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: white !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-export-excel:hover {
+  background-color: #218838 !important;
+  border-color: #218838 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.btn-export-csv {
+  background-color: #17a2b8 !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-export-csv:hover {
+  background-color: #138496 !important;
+  border-color: #138496 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+}
+
+.btn-export-print {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white !important;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  height: 38px;
+}
+
+.btn-export-print:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Input Group Styling */
+.input-group-custom .input-group-text {
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: #495057;
+}
+
+.input-group-custom .form-control,
+.input-group-custom .form-select {
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+
+.input-group-custom .form-control:focus,
+.input-group-custom .form-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.input-group-custom .form-control:focus + .input-group-text,
+.input-group-custom:focus-within .input-group-text {
+  border-color: #505ece;
+}
+
+/* Form Controls */
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.form-label-custom {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Tab Styling */
+.nav-tabs {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.nav-tabs .nav-link {
+  color: #6c757d;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 12px 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-right: 4px;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #505ece;
+  border-bottom-color: rgba(80, 94, 206, 0.3);
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+.nav-tabs .nav-link.active {
+  color: #505ece;
+  background-color: transparent;
+  border-bottom-color: #505ece;
+}
+
+/* Table Styling */
+.reports-table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+}
+
+.payroll-reports-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.payroll-reports-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.payroll-reports-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+  transform: scale(1.01);
+}
+
+.payroll-reports-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+/* Status Badges */
+.badge-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge-paid {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+/* Action Buttons */
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  color: white !important;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.9;
+}
+
+.btn-view {
+  background-color: #17a2b8;
+  color: white !important;
+}
+
+.btn-view:hover {
+  background-color: #138496;
+}
+
+/* Mobile Card Styling */
+.mobile-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white !important;
+  margin-bottom: 1rem;
+}
+
+.mobile-card-body {
+  padding: 1rem;
+  background: white;
+}
+
+/* Modal Styling */
+.payroll-reports-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-custom {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.modal-header-custom .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.modal-body-custom {
+  padding: 1.5rem;
+  background: white;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-body-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+  background: #505ece;
+  border-radius: 10px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+  background: #3d47b8;
+}
+
+.modal-footer-custom {
+  border-top: 2px solid #f0f0f0;
+  padding: 1rem 1.5rem;
+  background: white;
+}
+
+/* Detail Tables */
+.detail-table {
+  margin-bottom: 1.5rem;
+}
+
+.detail-table thead {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.detail-table thead th {
+  color: white !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none !important;
+  padding: 0.75rem;
+}
+
+.detail-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+/* Info Cards */
+.info-card {
+  background: linear-gradient(135deg, rgba(80, 94, 206, 0.05) 0%, rgba(61, 71, 184, 0.05) 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid rgba(80, 94, 206, 0.1);
+}
+
+.info-card .card-title {
+  color: #505ece;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* Modal Buttons */
+.btn-modal-export {
+  background-color: #505ece !important;
+  border-color: #505ece !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-export:hover {
+  background-color: #3d47b8 !important;
+  border-color: #3d47b8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(80, 94, 206, 0.4);
+}
+
+.btn-modal-cancel {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+/* Loading Spinner */
+.loading-container {
+  background: #f8f9fa;
+}
+
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .payroll-reports-title {
+    font-size: 1.5rem;
+  }
+
+  .payroll-reports-table {
+    font-size: 14px;
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+  }
+}
+

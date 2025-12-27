@@ -9,6 +9,7 @@ import {
   Button,
   Modal,
   Badge,
+  Spinner,
 } from "react-bootstrap";
 import {
   FaFileContract,
@@ -22,6 +23,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './Documents.css';
 
 const DOCUMENT_TYPES = [
   "Employment Contract",
@@ -133,23 +135,11 @@ const Documents = () => {
     return "Pending";
   };
 
-  const statusBadge = (status) => {
-    let bg = "#6c757d";
-    if (status === "Active") bg = "#28a745";
-    else if (status === "Expired") bg = "#dc3545";
-    else if (status === "Pending") bg = "#ffc107";
-
-    return (
-      <Badge
-        style={{
-          backgroundColor: bg,
-          color: status === "Pending" ? "#212529" : "#fff",
-          fontWeight: 500,
-        }}
-      >
-        {status}
-      </Badge>
-    );
+  const getStatusBadgeClass = (status) => {
+    if (status === "Active") return "badge-status badge-active";
+    if (status === "Expired") return "badge-status badge-expired";
+    if (status === "Pending") return "badge-status badge-pending";
+    return "badge-status badge-unknown";
   };
 
   const handleInputChange = (e) => {
@@ -370,48 +360,45 @@ const Documents = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
-        <div className="spinner-border" style={{ color: "#023347" }} role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading documents...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: "#f0f7f8", minHeight: "100vh" }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: "#e6f3f5" }}>
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h4 className="mb-1" style={{ color: "#023347" }}>
-                <FaFileContract className="me-2" style={{ color: "#2a8e9c" }} />
-                Documents & Contracts
-              </h4>
-              <p className="text-muted">Manage employee documents and agreements</p>
-            </div>
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-secondary"
-                onClick={handlePDF}
-                size="sm"
-                style={{ borderColor: "#023347", color: "#023347" }}
-              >
-                <FaFilePdf className="me-1" /> Export List
-              </Button>
-              <Button
-                style={{ backgroundColor: "#023347", border: "none" }}
-                onClick={handleAdd}
-                size="sm"
-              >
-                <FaPlus className="me-1" /> Add Document
-              </Button>
-            </div>
-          </div>
+    <Container fluid className="p-4 documents-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="documents-title">
+              <i className="fas fa-file-contract me-2"></i>
+              Documents & Contracts Management
+            </h3>
+            <p className="documents-subtitle">Manage employee documents, contracts, and agreements</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+            <Button className="btn-export-pdf d-flex align-items-center" onClick={handlePDF}>
+              <FaFilePdf className="me-2" /> Export List
+            </Button>
+            <Button className="btn-add-document d-flex align-items-center" onClick={handleAdd}>
+              <FaPlus className="me-2" /> Add Document
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Table Card */}
+      <Card className="documents-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
 
           <div style={{ overflowX: "auto" }}>
-            <Table hover responsive>
-              <thead>
+            <Table hover responsive className="documents-table">
+              <thead className="table-header">
                 <tr>
                   <th>Employee</th>
                   <th>Document Type</th>
@@ -419,59 +406,72 @@ const Documents = () => {
                   <th>Issue Date</th>
                   <th>Expiry Date</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {documents.length > 0 ? (
-                  documents.map((d) => (
-                    <tr key={d.id}>
-                      <td>{getEmployeeName(d.employeeId)}</td>
-                      <td>{d.documentType}</td>
-                      <td>
-                        {d.fileUrl ? (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => handleViewFile(d.fileUrl)}
-                            className="p-0"
-                            style={{ color: "#2a8e9c" }}
-                          >
-                            <FaEye className="me-1" /> {d.fileName || "View"}
-                          </Button>
-                        ) : d.fileName ? (
-                          d.fileName
-                        ) : (
-                          "–"
-                        )}
-                      </td>
-                      <td>{d.issueDate || "–"}</td>
-                      <td>{d.expiryDate || "–"}</td>
-                      <td>{statusBadge(getDocumentStatus(d.issueDate, d.expiryDate))}</td>
-                      <td>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          className="me-1"
-                          style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
-                          onClick={() => handleEdit(d)}
-                        >
-                          <FaEdit />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
-                          onClick={() => confirmDelete(d)}
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
+                  documents.map((d) => {
+                    const status = getDocumentStatus(d.issueDate, d.expiryDate);
+                    return (
+                      <tr key={d.id}>
+                        <td className="fw-semibold">{getEmployeeName(d.employeeId)}</td>
+                        <td>{d.documentType}</td>
+                        <td>
+                          {d.fileUrl ? (
+                            <button
+                              className="btn-file-view"
+                              onClick={() => handleViewFile(d.fileUrl)}
+                              title="View File"
+                            >
+                              <FaEye className="me-1" /> {d.fileName || "View"}
+                            </button>
+                          ) : d.fileName ? (
+                            <span className="text-muted">{d.fileName}</span>
+                          ) : (
+                            <span className="text-muted">–</span>
+                          )}
+                        </td>
+                        <td>{d.issueDate || "–"}</td>
+                        <td>{d.expiryDate || "–"}</td>
+                        <td>
+                          <Badge className={getStatusBadgeClass(status)}>
+                            {status}
+                          </Badge>
+                        </td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            {d.fileUrl && (
+                              <Button
+                                className="btn-action btn-view"
+                                onClick={() => handleViewFile(d.fileUrl)}
+                                title="View File"
+                              >
+                                <FaEye />
+                              </Button>
+                            )}
+                            <Button
+                              className="btn-action btn-edit"
+                              onClick={() => handleEdit(d)}
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </Button>
+                            <Button
+                              className="btn-action btn-delete"
+                              onClick={() => confirmDelete(d)}
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center text-muted">
+                    <td colSpan="7" className="text-center text-muted py-4">
                       No documents found.
                     </td>
                   </tr>
@@ -489,20 +489,23 @@ const Documents = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         size="lg"
+        centered
+        className="documents-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "white" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{modalType === "edit" ? "Edit Document" : "Add New Document"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
+        <Modal.Body className="modal-body-custom">
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Employee *</Form.Label>
+                <Form.Label className="form-label-custom">Employee *</Form.Label>
                 <Form.Select
                   name="employeeId"
                   value={form.employeeId}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select Employee</option>
                   {employees.map((emp) => (
@@ -516,12 +519,13 @@ const Documents = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Document Type *</Form.Label>
+                <Form.Label className="form-label-custom">Document Type *</Form.Label>
                 <Form.Select
                   name="documentType"
                   value={form.documentType}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select Type</option>
                   {DOCUMENT_TYPES.map((type) => (
@@ -535,48 +539,51 @@ const Documents = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Issue Date *</Form.Label>
+                <Form.Label className="form-label-custom">Issue Date *</Form.Label>
                 <Form.Control
                   type="date"
                   name="issueDate"
                   value={form.issueDate}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Expiry Date</Form.Label>
+                <Form.Label className="form-label-custom">Expiry Date</Form.Label>
                 <Form.Control
                   type="date"
                   name="expiryDate"
                   value={form.expiryDate}
                   onChange={handleInputChange}
                   min={form.issueDate || ""}
+                  className="form-control-custom"
                 />
-                <Form.Text muted>Leave blank if no expiry</Form.Text>
+                <Form.Text className="text-muted">Leave blank if no expiry</Form.Text>
               </Form.Group>
             </Col>
 
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Upload File (Optional)</Form.Label>
+                <Form.Label className="form-label-custom">Upload File (Optional)</Form.Label>
                 <Form.Control
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  className="form-control-custom"
                 />
                 {form.fileName && (
-                  <div className="mt-1">
-                    <Badge bg="light" text="dark">
+                  <div className="mt-2">
+                    <span className="file-name-badge">
                       {form.fileName}
-                    </Badge>
+                    </span>
                   </div>
                 )}
-                <Form.Text muted>
+                <Form.Text className="text-muted">
                   Supported: PDF, DOC, DOCX, JPG, PNG (Max size depends on server)
                 </Form.Text>
               </Form.Group>
@@ -584,23 +591,24 @@ const Documents = () => {
 
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Notes</Form.Label>
+                <Form.Label className="form-label-custom">Notes</Form.Label>
                 <Form.Control
                   as="textarea"
                   name="notes"
                   value={form.notes}
                   onChange={handleInputChange}
                   rows={2}
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button style={{ backgroundColor: "#023347", border: "none" }} onClick={handleSave}>
+          <Button className="btn-modal-save" onClick={handleSave}>
             {modalType === "edit" ? "Update" : "Save"} Document
           </Button>
         </Modal.Footer>
@@ -613,19 +621,26 @@ const Documents = () => {
         onHide={handleDeleteModalClose}
         onExited={handleDeleteModalExited}
         centered
+        className="documents-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#dc3545", color: "white" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Delete Document</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
-          Are you sure you want to delete the <strong>{docToDelete?.documentType}</strong> for{" "}
-          <strong>{getEmployeeName(docToDelete?.employeeId)}</strong>?
+        <Modal.Body className="modal-body-custom text-center py-4">
+          <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FaTrash style={{ fontSize: "32px", color: "#F04438" }} />
+          </div>
+          <h4 className="fw-bold mb-2">Delete Document</h4>
+          <p className="text-muted mb-3">
+            Are you sure you want to delete the <strong>{docToDelete?.documentType}</strong> for{" "}
+            <strong>{getEmployeeName(docToDelete?.employeeId)}</strong>? This action cannot be undone.
+          </p>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8" }}>
-          <Button variant="secondary" onClick={handleDeleteModalClose}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete} style={{ backgroundColor: "#dc3545" }}>
+          <Button className="btn-modal-delete" onClick={handleDelete}>
             Delete
           </Button>
         </Modal.Footer>

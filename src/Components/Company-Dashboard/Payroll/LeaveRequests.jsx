@@ -10,6 +10,7 @@ import {
   Modal,
   Spinner,
   Alert,
+  Badge,
 } from "react-bootstrap";
 import {
   FaCalendarAlt,
@@ -23,6 +24,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './LeaveRequests.css';
 
 const STATUSES = ["Pending", "Approved", "Rejected"];
 
@@ -381,63 +383,51 @@ const LeaveRequests = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
-        <Spinner animation="border" variant="primary" />
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading leave requests...</p>
+        </div>
       </div>
     );
   }
 
-  const statusBadge = (status) => {
-    let bg = "#6c757d";
-    if (status === "Approved") bg = "#28a745";
-    else if (status === "Rejected") bg = "#dc3545";
-    else if (status === "Pending") bg = "#ffc107";
-
-    return (
-      <span
-        className="badge"
-        style={{
-          backgroundColor: bg,
-          color: status === "Pending" ? "#212529" : "#fff",
-          fontWeight: 500,
-        }}
-      >
-        {status}
-      </span>
-    );
+  const getStatusBadgeClass = (status) => {
+    if (status === "Approved") return "badge-status badge-approved";
+    if (status === "Rejected") return "badge-status badge-rejected";
+    return "badge-status badge-pending";
   };
 
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
-      <Card className="border-0 shadow-sm">
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h4 className="mb-1">
-                <FaCalendarAlt className="me-2 text-primary" />
-                Leave Requests
-              </h4>
-              <p className="text-muted">Manage employee leave applications</p>
-            </div>
-            <div className="d-flex gap-2">
-              <Button variant="outline-secondary" onClick={handlePDF} size="sm">
-                <FaFilePdf className="me-1" /> Export PDF
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleAdd}
-                size="sm"
-                className="d-flex align-items-center gap-2"
-                style={{ backgroundColor: "#023347", borderColor: "#023347" }}
-              >
-                <FaPlus /> New Request
-              </Button>
-            </div>
-          </div>
+    <Container fluid className="p-4 leave-requests-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="leave-requests-title">
+              <i className="fas fa-calendar-alt me-2"></i>
+              Leave Requests Management
+            </h3>
+            <p className="leave-requests-subtitle">Manage employee leave applications and approvals</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+            <Button className="btn-export-pdf d-flex align-items-center" onClick={handlePDF}>
+              <FaFilePdf className="me-2" /> Export PDF
+            </Button>
+            <Button className="btn-add-request d-flex align-items-center" onClick={handleAdd}>
+              <FaPlus className="me-2" /> New Request
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Table Card */}
+      <Card className="leave-requests-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
 
           <div style={{ overflowX: "auto" }}>
-            <Table hover responsive>
-              <thead>
+            <Table hover responsive className="leave-requests-table">
+              <thead className="table-header">
                 <tr>
                   <th>Leave ID</th>
                   <th>Employee</th>
@@ -447,43 +437,48 @@ const LeaveRequests = () => {
                   <th>Days</th>
                   <th>Status</th>
                   <th>Approver</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {leaves.length > 0 ? (
                   leaves.map((l) => (
                     <tr key={l.id}>
-                      <td>{l.leaveId}</td> {/* ✅ Now shows "LR-003" */}
+                      <td className="fw-bold">{l.leaveId}</td>
                       <td>{getEmployeeName(l.employeeId)}</td>
-                      <td>{getLeaveTypeName(l.leaveTypeId)}</td> {/* ✅ Now shows real type */}
+                      <td>{getLeaveTypeName(l.leaveTypeId)}</td>
                       <td>{l.fromDate}</td>
                       <td>{l.toDate}</td>
-                      <td>{l.totalDays}</td>
-                      <td>{statusBadge(l.status)}</td>
-                      <td>{l.approver || "–"}</td>
+                      <td className="fw-semibold">{l.totalDays}</td>
                       <td>
-                        <Button
-                          size="sm"
-                          variant="outline-primary"
-                          className="me-1"
-                          onClick={() => handleEdit(l)}
-                        >
-                          <FaEdit />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          onClick={() => confirmDelete(l)}
-                        >
-                          <FaTrash />
-                        </Button>
+                        <Badge className={getStatusBadgeClass(l.status)}>
+                          {l.status}
+                        </Badge>
+                      </td>
+                      <td>{l.approver || "–"}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button
+                            className="btn-action btn-edit"
+                            onClick={() => handleEdit(l)}
+                            title="Edit"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            className="btn-action btn-delete"
+                            onClick={() => confirmDelete(l)}
+                            title="Delete"
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="9" className="text-center text-muted">
+                    <td colSpan="9" className="text-center text-muted py-4">
                       No leave requests found.
                     </td>
                   </tr>
@@ -501,22 +496,25 @@ const LeaveRequests = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         size="lg"
+        centered
+        className="leave-requests-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>
             {modalType === "edit" ? "Edit Leave Request" : "Apply for Leave"}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <Row>
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Employee *</Form.Label>
+                <Form.Label className="form-label-custom">Employee *</Form.Label>
                 <Form.Select
                   name="employeeId"
                   value={form.employeeId}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select</option>
                   {employees.map((emp) => (
@@ -530,12 +528,13 @@ const LeaveRequests = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Leave Type *</Form.Label>
+                <Form.Label className="form-label-custom">Leave Type *</Form.Label>
                 <Form.Select
                   name="leaveTypeId"
                   value={form.leaveTypeId}
                   onChange={handleInputChange}
                   required
+                  className="form-select-custom"
                 >
                   <option value="">Select</option>
                   {leaveTypes.map((type) => (
@@ -549,47 +548,50 @@ const LeaveRequests = () => {
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>From Date *</Form.Label>
+                <Form.Label className="form-label-custom">From Date *</Form.Label>
                 <Form.Control
                   type="date"
                   name="fromDate"
                   value={form.fromDate}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>To Date *</Form.Label>
+                <Form.Label className="form-label-custom">To Date *</Form.Label>
                 <Form.Control
                   type="date"
                   name="toDate"
                   value={form.toDate}
                   onChange={handleInputChange}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Total Days</Form.Label>
+                <Form.Label className="form-label-custom">Total Days</Form.Label>
                 <Form.Control
                   type="number"
                   name="totalDays"
                   value={form.totalDays}
                   readOnly
                   placeholder="Auto-calculated"
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={6}>
               <Form.Group className="mb-3">
-                <Form.Label>Status</Form.Label>
-                <Form.Select name="status" value={form.status} onChange={handleInputChange}>
+                <Form.Label className="form-label-custom">Status</Form.Label>
+                <Form.Select name="status" value={form.status} onChange={handleInputChange} className="form-select-custom">
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -601,7 +603,7 @@ const LeaveRequests = () => {
 
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>Reason *</Form.Label>
+                <Form.Label className="form-label-custom">Reason *</Form.Label>
                 <Form.Control
                   as="textarea"
                   name="reason"
@@ -609,13 +611,14 @@ const LeaveRequests = () => {
                   onChange={handleInputChange}
                   rows={3}
                   required
+                  className="form-control-custom"
                 />
               </Form.Group>
             </Col>
 
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Label>
+                <Form.Label className="form-label-custom">
                   <FaPaperclip className="me-1" /> Attachment (Optional)
                 </Form.Label>
                 <Form.Control
@@ -623,23 +626,30 @@ const LeaveRequests = () => {
                   onChange={(e) =>
                     setForm({ ...form, attachment: e.target.files[0] || null })
                   }
+                  className="form-control-custom"
                 />
-                <Form.Text muted>Supporting documents (e.g., medical certificate)</Form.Text>
+                <Form.Text className="text-muted">Supporting documents (e.g., medical certificate)</Form.Text>
               </Form.Group>
             </Col>
           </Row>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button
-            variant="primary"
+            className="btn-modal-save"
             onClick={handleSave}
             disabled={saving}
-            style={{ backgroundColor: "#023347", borderColor: "#023347" }}
           >
-            {saving ? "Saving..." : modalType === "edit" ? "Update" : "Submit"} Request
+            {saving ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Saving...
+              </>
+            ) : (
+              modalType === "edit" ? "Update" : "Submit"
+            )} Request
           </Button>
         </Modal.Footer>
       </Modal>
@@ -651,23 +661,26 @@ const LeaveRequests = () => {
         onHide={handleDeleteModalClose}
         onExited={handleDeleteModalExited}
         centered
+        className="leave-requests-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Delete Leave Request</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete the leave request for{" "}
-          <strong>{getEmployeeName(leaveToDelete?.employeeId)}</strong>?
+        <Modal.Body className="modal-body-custom text-center py-4">
+          <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FaTrash style={{ fontSize: "32px", color: "#F04438" }} />
+          </div>
+          <h4 className="fw-bold mb-2">Delete Leave Request</h4>
+          <p className="text-muted mb-3">
+            Are you sure you want to delete the leave request for{" "}
+            <strong>{getEmployeeName(leaveToDelete?.employeeId)}</strong>? This action cannot be undone.
+          </p>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleDeleteModalClose}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleDeleteModalClose}>
             Cancel
           </Button>
-          <Button
-            variant="danger"
-            onClick={handleDelete}
-            style={{ backgroundColor: "#023347", borderColor: "#023347" }}
-          >
+          <Button className="btn-modal-delete" onClick={handleDelete}>
             Delete
           </Button>
         </Modal.Footer>

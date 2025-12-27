@@ -9,6 +9,7 @@ import {
   faPlus,
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
+import { Card, Row, Col, Spinner, Alert } from "react-bootstrap";
 import axios from "axios";
 import BaseUrl from "../../../../Api/BaseUrl";
 import GetCompanyId from "../../../../Api/GetCompanyId";
@@ -16,6 +17,7 @@ import axiosInstance from "../../../../Api/axiosInstance";
 import { CurrencyContext } from "../../../../hooks/CurrencyContext";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './StockTransfer.css';
 
 function StockTransfer() {
   // Permission states
@@ -465,120 +467,151 @@ function StockTransfer() {
   // If user doesn't have view permission, show access denied message
   if (!hasViewPermission) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger text-center">
-          <h4>Access Denied</h4>
+      <div className="p-4 stock-transfer-container">
+        <Card className="text-center p-5 border-0 shadow-lg">
+          <h3 className="text-danger">Access Denied</h3>
           <p>You don't have permission to view the Stock Transfer module.</p>
-          <button className="btn btn-primary" onClick={() => window.history.back()}>
+          <button className="btn btn-primary mt-3" onClick={() => window.history.back()}>
             Go Back
           </button>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mt-4">
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+    <div className="p-4 stock-transfer-container">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="colored" />
 
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>Stock Transfer Records</h3>
-        {hasCreatePermission && (
-          <button
-            className="btn text-white"
-            style={{ backgroundColor: "#53b2a5" }}
-            onClick={() => {
-              resetForm();
-              setEditTransfer(null);
-              setShowModal(true);
-            }}
-          >
-            <FontAwesomeIcon icon={faPlus} className="me-2" /> Add Stock Transfer
-          </button>
-        )}
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="stock-transfer-title">
+          <i className="fas fa-exchange-alt me-2"></i>
+          Stock Transfer Management
+        </h3>
+        <p className="stock-transfer-subtitle">Manage and track all stock transfers between warehouses</p>
       </div>
+
+      <Row className="g-3 mb-4 align-items-center">
+        <Col xs={12} md={6}>
+          {/* Search can be added here if needed */}
+        </Col>
+        <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start">
+          {hasCreatePermission && (
+            <button
+              className="btn btn-add-transfer d-flex align-items-center"
+              onClick={() => {
+                resetForm();
+                setEditTransfer(null);
+                setShowModal(true);
+              }}
+            >
+              <FontAwesomeIcon icon={faPlus} className="me-2" /> Add Stock Transfer
+            </button>
+          )}
+        </Col>
+      </Row>
 
       {/* Filters */}
-      <div className="card mb-3">
-        <div className="card-body">
-          <h5>Filter Transfers</h5>
-          <div className="row g-3">
-            <div className="col-md-3">
-              <input type="date" className="form-control" value={filters.fromDate} onChange={e => setFilters({ ...filters, fromDate: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <input type="date" className="form-control" value={filters.toDate} onChange={e => setFilters({ ...filters, toDate: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <input type="text" className="form-control" placeholder="Destination" value={filters.destination} onChange={e => setFilters({ ...filters, destination: e.target.value })} />
-            </div>
-            <div className="col-md-3">
-              <input type="text" className="form-control" placeholder="Source" value={filters.source} onChange={e => setFilters({ ...filters, source: e.target.value })} />
-            </div>
-            <div className="col-md-6">
-              <input type="text" className="form-control" placeholder="Search item..." value={filters.searchItem} onChange={e => setFilters({ ...filters, searchItem: e.target.value })} />
-            </div>
-          </div>
-        </div>
-      </div>
+      <Card className="filter-card">
+        <Card.Body>
+          <h5 className="mb-3 fw-bold">Filter Transfers</h5>
+          <Row className="g-3">
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">From Date</label>
+              <input type="date" className="form-control filter-input" value={filters.fromDate} onChange={e => setFilters({ ...filters, fromDate: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">To Date</label>
+              <input type="date" className="form-control filter-input" value={filters.toDate} onChange={e => setFilters({ ...filters, toDate: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Destination</label>
+              <input type="text" className="form-control filter-input" placeholder="Destination warehouse" value={filters.destination} onChange={e => setFilters({ ...filters, destination: e.target.value })} />
+            </Col>
+            <Col xs={12} sm={6} md={3}>
+              <label className="form-label fw-semibold mb-2">Source</label>
+              <input type="text" className="form-control filter-input" placeholder="Source warehouse" value={filters.source} onChange={e => setFilters({ ...filters, source: e.target.value })} />
+            </Col>
+            <Col xs={12} md={6}>
+              <label className="form-label fw-semibold mb-2">Search Item</label>
+              <input type="text" className="form-control filter-input" placeholder="Search item..." value={filters.searchItem} onChange={e => setFilters({ ...filters, searchItem: e.target.value })} />
+            </Col>
+            <Col xs={12} md={6} className="d-flex align-items-end">
+              <button
+                className="btn btn-outline-secondary w-100"
+                onClick={() => setFilters({ fromDate: "", toDate: "", destination: "", source: "", searchItem: "" })}
+              >
+                Clear Filters
+              </button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {/* Table */}
-      <div className="card">
-        <div className="card-body">
+      <Card className="stock-transfer-table-card border-0 shadow-lg">
+        <Card.Body style={{ padding: 0 }}>
           {dataLoading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary"></div>
+            <div className="text-center py-5">
+              <Spinner animation="border" style={{ color: "#505ece" }} />
+              <p className="mt-2 text-muted">Loading transfers...</p>
             </div>
           ) : filteredTransfers.length === 0 ? (
-            <p className="text-center text-muted">No transfers found</p>
+            <Alert variant="info" className="m-3">No transfers found</Alert>
           ) : (
             <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead className="">
+              <table className="table stock-transfer-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
                   <tr>
-                    <th>Voucher No</th>
-                    <th>Date</th>
-                    <th>Source</th>
-                    <th>Destination</th>
-                    <th>Items</th>
-                    <th>Total</th>
-                    <th>Actions</th>
+                    <th className="py-3">Voucher No</th>
+                    <th className="py-3">Date</th>
+                    <th className="py-3">Source</th>
+                    <th className="py-3">Destination</th>
+                    <th className="py-3">Items</th>
+                    <th className="py-3">Total</th>
+                    <th className="py-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTransfers.map(t => (
                     <tr key={t.id}>
-                      <td>{t.voucherNo}</td>
+                      <td className="fw-bold">{t.voucherNo}</td>
                       <td>{t.voucherDate}</td>
                       <td>{t.sourceWarehouses.length > 0 ? t.sourceWarehouses.join(", ") : "—"}</td>
-                      <td>{t.destinationWarehouse}</td>
-                      <td>{t.items.length > 0 ? t.items.length : "—"}</td>
-                      <td>{symbol}{convertPrice(t.totalAmount)}</td>
-                      <td className="d-flex">
-                        <button className="btn btn-sm btn-success me-1" onClick={() => setViewTransfer(t)}>
-                          <FontAwesomeIcon icon={faEye} />
-                        </button>
-                        {hasUpdatePermission && (
+                      <td className="fw-semibold">{t.destinationWarehouse}</td>
+                      <td>
+                        <span className="badge bg-info text-dark">{t.items.length > 0 ? t.items.length : "0"} items</span>
+                      </td>
+                      <td className="fw-bold text-primary">{symbol}{convertPrice(t.totalAmount)}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
                           <button
-                            className="btn btn-sm p-2 me-1"
-                            style={{ backgroundColor: "#ffc107", borderColor: "#ffc107", color: "black", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}
-                            onClick={() => handleEditTransfer(t)}
-                            title="Edit Transfer"
+                            className="btn btn-sm btn-action btn-view"
+                            onClick={() => setViewTransfer(t)}
+                            title="View"
                           >
-                            <FontAwesomeIcon icon={faEdit} />
+                            <FontAwesomeIcon icon={faEye} size={14} />
                           </button>
-                        )}
-                        {hasDeletePermission && (
-                          <button
-                            className="btn btn-sm p-2"
-                            style={{ backgroundColor: "#dc3545", borderColor: "#dc3545", color: "white", width: "36px", height: "36px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}
-                            onClick={() => handleDeleteTransfer(t.id)}
-                            title="Delete Transfer"
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        )}
+                          {hasUpdatePermission && (
+                            <button
+                              className="btn btn-sm btn-action btn-edit"
+                              onClick={() => handleEditTransfer(t)}
+                              title="Edit Transfer"
+                            >
+                              <FontAwesomeIcon icon={faEdit} size={14} />
+                            </button>
+                          )}
+                          {hasDeletePermission && (
+                            <button
+                              className="btn btn-sm btn-action btn-delete"
+                              onClick={() => handleDeleteTransfer(t.id)}
+                              title="Delete Transfer"
+                            >
+                              <FontAwesomeIcon icon={faTrash} size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -586,45 +619,45 @@ function StockTransfer() {
               </table>
             </div>
           )}
-        </div>
-      </div>
+        </Card.Body>
+      </Card>
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal show d-block stock-transfer-modal" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5>{editTransfer ? "Edit" : "New"} Stock Transfer</h5>
+              <div className="modal-header modal-header-custom">
+                <h5 className="modal-title">{editTransfer ? "Edit" : "New"} Stock Transfer</h5>
                 <button className="btn-close" onClick={() => {
                   setShowModal(false);
                   resetForm();
                   setEditTransfer(null);
                 }}></button>
               </div>
-              <div className="modal-body">
-                {error && <div className="alert alert-danger">{error}</div>}
+              <div className="modal-body modal-body-custom">
+                {error && <Alert variant="danger">{error}</Alert>}
                 {/* Voucher Info */}
-                <div className="row mb-3">
-                  <div className="col-md-4">
-                    <input className="form-control" value={voucherNo} readOnly />
-                    <small>System Voucher No</small>
-                  </div>
-                  <div className="col-md-4">
-                    <input className="form-control" value={manualVoucherNo} onChange={e => setManualVoucherNo(e.target.value)} />
-                    <small>Manual Voucher No</small>
-                  </div>
-                  <div className="col-md-4">
-                    <input type="date" className="form-control" value={voucherDate} onChange={e => setVoucherDate(e.target.value)} />
-                    <small>Voucher Date</small>
-                  </div>
-                </div>
+                <Row className="mb-3">
+                  <Col md={4}>
+                    <label className="form-label-custom">System Voucher No</label>
+                    <input className="form-control form-control-custom" value={voucherNo} readOnly />
+                  </Col>
+                  <Col md={4}>
+                    <label className="form-label-custom">Manual Voucher No</label>
+                    <input className="form-control form-control-custom" value={manualVoucherNo} onChange={e => setManualVoucherNo(e.target.value)} />
+                  </Col>
+                  <Col md={4}>
+                    <label className="form-label-custom">Voucher Date</label>
+                    <input type="date" className="form-control form-control-custom" value={voucherDate} onChange={e => setVoucherDate(e.target.value)} />
+                  </Col>
+                </Row>
                 {/* Destination Warehouse */}
                 <div className="mb-3">
-                  <label>Destination Warehouse</label>
+                  <label className="form-label-custom">Destination Warehouse</label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control form-control-custom"
                     value={destinationWarehouse}
                     onChange={e => {
                       setDestinationWarehouse(e.target.value);
@@ -664,10 +697,10 @@ function StockTransfer() {
                 </div>
                 {/* Select Item */}
                 <div className="mb-3">
-                  <label>Select Item</label>
+                  <label className="form-label-custom">Select Item</label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control form-control-custom"
                     value={itemSearch}
                     onChange={e => {
                       setItemSearch(e.target.value);
@@ -717,15 +750,15 @@ function StockTransfer() {
                 </div>
                 {/* Items Table */}
                 <div className="table-responsive mb-3">
-                  <table className="table table-bordered">
-                    <thead>
+                  <table className="table table-bordered table-sm">
+                    <thead style={{ background: "#f8f9fa" }}>
                       <tr>
-                        <th>Item</th>
-                        <th>Source WH</th>
-                        <th>Qty</th>
-                        <th>Rate</th>
-                        <th>Amount</th>
-                        <th>Narration</th>
+                        <th className="fw-semibold">Item</th>
+                        <th className="fw-semibold">Source WH</th>
+                        <th className="fw-semibold">Qty</th>
+                        <th className="fw-semibold">Rate</th>
+                        <th className="fw-semibold">Amount</th>
+                        <th className="fw-semibold">Narration</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -796,19 +829,36 @@ function StockTransfer() {
                 </div>
                 {/* Narration */}
                 <div className="mb-3">
+                  <label className="form-label-custom">Narration</label>
                   <textarea
-                    className="form-control"
+                    className="form-control form-control-custom"
                     rows="2"
-                    placeholder="Narration"
+                    placeholder="Enter narration/notes"
                     value={note}
                     onChange={e => setNote(e.target.value)}
                   />
                 </div>
-                <div className="d-flex justify-content-between align-items-center">
-                  <strong>Total: {symbol}{convertPrice(calculateTotalAmount())}</strong>
-                  <button className="btn btn-success" onClick={handleSubmitTransfer} disabled={loading}>
-                    {loading ? "Saving..." : (editTransfer ? "Update Transfer" : "Save Transfer")}
-                  </button>
+                <div className="d-flex justify-content-between align-items-center pt-3 border-top">
+                  <strong className="fs-5">Total: {symbol}{convertPrice(calculateTotalAmount())}</strong>
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-modal-cancel" onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                      setEditTransfer(null);
+                    }}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-modal-save" onClick={handleSubmitTransfer} disabled={loading}>
+                      {loading ? (
+                        <>
+                          <Spinner animation="border" size="sm" className="me-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        editTransfer ? "Update Transfer" : "Save Transfer"
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -818,14 +868,14 @@ function StockTransfer() {
 
       {/* View Modal */}
       {viewTransfer && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal show d-block stock-transfer-modal" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5>Transfer Details</h5>
+              <div className="modal-header modal-header-custom">
+                <h5 className="modal-title">Transfer Details</h5>
                 <button className="btn-close" onClick={() => setViewTransfer(null)}></button>
               </div>
-              <div className="modal-body">
+              <div className="modal-body modal-body-custom">
                 <div id="print-transfer">
                   <div className="row">
                     <div className="col-md-4"><strong>Voucher:</strong> {viewTransfer.voucherNo}</div>
@@ -834,13 +884,13 @@ function StockTransfer() {
                   </div>
                   <div className="table-responsive mt-3">
                     <table className="table table-bordered">
-                      <thead className="table-light">
+                      <thead style={{ background: "#f8f9fa" }}>
                         <tr>
-                          <th>Item</th>
-                          <th>Source</th>
-                          <th>Qty</th>
-                          <th>Rate</th>
-                          <th>Amount</th>
+                          <th className="fw-semibold">Item</th>
+                          <th className="fw-semibold">Source</th>
+                          <th className="fw-semibold">Qty</th>
+                          <th className="fw-semibold">Rate</th>
+                          <th className="fw-semibold">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -867,11 +917,11 @@ function StockTransfer() {
                   )}
                   <div className="mt-3 h5">Total: {symbol}{convertPrice(parseFloat(viewTransfer.totalAmount))}</div>
                 </div>
-                <div className="mt-3 text-end">
-                  <button className="btn btn-primary me-2" onClick={printTransfer}>
-                    <FontAwesomeIcon icon={faPrint} /> Print
+                <div className="mt-3 text-end modal-footer-custom">
+                  <button className="btn btn-modal-print me-2" onClick={printTransfer}>
+                    <FontAwesomeIcon icon={faPrint} className="me-2" /> Print
                   </button>
-                  <button className="btn btn-secondary" onClick={() => setViewTransfer(null)}>Close</button>
+                  <button className="btn btn-modal-cancel" onClick={() => setViewTransfer(null)}>Close</button>
                 </div>
               </div>
             </div>

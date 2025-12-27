@@ -8,6 +8,8 @@ import {
   Form,
   Button,
   Modal,
+  Spinner,
+  Badge,
 } from "react-bootstrap";
 import {
   FaClock,
@@ -20,6 +22,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import GetCompanyId from "../../../Api/GetCompanyId";
 import axiosInstance from "../../../Api/axiosInstance";
+import './Attendance.css';
 
 const STATUS_OPTIONS = ["Present", "Absent", "Leave", "Late"];
 
@@ -349,50 +352,52 @@ const Attendance = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f0f7f8" }}>
-        <div className="spinner-border" style={{ color: "#023347" }} role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading attendance data...</p>
         </div>
       </div>
     );
   }
 
+  const getStatusBadgeClass = (status) => {
+    if (status === "Present") return "badge-status badge-present";
+    if (status === "Absent") return "badge-status badge-absent";
+    if (status === "Leave") return "badge-status badge-leave";
+    return "badge-status badge-late";
+  };
+
   return (
-    <Container fluid className="py-3" style={{ backgroundColor: "#f0f7f8", minHeight: "100vh" }}>
-      <Card className="border-0 shadow-sm" style={{ backgroundColor: "#e6f3f5" }}>
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h4 className="mb-1" style={{ color: "#023347" }}>
-                <FaClock className="me-2" style={{ color: "#2a8e9c" }} />
-                Attendance
-              </h4>
-              <p className="text-muted">Track daily employee attendance</p>
-            </div>
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-secondary"
-                onClick={handlePDF}
-                size="sm"
-                style={{ borderColor: "#2a8e9c", color: "#2a8e9c" }}
-                className="d-flex align-items-center justify-content-center"
-              >
-                <FaFilePdf className="me-1" /> Export PDF
-              </Button>
-              <Button
-                style={{ backgroundColor: "#023347", border: "none" }}
-                onClick={handleAdd}
-                size="sm"
-                className="d-flex align-items-center justify-content-center"
-              >
-                <FaPlus className="me-1" /> Add Record
-              </Button>
-            </div>
-          </div>
+    <Container fluid className="p-4 attendance-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <Row className="align-items-center">
+          <Col xs={12} md={8}>
+            <h3 className="attendance-title">
+              <i className="fas fa-clock me-2"></i>
+              Attendance Management
+            </h3>
+            <p className="attendance-subtitle">Track daily employee attendance and time records</p>
+          </Col>
+          <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+            <Button className="btn-export-pdf d-flex align-items-center" onClick={handlePDF}>
+              <FaFilePdf className="me-2" /> Export PDF
+            </Button>
+            <Button className="btn-add-record d-flex align-items-center" onClick={handleAdd}>
+              <FaPlus className="me-2" /> Add Record
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Table Card */}
+      <Card className="attendance-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
 
           <div style={{ overflowX: "auto" }}>
-            <Table hover responsive>
-              <thead>
+            <Table hover responsive className="attendance-table">
+              <thead className="table-header">
                 <tr>
                   <th>Date</th>
                   <th>Employee</th>
@@ -400,56 +405,46 @@ const Attendance = () => {
                   <th>Check-Out</th>
                   <th>Total Hours</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {records.length > 0 ? (
                   records.map((r) => (
                     <tr key={r.id}>
-                      <td>{r.date}</td>
+                      <td className="fw-semibold">{r.date}</td>
                       <td>{getEmployeeName(r.employeeId)}</td>
                       <td>{r.checkIn || "–"}</td>
                       <td>{r.checkOut || "–"}</td>
-                      <td>{calculateHours(r.checkIn, r.checkOut)}</td>
+                      <td className="fw-semibold">{calculateHours(r.checkIn, r.checkOut)}</td>
                       <td>
-                        <span
-                          className={`badge ${r.status === "Present"
-                            ? "bg-success"
-                            : r.status === "Absent"
-                              ? "bg-danger"
-                              : r.status === "Leave"
-                                ? "bg-info"
-                                : "bg-warning"
-                            } text-dark`}
-                        >
+                        <Badge className={getStatusBadgeClass(r.status)}>
                           {r.status}
-                        </span>
+                        </Badge>
                       </td>
-                      <td>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          className="me-1"
-                          onClick={() => handleEdit(r)}
-                          style={{ color: "#023347", backgroundColor: "#e6f3f5" }}
-                        >
-                          <FaEdit />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          onClick={() => confirmDelete(r)}
-                          style={{ color: "#dc3545", backgroundColor: "#e6f3f5" }}
-                        >
-                          <FaTrash />
-                        </Button>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button
+                            className="btn-action btn-edit"
+                            onClick={() => handleEdit(r)}
+                            title="Edit"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            className="btn-action btn-delete"
+                            onClick={() => confirmDelete(r)}
+                            title="Delete"
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="text-center text-muted">
+                    <td colSpan="7" className="text-center text-muted py-4">
                       No attendance records found.
                     </td>
                   </tr>
@@ -467,20 +462,22 @@ const Attendance = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         size="md"
+        centered
+        className="attendance-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#ffffff" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>{modalType === "edit" ? "Edit Attendance" : "Add Attendance Record"}</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label>Employee *</Form.Label>
+              <Form.Label className="form-label-custom">Employee *</Form.Label>
               <Form.Select
                 name="employeeId"
                 value={form.employeeId}
                 onChange={handleInputChange}
                 required
-                style={{ border: "1px solid #ced4da" }}
+                className="form-select-custom"
               >
                 <option value="">Select Employee</option>
                 {employees.map((emp) => (
@@ -492,49 +489,49 @@ const Attendance = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Date *</Form.Label>
+              <Form.Label className="form-label-custom">Date *</Form.Label>
               <Form.Control
                 type="date"
                 name="date"
                 value={form.date}
                 onChange={handleInputChange}
                 required
-                style={{ border: "1px solid #ced4da" }}
+                className="form-control-custom"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Check-In Time</Form.Label>
+              <Form.Label className="form-label-custom">Check-In Time</Form.Label>
               <Form.Control
                 type="time"
                 name="checkIn"
                 value={form.checkIn}
                 onChange={handleInputChange}
                 disabled={form.status !== "Present"}
-                style={{ border: "1px solid #ced4da" }}
+                className="form-control-custom"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Check-Out Time</Form.Label>
+              <Form.Label className="form-label-custom">Check-Out Time</Form.Label>
               <Form.Control
                 type="time"
                 name="checkOut"
                 value={form.checkOut}
                 onChange={handleInputChange}
                 disabled={form.status !== "Present"}
-                style={{ border: "1px solid #ced4da" }}
+                className="form-control-custom"
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Status *</Form.Label>
+              <Form.Label className="form-label-custom">Status *</Form.Label>
               <Form.Select
                 name="status"
                 value={form.status}
                 onChange={handleInputChange}
                 required
-                style={{ border: "1px solid #ced4da" }}
+                className="form-select-custom"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -545,32 +542,38 @@ const Attendance = () => {
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Notes</Form.Label>
+              <Form.Label className="form-label-custom">Notes</Form.Label>
               <Form.Control
                 as="textarea"
                 name="notes"
                 value={form.notes}
                 onChange={handleInputChange}
                 rows={2}
-                style={{ border: "1px solid #ced4da" }}
+                className="form-control-custom"
               />
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
+        <Modal.Footer className="modal-footer-custom">
           <Button
-            variant="secondary"
+            className="btn-modal-cancel"
             onClick={handleCloseModal}
-            style={{ border: "1px solid #ced4da" }}
           >
             Cancel
           </Button>
           <Button
-            style={{ backgroundColor: "#023347", border: "none" }}
+            className="btn-modal-save"
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : modalType === "edit" ? "Update" : "Add"} Record
+            {saving ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Saving...
+              </>
+            ) : (
+              modalType === "edit" ? "Update" : "Add"
+            )} Record
           </Button>
         </Modal.Footer>
       </Modal>
@@ -582,24 +585,30 @@ const Attendance = () => {
         onHide={handleDeleteModalClose}
         onExited={handleDeleteModalExited}
         centered
+        className="attendance-modal"
       >
-        <Modal.Header closeButton style={{ backgroundColor: "#023347", color: "#ffffff" }}>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Delete Record</Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ backgroundColor: "#f0f7f8" }}>
-          Are you sure you want to delete this attendance record for{" "}
-          <strong>{getEmployeeName(recordToDelete?.employeeId)}</strong> on{" "}
-          <strong>{recordToDelete?.date}</strong>?
+        <Modal.Body className="modal-body-custom text-center py-4">
+          <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FaTrash style={{ fontSize: "32px", color: "#F04438" }} />
+          </div>
+          <h4 className="fw-bold mb-2">Delete Attendance Record</h4>
+          <p className="text-muted mb-3">
+            Are you sure you want to delete this attendance record for{" "}
+            <strong>{getEmployeeName(recordToDelete?.employeeId)}</strong> on{" "}
+            <strong>{recordToDelete?.date}</strong>? This action cannot be undone.
+          </p>
         </Modal.Body>
-        <Modal.Footer style={{ backgroundColor: "#f0f7f8", border: "none" }}>
+        <Modal.Footer className="modal-footer-custom">
           <Button
-            variant="secondary"
+            className="btn-modal-cancel"
             onClick={handleDeleteModalClose}
-            style={{ border: "1px solid #ced4da" }}
           >
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleDelete}>
+          <Button className="btn-modal-delete" onClick={handleDelete}>
             Delete
           </Button>
         </Modal.Footer>

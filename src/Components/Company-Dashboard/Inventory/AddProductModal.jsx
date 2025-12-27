@@ -753,10 +753,23 @@ const AddProductModal = ({
                       size="sm"
                       onClick={() => setInternalShowAddCategoryModal(true)}
                       style={{
-                        backgroundColor: "#27b2b6",
+                        backgroundColor: "#505ece",
                         border: "none",
                         color: "#fff",
                         padding: "6px 16px",
+                        borderRadius: "8px",
+                        fontWeight: "600",
+                        transition: "all 0.3s ease"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#3d47b8";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "#505ece";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                     >
                       + Add New
@@ -842,10 +855,27 @@ const AddProductModal = ({
                         localNewItem.productWarehouses.length >= warehouses.length || hasPreselectedWarehouse
                       }
                       style={{
-                        backgroundColor: "#27b2b6",
+                        backgroundColor: "#505ece",
                         border: "none",
                         color: "#fff",
                         padding: "6px 16px",
+                        borderRadius: "8px",
+                        fontWeight: "600",
+                        transition: "all 0.3s ease"
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!e.currentTarget.disabled) {
+                          e.currentTarget.style.backgroundColor = "#3d47b8";
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!e.currentTarget.disabled) {
+                          e.currentTarget.style.backgroundColor = "#505ece";
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "none";
+                        }
                       }}
                     >
                       + Add Warehouse
@@ -962,6 +992,24 @@ const AddProductModal = ({
                                   disabled={
                                     localNewItem.productWarehouses.length <= 1 || hasPreselectedWarehouse // UPDATED: Disable if preselected
                                   }
+                                  style={{
+                                    borderRadius: "8px",
+                                    fontWeight: "600",
+                                    padding: "6px 12px",
+                                    transition: "all 0.3s ease"
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!e.currentTarget.disabled) {
+                                      e.currentTarget.style.transform = "translateY(-2px)";
+                                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(220, 53, 69, 0.4)";
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!e.currentTarget.disabled) {
+                                      e.currentTarget.style.transform = "translateY(0)";
+                                      e.currentTarget.style.boxShadow = "none";
+                                    }
+                                  }}
                                 >
                                   Remove
                                 </Button>
@@ -1096,17 +1144,63 @@ const AddProductModal = ({
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
+          <Button 
+            variant="secondary" 
+            onClick={handleClose}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              borderRadius: "8px",
+              fontWeight: "600",
+              padding: "8px 18px",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.borderColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.borderColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             Cancel
           </Button>
           <Button
-            style={{ backgroundColor: "#27b2b6", borderColor: "#27b2b6" }}
+            style={{ 
+              backgroundColor: "#505ece", 
+              borderColor: "#505ece",
+              borderRadius: "8px",
+              fontWeight: "600",
+              padding: "8px 18px",
+              transition: "all 0.3s ease"
+            }}
             onClick={isAdding ? handleAddProductApi : handleUpdateProductApi}
             disabled={
               isAddingProduct ||
               isUpdatingProduct ||
               localNewItem.productWarehouses.length === 0
             }
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.backgroundColor = "#3d47b8";
+                e.currentTarget.style.borderColor = "#3d47b8";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.backgroundColor = "#505ece";
+                e.currentTarget.style.borderColor = "#505ece";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }
+            }}
           >
             {isAdding ? (
               isAddingProduct ? (
@@ -1162,16 +1256,50 @@ const AddProductModal = ({
           <Button
             variant="secondary"
             onClick={() => setInternalShowAddCategoryModal(false)}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              borderRadius: "8px",
+              fontWeight: "600",
+              padding: "8px 18px",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.borderColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.borderColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             Cancel
           </Button>
           <Button
             style={{
-              backgroundColor: "#27b2b6",
+              backgroundColor: "#505ece",
               border: "none",
               color: "#fff",
+              borderRadius: "8px",
+              fontWeight: "600",
+              padding: "8px 18px",
+              transition: "all 0.3s ease"
             }}
             onClick={handleAddCategoryApi}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#3d47b8";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#505ece";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             {isAddingCategory ? (
               <>
@@ -1210,16 +1338,53 @@ const AddProductModal = ({
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddUOMModal(false)}>
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowAddUOMModal(false)}
+            style={{
+              backgroundColor: "#6c757d",
+              borderColor: "#6c757d",
+              borderRadius: "8px",
+              fontWeight: "600",
+              padding: "8px 18px",
+              transition: "all 0.3s ease"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#5a6268";
+              e.currentTarget.style.borderColor = "#5a6268";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#6c757d";
+              e.currentTarget.style.borderColor = "#6c757d";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
             Cancel
           </Button>
           <Button
             style={{
-              backgroundColor: "#27b2b6",
+              backgroundColor: "#505ece",
               border: "none",
               color: "#fff",
+              borderRadius: "8px",
+              fontWeight: "600",
+              padding: "8px 18px",
+              transition: "all 0.3s ease"
             }}
             onClick={handleAddUOM}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#3d47b8";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(80, 94, 206, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#505ece";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             Add
           </Button>

@@ -19,6 +19,11 @@
   border: none !important;
   position: relative;
   overflow: hidden;
+  background: #ffffff !important;
+}
+
+.summary-card .card-body {
+  background: #ffffff !important;
 }
 
 .summary-card::before {
@@ -43,23 +48,39 @@
 }
 
 .summary-card-1 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
+}
+
+.summary-card-1 .card-body {
+  background: #ffffff !important;
 }
 
 .summary-card-2 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
+}
+
+.summary-card-2 .card-body {
+  background: #ffffff !important;
 }
 
 .summary-card-3 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
 }
 
+.summary-card-3 .card-body {
+  background: #ffffff !important;
+}
+
 .summary-card-4 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
+}
+
+.summary-card-4 .card-body {
+  background: #ffffff !important;
 }
 
 .summary-card .card-value {
@@ -94,6 +115,7 @@
 .stats-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none !important;
+  background: #ffffff !important;
 }
 
 .stats-card:hover {
@@ -102,7 +124,7 @@
 }
 
 .stats-card-1 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
 }
 
@@ -111,7 +133,7 @@
 }
 
 .stats-card-2 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
 }
 
@@ -120,7 +142,7 @@
 }
 
 .stats-card-3 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
 }
 
@@ -129,7 +151,7 @@
 }
 
 .stats-card-4 {
-  background: linear-gradient(135deg, rgba(80, 94, 206, 0.15) 0%, rgba(80, 94, 206, 0.25) 100%);
+  background: #ffffff !important;
   border-left: 4px solid #505ece !important;
 }
 

@@ -1,9 +1,10 @@
 // CompanyPasswordRequests.js
 import React, { useState, useEffect, useRef } from "react";
-import { Table, Button, Badge, Modal, Form } from "react-bootstrap";
+import { Table, Button, Badge, Modal, Form, Container, Card, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
 import GetCompanyId from "../../../../Api/GetCompanyId";
 import axiosInstance from "../../../../Api/axiosInstance";
+import './PasswordRequests.css';
 
 const PasswordRequests = () => {
   const [showModal, setShowModal] = useState(false);
@@ -90,24 +91,46 @@ const PasswordRequests = () => {
     isCleaningUpRef.current = false;
   };
 
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case "Pending": return "badge-status badge-pending";
+      case "Approved": return "badge-status badge-approved";
+      case "Rejected": return "badge-status badge-rejected";
+      default: return "badge-status";
+    }
+  };
+
+  const getStatusText = (status) => {
+    if (status === "Approved") return "Changed";
+    return status;
+  };
+
   const renderStatus = (status) => {
-    if (status === "Pending") return <Badge bg="warning">Pending</Badge>;
-    if (status === "Approved") return <Badge bg="success">Changed</Badge>;
-    if (status === "Rejected") return <Badge bg="danger">Rejected</Badge>;
-    return <Badge bg="secondary">{status}</Badge>;
+    return <Badge className={getStatusBadgeClass(status)}>{getStatusText(status)}</Badge>;
   };
 
   const renderEmailStatus = (emailSent) => {
-    if (emailSent) return <Badge bg="info">Email Sent</Badge>;
+    if (emailSent) return <Badge className="badge-status badge-email-sent">Email Sent</Badge>;
     return null;
   };
 
   return (
-    <div className="p-3">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0">Password Change Requests</h4>
+    <Container fluid className="p-4 password-requests-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="password-requests-title">
+          <i className="fas fa-key me-2"></i>
+          Password Change Requests
+        </h3>
+        <p className="password-requests-subtitle">
+          Request password changes and track your requests
+        </p>
+      </div>
+
+      {/* Action Bar */}
+      <div className="d-flex justify-content-end mb-3">
         <Button 
-          variant="primary" 
+          className="btn-request"
           onClick={() => {
             // Reset cleanup flag
             isCleaningUpRef.current = false;
@@ -118,40 +141,50 @@ const PasswordRequests = () => {
             setShowModal(true);
           }}
         >
-          + Request Password Change
+          <i className="fas fa-plus"></i> Request Password Change
         </Button>
       </div>
 
-      <Table bordered hover className="mt-3 shadow-sm">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Request Date</th>
-            <th>Reason</th>
-            <th>Status</th>
-            <th>Email Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests.length === 0 ? (
-            <tr>
-              <td colSpan="5" className="text-center text-muted">
-                No password change requests found.
-              </td>
-            </tr>
-          ) : (
-            requests.map((req) => (
-              <tr key={req.id}>
-                <td>{req.id}</td>
-                <td>{req.date}</td>
-                <td>{req.reason}</td>
-                <td>{renderStatus(req.status)}</td>
-                <td>{renderEmailStatus(req.emailSent)}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </Table>
+      {/* Table Card */}
+      <Card className="password-requests-table-card border-0 shadow-lg">
+        <Card.Body className="p-0">
+          <div className="table-responsive">
+            <Table hover responsive className="password-requests-table">
+              <thead className="table-header">
+                <tr>
+                  <th>#</th>
+                  <th>Request Date</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Email Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center text-muted py-4">
+                      <div className="empty-state">
+                        <i className="fas fa-key"></i>
+                        <p>No password change requests found</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  requests.map((req) => (
+                    <tr key={req.id}>
+                      <td>{req.id}</td>
+                      <td className="date-cell">{req.date}</td>
+                      <td className="reason-cell" title={req.reason}>{req.reason}</td>
+                      <td>{renderStatus(req.status)}</td>
+                      <td>{renderEmailStatus(req.emailSent)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </div>
+        </Card.Body>
+      </Card>
 
       {/* Modal */}
       <Modal 
@@ -160,34 +193,43 @@ const PasswordRequests = () => {
         onHide={handleCloseModal}
         onExited={handleModalExited}
         centered
+        className="password-requests-modal"
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Request Password Change</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <Form>
             <Form.Group>
-              <Form.Label>Reason</Form.Label>
+              <Form.Label className="form-label-custom">Reason</Form.Label>
               <Form.Control
                 as="textarea"
-                rows={3}
+                rows={4}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Enter reason for password change..."
+                className="form-control-custom"
               />
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCloseModal}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-            {loading ? "Submitting..." : "Submit Request"}
+          <Button className="btn-modal-submit" onClick={handleSubmit} disabled={loading}>
+            {loading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Submitting...
+              </>
+            ) : (
+              "Submit Request"
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

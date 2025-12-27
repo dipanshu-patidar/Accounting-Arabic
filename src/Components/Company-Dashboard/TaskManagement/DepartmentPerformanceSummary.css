@@ -1,0 +1,152 @@
+/* Department Performance Summary Page Container */
+.department-summary-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.department-summary-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.department-summary-title i {
+  color: #505ece;
+}
+
+.department-summary-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Stats Cards */
+.stats-card {
+  background: white !important;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+  height: 100%;
+}
+
+.stats-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
+}
+
+.stats-card-body {
+  padding: 1.5rem;
+  text-align: center;
+  background: white;
+}
+
+.stats-card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stats-card-title {
+  color: #495057;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.stats-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Chart Cards */
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: none;
+  height: 100%;
+}
+
+.chart-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.chart-card-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+}
+
+.chart-card-header h6 {
+  color: white;
+  font-weight: 700;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chart-card-body {
+  padding: 1.5rem;
+  background: white;
+}
+
+/* Chart Colors */
+.chart-color-primary {
+  fill: #505ece;
+}
+
+.chart-color-success {
+  fill: #28a745;
+}
+
+.chart-color-info {
+  fill: #17a2b8;
+}
+
+.chart-color-danger {
+  fill: #dc3545;
+}
+
+.chart-color-warning {
+  fill: #ffc107;
+}
+
+/* Loading Spinner */
+.loading-container {
+  background: #f8f9fa;
+}
+
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Alert Styling */
+.alert-custom {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .department-summary-title {
+    font-size: 1.5rem;
+  }
+
+  .stats-card-value {
+    font-size: 1.5rem;
+  }
+
+  .stats-card-icon {
+    font-size: 2rem;
+  }
+}
+

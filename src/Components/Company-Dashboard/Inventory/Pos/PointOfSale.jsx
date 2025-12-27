@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Alert, Modal, Button, Form, Row, Col, Card, Image, Table, ListGroup, Badge, Dropdown } from "react-bootstrap";
+import { Container, Alert, Modal, Button, Form, Row, Col, Card, Image, Table, ListGroup, Badge, Dropdown, Spinner } from "react-bootstrap";
 import CustomerList from "./CustomerList";
 import AddProductModal from "../AddProductModal";
 import axiosInstance from "../../../../Api/axiosInstance";
@@ -8,6 +8,7 @@ import GetCompanyId from "../../../../Api/GetCompanyId";
 import { CurrencyContext } from "../../../../hooks/CurrencyContext";
 import React, { useContext } from "react";
 import { FaTrash } from "react-icons/fa";
+import './PointOfSale.css';
 
 const PointOfSale = () => {
   const companyId = GetCompanyId();
@@ -525,7 +526,7 @@ const PointOfSale = () => {
   // Custom Dropdown component for tax selection with delete buttons
   const CustomTaxDropdown = () => (
     <Dropdown>
-      <Dropdown.Toggle variant="success" id="tax-dropdown">
+      <Dropdown.Toggle variant="success" id="tax-dropdown" className="tax-dropdown-toggle">
         {selectedTax?.tax_class || "GST"} - {selectedTax?.tax_value || 0}%
       </Dropdown.Toggle>
 
@@ -575,63 +576,66 @@ const PointOfSale = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-50">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <Container fluid className="p-4 loading-container" style={{ minHeight: '100vh' }}>
+        <div className="text-center py-5">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading POS data...</p>
         </div>
-        <span className="ms-2">Loading POS data...</span>
-      </div>
+      </Container>
     );
   }
 
   if (!posPermissions.can_view) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-50">
-        <div className="text-center">
+      <Container fluid className="p-4 loading-container" style={{ minHeight: '100vh' }}>
+        <div className="text-center py-5">
           <h3 className="text-danger">Access Denied</h3>
           <p>You don't have permission to view the Point of Sale module.</p>
         </div>
-      </div>
+      </Container>
     );
   }
 
   return (
-    <div className="p-4">
+    <Container fluid className="p-4 pos-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="pos-title">
+          <i className="fas fa-cash-register me-2"></i>
+          Point of Sale
+        </h3>
+        <p className="pos-subtitle">
+          Create invoices and process sales transactions
+        </p>
+      </div>
 
       <Row>
         {/* Left Side */}
         <Col md={8}>
           <CustomerList onSelectCustomer={setSelectedCustomer} />
           {selectedCustomer && (
-            <Alert variant="info" className="mt-2">
-              Selected Customer: {selectedCustomer?.name_english}
+            <Alert variant="info" className="mt-2 customer-alert alert-custom alert-info-custom">
+              <strong>Selected Customer:</strong> {selectedCustomer?.name_english}
             </Alert>
           )}
 
           {/* Available Products */}
           <div className="mb-4">
             <div className="d-flex justify-content-between align-items-center mb-4 mt-2">
-              <h4 className="mb-0">Available Products</h4>
+              <h4 className="section-title mb-0">Available Products</h4>
               {posPermissions.can_create && (
-                <button
+                <Button
                   onClick={() => setShowAdd(true)}
-                  className="btn"
-                  style={{
-                    backgroundColor: "#27b2b6",
-                    color: "#fff",
-                    padding: "4px 10px",
-                    borderRadius: "4px",
-                    fontSize: "13px",
-                  }}
+                  className="btn-add-product"
                 >
-                  Add Product
-                </button>
+                  <i className="fas fa-plus me-1"></i> Add Product
+                </Button>
               )}
             </div>
             {products?.length === 0 ? (
-              <Alert variant="warning">
+              <Alert variant="warning" className="alert-custom alert-warning-custom">
                 <div className="d-flex align-items-center">
-                  <i className="bi bi-exclamation-triangle me-2"></i>
+                  <i className="fas fa-exclamation-triangle me-2"></i>
                   <div>
                     <strong>No products found</strong>
                     <p className="mb-0">Please add products to the system to continue.</p>
@@ -639,83 +643,89 @@ const PointOfSale = () => {
                 </div>
               </Alert>
             ) : (
-              <Table striped bordered hover responsive>
-                <thead>
-                  <tr>
-                    <th>Image</th>
-                    <th>Product Name</th>
-                    <th>Price</th>
-                    <th>Warehouses</th>
-                    <th>Total Stock</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => {
-                    const totalStock = product.warehouses?.reduce((sum, wh) => sum + (wh.stock_qty || 0), 0) || 0;
-                    const isSelected = selectedProducts.some((p) => p.id === product.id);
+              <Card className="pos-table-card">
+                <Card.Body className="p-0">
+                  <div className="table-responsive">
+                    <Table hover responsive className="pos-table">
+                      <thead className="table-header">
+                        <tr>
+                          <th>Image</th>
+                          <th>Product Name</th>
+                          <th>Price</th>
+                          <th>Warehouses</th>
+                          <th>Total Stock</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {products.map((product) => {
+                          const totalStock = product.warehouses?.reduce((sum, wh) => sum + (wh.stock_qty || 0), 0) || 0;
+                          const isSelected = selectedProducts.some((p) => p.id === product.id);
 
-                    return (
-                      <tr key={product.id}>
-                        <td>
-                          <div className="cursor-pointer"
-                            onClick={() => showModal(product)}
-                            style={{ cursor: "pointer" }}>
-                            <Image
-                              src={product.image || "https://via.placeholder.com/50"}
-                              alt={product.item_name}
-                              rounded
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                objectFit: "cover",
-                                border: isSelected ? "2px solid #27b2b6" : "none",
-                                borderRadius: "4px",
-                              }}
-                            />
-                          </div>
-                        </td>
-                        <td>{product?.item_name}</td>
-                        <td>{symbol} {convertPrice(product.initial_cost)}</td>
-                        <td>
-                          {product?.warehouses && product?.warehouses.length > 0 ? (
-                            <div style={{ maxHeight: "100px", overflowY: "auto" }}>
-                              {product.warehouses.map((wh, index) => (
-                                <div key={index} className="mb-1">
-                                  <small>
-                                    <strong>{wh.warehouse_name}:</strong> {wh.stock_qty} units ({wh.location})
-                                  </small>
+                          return (
+                            <tr key={product.id}>
+                              <td>
+                                <div
+                                  onClick={() => showModal(product)}
+                                  style={{ cursor: "pointer" }}>
+                                  <Image
+                                    src={product.image || "https://via.placeholder.com/50"}
+                                    alt={product.item_name}
+                                    rounded
+                                    className={`product-image ${isSelected ? 'selected' : ''}`}
+                                    style={{
+                                      width: "50px",
+                                      height: "50px",
+                                      objectFit: "cover",
+                                    }}
+                                  />
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <small>N/A</small>
-                          )}
-                        </td>
-                        <td>{totalStock} units</td>
-                        <td>
-                          <Button
-                            variant={isSelected ? "success" : "primary"}
-                            onClick={() => showModal(product)} size="sm">
-                            {isSelected ? "Selected" : "Select"}
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
+                              </td>
+                              <td className="fw-semibold">{product?.item_name}</td>
+                              <td><strong>{symbol} {convertPrice(product.initial_cost)}</strong></td>
+                              <td>
+                                {product?.warehouses && product?.warehouses.length > 0 ? (
+                                  <div className="warehouse-info">
+                                    {product.warehouses.map((wh, index) => (
+                                      <div key={index} className="mb-1">
+                                        <small>
+                                          <strong>{wh.warehouse_name}:</strong> {wh.stock_qty} units ({wh.location})
+                                        </small>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <small className="text-muted">N/A</small>
+                                )}
+                              </td>
+                              <td><strong>{totalStock} units</strong></td>
+                              <td>
+                                <Button
+                                  className={isSelected ? "btn-selected" : "btn-select"}
+                                  onClick={() => showModal(product)} 
+                                  size="sm">
+                                  {isSelected ? "Selected" : "Select"}
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </Table>
+                  </div>
+                </Card.Body>
+              </Card>
             )}
           </div>
 
           {/* Selected Products */}
-          <div className="border-2 p-3">
-            <h4>Selected Products</h4>
+          <Card className="selected-products-card">
+            <h4 className="section-title">Selected Products</h4>
             <div className="product-list">
               {selectedProducts.length === 0 ? (
-                <Alert variant="info">
+                <Alert variant="info" className="alert-custom alert-info-custom">
                   <div className="d-flex align-items-center">
-                    <i className="bi bi-info-circle me-2"></i>
+                    <i className="fas fa-info-circle me-2"></i>
                     <div>
                       <strong>No products selected</strong>
                       <p className="mb-0">Select products from the list above to add them to your order.</p>
@@ -734,7 +744,7 @@ const PointOfSale = () => {
 
                     return (
                       <Col key={product.id} md={6} className="mb-3">
-                        <Card>
+                        <Card className="product-card">
                           <Card.Body className="d-flex">
                             <Image
                               src={product.image || "https://via.placeholder.com/80"}
@@ -743,7 +753,7 @@ const PointOfSale = () => {
                               style={{ width: "80px", height: "80px", objectFit: "cover" }}
                               className="me-3" />
                             <div className="flex-grow-1">
-                              <Card.Title>{product.item_name}</Card.Title>
+                              <Card.Title className="fw-semibold">{product.item_name}</Card.Title>
                               <Card.Text>
                                 <div style={{ maxHeight: "80px", overflowY: "auto" }}>
                                   <small>
@@ -752,14 +762,14 @@ const PointOfSale = () => {
                                 </div>
                                 <br />
                                 Total Stock: {totalStock} units<br />
-                                {qty} x {symbol}{convertPrice(unitPrice)} = {symbol}{convertPrice(total)}
+                                <strong>{qty} x {symbol}{convertPrice(unitPrice)} = {symbol}{convertPrice(total)}</strong>
                               </Card.Text>
                               <Button
-                                variant="danger"
+                                className="btn-remove"
                                 onClick={() => handleRemoveProduct(product.id)}
                                 size="sm"
                               >
-                                Remove
+                                <FaTrash className="me-1" /> Remove
                               </Button>
                             </div>
                           </Card.Body>
@@ -770,126 +780,143 @@ const PointOfSale = () => {
                 </Row>
               )}
             </div>
-          </div>
+          </Card>
         </Col>
 
         {/* Right Side */}
-        <Col md={4} className="p-4 border rounded">
-          <Row className="mb-3">
-            <Col>
-              <Form.Label>Tax</Form.Label>
-              <CustomTaxDropdown />
-            </Col>
-            <Col>
-              <Form.Label>Payment Status</Form.Label>
-              <Form.Select value={paymentStatus} onChange={handlePaymentStatusChange}>
-                <option value="0">Due Payment</option>
-                <option value="1">Partial Payment</option>
-                <option value="2">Paid</option>
-                <option value="3">Cash</option>
-              </Form.Select>
-            </Col>
-          </Row>
-
-          {paymentStatus === "1" && (
+        <Col md={4}>
+          <Card className="pos-sidebar-card">
             <Row className="mb-3">
-              <Col>
-                <Form.Label>Amount Paid</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={amountPaid}
-                  onChange={handleAmountPaidChange}
-                  min={0}
-                  max={calculateTotal()}
-                />
+              <Col xs={12} className="mb-3">
+                <Form.Label className="form-label-custom">Tax</Form.Label>
+                <CustomTaxDropdown />
+              </Col>
+              <Col xs={12}>
+                <Form.Label className="form-label-custom">Payment Status</Form.Label>
+                <Form.Select 
+                  value={paymentStatus} 
+                  onChange={handlePaymentStatusChange}
+                  className="form-select-custom"
+                >
+                  <option value="0">Due Payment</option>
+                  <option value="1">Partial Payment</option>
+                  <option value="2">Paid</option>
+                  <option value="3">Cash</option>
+                </Form.Select>
               </Col>
             </Row>
-          )}
 
-          <div className="border p-3 rounded">
-            <div className="d-flex justify-content-between mb-3">
-              <strong>Subtotal:</strong>
-              <span>{symbol}{convertPrice(calculateSubTotal())}</span>
-            </div>
-            <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
-              <strong>{selectedTax?.tax_class || "GST"} ({selectedTax?.tax_value || 0}%):</strong>
-              <span>{symbol}{convertPrice(calculateTaxAmount())}</span>
-            </div>
-            {(paymentStatus === "1" || paymentStatus === "3") && (
-              <>
-                <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
-                  <strong>Amount Paid:</strong>
-                  <span>{symbol}{convertPrice(amountPaid)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
-                  <strong>Amount Due:</strong>
-                  <span>{symbol}{convertPrice(amountDue)}</span>
-                </div>
-              </>
+            {paymentStatus === "1" && (
+              <Row className="mb-3">
+                <Col xs={12}>
+                  <Form.Label className="form-label-custom">Amount Paid</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={amountPaid}
+                    onChange={handleAmountPaidChange}
+                    min={0}
+                    max={calculateTotal()}
+                    className="form-control-custom"
+                  />
+                </Col>
+              </Row>
             )}
-            {paymentStatus === "3" && amountPaid > calculateTotal() && (
-              <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
-                <strong>Change:</strong>
-                <span>{symbol}{convertPrice(amountPaid - calculateTotal())}</span>
+
+            <div className="summary-box">
+              <div className="summary-row">
+                <strong>Subtotal:</strong>
+                <span>{symbol}{convertPrice(calculateSubTotal())}</span>
               </div>
-            )}
-            <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
-              <h5>Total:</h5>
-              <h5>{symbol}{convertPrice(calculateTotal())}</h5>
+              <div className="summary-row">
+                <strong>{selectedTax?.tax_class || "GST"} ({selectedTax?.tax_value || 0}%):</strong>
+                <span>{symbol}{convertPrice(calculateTaxAmount())}</span>
+              </div>
+              {(paymentStatus === "1" || paymentStatus === "3") && (
+                <>
+                  <div className="summary-row">
+                    <strong>Amount Paid:</strong>
+                    <span>{symbol}{convertPrice(amountPaid)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <strong>Amount Due:</strong>
+                    <span>{symbol}{convertPrice(amountDue)}</span>
+                  </div>
+                </>
+              )}
+              {paymentStatus === "3" && amountPaid > calculateTotal() && (
+                <div className="summary-row">
+                  <strong>Change:</strong>
+                  <span>{symbol}{convertPrice(amountPaid - calculateTotal())}</span>
+                </div>
+              )}
+              <div className="summary-total">
+                <h5>Total:</h5>
+                <h5>{symbol}{convertPrice(calculateTotal())}</h5>
+              </div>
             </div>
-          </div>
+          </Card>
         </Col>
 
         {/* Success Message */}
         {successMessage && (
-          <Alert variant="success" className="mt-3">
+          <Alert variant="success" className="mt-3 alert-custom alert-success-custom">
+            <i className="fas fa-check-circle me-2"></i>
             {successMessage}
           </Alert>
         )}
 
         {/* Validation Error */}
         {validationError && (
-          <Alert variant="danger" className="mt-3">
+          <Alert variant="danger" className="mt-3 alert-custom alert-danger-custom">
+            <i className="fas fa-exclamation-circle me-2"></i>
             {validationError}
           </Alert>
         )}
 
-        {/* Buttons */}
-        <div className="mt-3 d-flex gap-2 flex-column flex-sm-row-reverse">
+        {/* Action Buttons */}
+        <div className="action-buttons-container">
           {posPermissions.can_create && (
             <Button
-              variant="primary"
+              className="btn-generate-invoice"
               onClick={handleCreateInvoice}
               disabled={selectedProducts.length === 0}
             >
+              <i className="fas fa-file-invoice me-2"></i>
               Generate Invoice
             </Button>
           )}
           <Button
-            variant="danger"
+            className="btn-clear"
             onClick={handleClear}
             disabled={selectedProducts.length === 0}
           >
+            <i className="fas fa-times me-2"></i>
             Clear Selection
           </Button>
         </div>
       </Row>
 
-      {/* Modals */}
-      <Modal show={isModalVisible} onHide={handleCancel} centered>
-        <Modal.Header closeButton>
+      {/* Product Details Modal */}
+      <Modal 
+        show={isModalVisible} 
+        onHide={handleCancel} 
+        centered
+        className="pos-modal"
+      >
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Product Details</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <h5>{currentProduct?.item_name}</h5>
+        <Modal.Body className="modal-body-custom">
+          <h5 className="fw-bold mb-3">{currentProduct?.item_name}</h5>
 
           <p><strong>Total Stock:</strong> {warehouseStock[currentProduct?.id] || 0} units</p>
 
           <Form.Group className="mb-3">
-            <Form.Label>Select Warehouse</Form.Label>
+            <Form.Label className="form-label-custom">Select Warehouse</Form.Label>
             <Form.Select
               value={selectedWarehouses[currentProduct?.id] || ''}
               onChange={handleWarehouseChange}
+              className="form-select-custom"
             >
               {currentProduct?.warehouses && currentProduct.warehouses.length > 0 ? (
                 currentProduct.warehouses.map((warehouse) => (
@@ -904,7 +931,7 @@ const PointOfSale = () => {
           </Form.Group>
 
           <Form.Group className="mb-3">
-            <Form.Label>Quantity</Form.Label>
+            <Form.Label className="form-label-custom">Quantity</Form.Label>
             <Form.Control
               type="number"
               min={1}
@@ -912,66 +939,89 @@ const PointOfSale = () => {
               onChange={(e) =>
                 handleQuantityChange(currentProduct.id, parseInt(e.target.value))
               }
+              className="form-control-custom"
             />
           </Form.Group>
 
           <Form.Group>
-            <Form.Label>Price per unit ({symbol})</Form.Label>
-            <Form.Control type="number" value={price} onChange={handlePriceChange} />
+            <Form.Label className="form-label-custom">Price per unit ({symbol})</Form.Label>
+            <Form.Control 
+              type="number" 
+              value={price} 
+              onChange={handlePriceChange}
+              className="form-control-custom"
+            />
           </Form.Group>
 
-          <p className="mt-3">
+          <div className="mt-3 p-3 bg-light rounded">
             <strong>Total Price:</strong> {symbol} {isNaN(price * (quantity[currentProduct?.id] || 1))
               ? "0.00"
               : convertPrice(price * (quantity[currentProduct?.id] || 1))}
-          </p>
+          </div>
 
-          {quantityError && <Alert variant="danger" className="mt-2">{quantityError}</Alert>}
+          {quantityError && (
+            <Alert variant="danger" className="mt-2 alert-custom alert-danger-custom">
+              {quantityError}
+            </Alert>
+          )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleCancel}>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleOk}>
+          <Button className="btn-modal-ok" onClick={handleOk}>
             OK
           </Button>
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showAddTaxModal} onHide={() => setShowAddTaxModal(false)} centered>
-        <Modal.Header closeButton>
+      {/* Add Tax Modal */}
+      <Modal 
+        show={showAddTaxModal} 
+        onHide={() => setShowAddTaxModal(false)} 
+        centered
+        className="pos-modal"
+      >
+        <Modal.Header closeButton className="modal-header-custom">
           <Modal.Title>Add New Tax</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="modal-body-custom">
           <Form onSubmit={handleTaxFormSubmit}>
-            <Form.Group>
-              <Form.Label>Tax Class</Form.Label>
+            <Form.Group className="mb-3">
+              <Form.Label className="form-label-custom">Tax Class</Form.Label>
               <Form.Control
                 type="text"
                 value={newTaxClass}
                 onChange={(e) => setNewTaxClass(e.target.value)}
+                className="form-control-custom"
+                placeholder="e.g., GST, VAT, Sales Tax"
                 required
               />
             </Form.Group>
-            <Form.Group className="mt-3">
-              <Form.Label>Tax Value (%)</Form.Label>
+            <Form.Group className="mb-3">
+              <Form.Label className="form-label-custom">Tax Value (%)</Form.Label>
               <Form.Control
                 type="number"
                 value={newTaxValue}
                 onChange={(e) => setNewTaxValue(e.target.value)}
+                className="form-control-custom"
+                placeholder="e.g., 10, 18, 20"
+                min="0"
+                max="100"
+                step="0.01"
                 required
               />
             </Form.Group>
-            <div className="d-flex justify-content-end mt-3">
-              <Button variant="secondary" onClick={() => setShowAddTaxModal(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" className="ms-2" variant="primary">
-                Submit
-              </Button>
-            </div>
           </Form>
         </Modal.Body>
+        <Modal.Footer className="modal-footer-custom">
+          <Button className="btn-modal-cancel" onClick={() => setShowAddTaxModal(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" className="btn-modal-ok" onClick={handleTaxFormSubmit}>
+            Submit
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       {/* Add Product Modal */}
@@ -994,7 +1044,7 @@ const PointOfSale = () => {
         handleAddCategory={handleAddCategory}
         companyId={companyId}
       />
-    </div>
+    </Container>
   );
 };
 

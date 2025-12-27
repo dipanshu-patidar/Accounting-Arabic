@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Table, Modal, Button, Form } from "react-bootstrap";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { Table, Modal, Button, Form, Row, Col, Card, Spinner, Alert } from "react-bootstrap";
+import { FaEdit, FaTrash, FaSearch, FaFile, FaDownload, FaUpload, FaPlus } from "react-icons/fa";
 import GetCompanyId from '../../../Api/GetCompanyId';
 import BaseUrl from '../../../Api/BaseUrl';
 import axiosInstance from '../../../Api/axiosInstance';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import * as XLSX from 'xlsx';
+import './UnitofMeasure.css';
 
 const UnitOfMeasure = () => {
   // Permission states
@@ -568,196 +569,233 @@ const UnitOfMeasure = () => {
   // If user doesn't have view permission, show access denied message
   if (!canViewUOM) {
     return (
-      <div className="p-4 mt-2">
-        <div className="text-center p-5">
-          <h3>Access Denied</h3>
+      <div className="p-4 uom-container">
+        <Card className="text-center p-5 border-0 shadow-lg">
+          <h3 className="text-danger">Access Denied</h3>
           <p>You don't have permission to view Unit of Measure.</p>
           <p>Please contact your administrator for access.</p>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
     <>
-      <div className="">
-        <div className="shadow p-4">
-          <div className="d-flex justify-content-between flex-wrap gap-2">
-            <h4 className="fw-semibold">Manage Unit of Measure</h4>
-            <div className="d-flex gap-2 flex-wrap">
-              {canCreateUOM && (
-                <Button
-                  className="rounded-pill text-white"
-                  style={{ backgroundColor: "#28a745", borderColor: "#28a745" }}
-                  onClick={() => document.getElementById("excelImport").click()}
-                  disabled={loading}
-                >
-                  <i className="fas fa-file-import me-2" /> Import
-                </Button>
-              )}
+      <div className="p-4 uom-container">
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
 
-              <input
-                type="file"
-                id="excelImport"
-                accept=".xlsx, .xls"
-                style={{ display: "none" }}
-                onChange={handleImport}
+        {/* Header Section */}
+        <div className="mb-4">
+          <h3 className="uom-title">
+            <i className="fas fa-ruler-combined me-2"></i>
+            Unit of Measure Management
+          </h3>
+          <p className="uom-subtitle">Manage measurement units and categories for your inventory</p>
+        </div>
+
+        <Row className="g-3 mb-4 align-items-center">
+          <Col xs={12} md={6}>
+            <div className="search-wrapper">
+              <FaSearch className="search-icon" />
+              <Form.Control
+                className="search-input"
+                type="text"
+                placeholder="Search by unit name or category..."
+                disabled
               />
-
-              {canViewUOM && (
-                <Button
-                  className="rounded-pill text-white"
-                  style={{ backgroundColor: "#fd7e14", borderColor: "#fd7e14" }}
-                  onClick={handleExport}
-                  disabled={loading}
-                >
-                  <i className="fas fa-file-export me-2" /> Export
-                </Button>
-              )}
-
-              {canCreateUOM && (
-                <Button
-                  className="rounded-pill text-white"
-                  style={{ backgroundColor: "#ffc107", borderColor: "#ffc107" }}
-                  onClick={handleDownloadTemplate}
-                  disabled={loading}
-                >
-                  <i className="fas fa-download me-2" /> Download Template
-                </Button>
-              )}
-
-              {canCreateUOM && (
-                <Button
-                  className="set_btn text-white fw-semibold"
-                  style={{ backgroundColor: "#3daaaa", borderColor: "#3daaaa" }}
-                  onClick={() => {
-                    isCleaningUpRef.current = false;
-                    modalKeyRef.current.uom += 1;
-                    setShowUOMModal(true);
-                  }}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  ) : (
-                    <i className="fa fa-plus me-2"></i>
-                  )}
-                  Create Unit
-                </Button>
-              )}
             </div>
-          </div>
+          </Col>
+          <Col xs={12} md={6} className="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
+            {canCreateUOM && (
+              <Button
+                className="d-flex align-items-center btn-import"
+                onClick={() => document.getElementById("excelImport").click()}
+                disabled={loading}
+              >
+                <FaUpload className="me-2" /> Import
+              </Button>
+            )}
 
-          {error && <div className="alert alert-danger mt-3">{error}</div>}
+            <input
+              type="file"
+              id="excelImport"
+              accept=".xlsx, .xls"
+              style={{ display: "none" }}
+              onChange={handleImport}
+            />
 
-          <div className="table-responsive mt-3">
-            <Table bordered striped hover>
-              <thead className="">
-                <tr>
-                  <th>S.No</th>
-                  <th>Unit Name</th>
-                  <th>Category</th>
-                  <th>Weight per Unit</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {unitsLoading ? (
+            {canViewUOM && (
+              <Button
+                className="d-flex align-items-center btn-export"
+                onClick={handleExport}
+                disabled={loading}
+              >
+                <FaFile className="me-2" /> Export
+              </Button>
+            )}
+
+            {canCreateUOM && (
+              <Button
+                className="d-flex align-items-center btn-download"
+                onClick={handleDownloadTemplate}
+                disabled={loading}
+              >
+                <FaDownload className="me-2" /> Download
+              </Button>
+            )}
+
+            {canCreateUOM && (
+              <Button
+                className="d-flex align-items-center btn-add-unit"
+                onClick={() => {
+                  isCleaningUpRef.current = false;
+                  modalKeyRef.current.uom += 1;
+                  setShowUOMModal(true);
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Spinner animation="border" size="sm" className="me-2" />
+                ) : (
+                  <FaPlus className="me-2" />
+                )}
+                Create Unit
+              </Button>
+            )}
+          </Col>
+        </Row>
+
+        {/* Table Card */}
+        <Card className="uom-table-card border-0 shadow-lg">
+          <Card.Body style={{ padding: 0 }}>
+            {error && <Alert variant="danger" className="m-3">{error}</Alert>}
+            
+            <div style={{ overflowX: "auto" }}>
+              <Table responsive className="uom-table align-middle" style={{ fontSize: 16 }}>
+                <thead className="table-header">
                   <tr>
-                    <td colSpan="5" className="text-center">
-                      <div className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
-                      Loading units...
-                    </td>
+                    <th className="py-3">S.No</th>
+                    <th className="py-3">Unit Name</th>
+                    <th className="py-3">Category</th>
+                    <th className="py-3">Weight per Unit</th>
+                    <th className="py-3 text-center">Actions</th>
                   </tr>
-                ) : currentItems.length > 0 ? (
-                  currentItems.map((u, index) => (
-                    <tr key={u.id}>
-                      <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                      <td>{u.uom_name || ""}</td> {/* ✅ Changed from 'unit_name' to 'uom_name' */}
-                      <td>{u.category || ""}</td>
-                      <td>{u.weight_per_unit || ""} {u.uom_name || ""}</td>
-                      <td>
-                        {canUpdateUOM && (
-                          <Button
-                            variant="link"
-                            className="text-warning p-0 me-2"
-                            onClick={() => handleModalShow(u)}
-                            disabled={loading}
-                          >
-                            <FaEdit />
-                          </Button>
-                        )}
-                        {canDeleteUOM && (
-                          <Button
-                            variant="link"
-                            className="text-danger p-0 me-2"
-                            onClick={() => handleDeleteClick(u.id)}
-                            disabled={loading}
-                          >
-                            <FaTrash />
-                          </Button>
-                        )}
+                </thead>
+                <tbody>
+                  {unitsLoading ? (
+                    <tr>
+                      <td colSpan="5" className="text-center py-4">
+                        <Spinner animation="border" style={{ color: "#505ece" }} />
+                        <p className="mt-2 text-muted">Loading units...</p>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center">No units found</td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-          </div>
+                  ) : currentItems.length > 0 ? (
+                    currentItems.map((u, index) => (
+                      <tr key={u.id}>
+                        <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                        <td className="fw-bold">{u.uom_name || ""}</td>
+                        <td>
+                          <span className="badge bg-info text-dark">{u.category || ""}</span>
+                        </td>
+                        <td>{u.weight_per_unit || ""} {u.uom_name || ""}</td>
+                        <td className="text-center">
+                          <div className="d-flex justify-content-center gap-2">
+                            {canUpdateUOM && (
+                              <Button
+                                variant="outline-warning"
+                                size="sm"
+                                className="btn-action btn-edit"
+                                onClick={() => handleModalShow(u)}
+                                disabled={loading}
+                              >
+                                <FaEdit size={14} />
+                              </Button>
+                            )}
+                            {canDeleteUOM && (
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                className="btn-action btn-delete"
+                                onClick={() => handleDeleteClick(u.id)}
+                                disabled={loading}
+                              >
+                                <FaTrash size={14} />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="text-center py-4 text-muted">No units found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
 
-          {/* Pagination */}
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2 px-2">
-            <span className="small text-muted">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-              {Math.min(currentPage * itemsPerPage, units.length)} of {units.length} entries
-            </span>
-            <nav>
-              <ul className="pagination pagination-sm mb-0 flex-wrap">
-                <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-                  <button
-                    className="page-link rounded-start"
-                    onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                    disabled={loading}
-                  >
-                    &laquo;
-                  </button>
-                </li>
-                {Array.from({ length: totalPages }, (_, index) => (
-                  <li
-                    key={index + 1}
-                    className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
-                  >
+            {/* Pagination */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2 px-3 py-3">
+              <span className="small text-muted">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, units.length)} of {units.length} entries
+              </span>
+              <nav>
+                <ul className="pagination pagination-sm mb-0 flex-wrap">
+                  <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
                     <button
-                      className="page-link"
-                      style={
-                        currentPage === index + 1
-                          ? { backgroundColor: "#3daaaa", borderColor: "#3daaaa", color: "white" }
-                          : {}
-                      }
-                      onClick={() => handlePageChange(index + 1)}
+                      className="page-link rounded-start"
+                      onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
                       disabled={loading}
                     >
-                      {index + 1}
+                      &laquo;
                     </button>
                   </li>
-                ))}
-                <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-                  <button
-                    className="page-link rounded-end"
-                    onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                    disabled={loading}
-                  >
-                    &raquo;
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-        </div>
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <li
+                      key={index + 1}
+                      className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
+                    >
+                      <button
+                        className="page-link"
+                        style={
+                          currentPage === index + 1
+                            ? { backgroundColor: "#505ece", borderColor: "#505ece", color: "white" }
+                            : {}
+                        }
+                        onClick={() => handlePageChange(index + 1)}
+                        disabled={loading}
+                      >
+                        {index + 1}
+                      </button>
+                    </li>
+                  ))}
+                  <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                    <button
+                      className="page-link rounded-end"
+                      onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                      disabled={loading}
+                    >
+                      &raquo;
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </Card.Body>
+        </Card>
 
         {/* ✅ Edit Unit Modal */}
         <Modal 
@@ -766,17 +804,17 @@ const UnitOfMeasure = () => {
           onHide={handleCloseMainModal}
           onExited={handleMainModalExited}
           centered
+          className="uom-modal"
         >
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="modal-header-custom">
             <Modal.Title>{editId ? "Edit Unit" : "Add Unit"}</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="modal-body-custom">
             <Form onSubmit={handleFormSubmit}>
               <Form.Group className="mb-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <Form.Label className="mb-0">Measurement Category</Form.Label>
-                </div>
+                <Form.Label className="form-label-custom">Measurement Category</Form.Label>
                 <Form.Select
+                  className="form-select-custom"
                   value={selectedCategory}
                   onChange={(e) => {
                     const selectedValue = e.target.value;
@@ -792,7 +830,6 @@ const UnitOfMeasure = () => {
                       setDynamicLabel('Weight per Unit');
                     }
                   }}
-                  className="mt-2"
                   disabled={loading}
                   required
                 >
@@ -806,11 +843,11 @@ const UnitOfMeasure = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label className="mb-0">Unit of Measurement (UOM)</Form.Label>
+                <Form.Label className="form-label-custom">Unit of Measurement (UOM)</Form.Label>
                 <Form.Select
+                  className="form-select-custom"
                   value={unitName}
                   onChange={(e) => setUnitName(e.target.value)}
-                  className="mt-2"
                   required
                   disabled={loading || !selectedCategory}
                 >
@@ -824,8 +861,9 @@ const UnitOfMeasure = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>{dynamicLabel}</Form.Label>
+                <Form.Label className="form-label-custom">{dynamicLabel}</Form.Label>
                 <Form.Control
+                  className="form-control-custom"
                   type="text"
                   placeholder={`e.g. 0.5 ${unitName || getCategoryDefaultUnit(selectedCategory)}`}
                   value={weightPerUnit}
@@ -836,31 +874,28 @@ const UnitOfMeasure = () => {
               </Form.Group>
             </Form>
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="modal-footer-custom">
             <Button
               variant="secondary"
+              className="btn-modal-cancel"
               onClick={handleModalClose}
-              style={{
-                border: 'none',
-                color: '#fff',
-                padding: '6px 16px',
-              }}
               disabled={loading}
             >
               Cancel
             </Button>
             <Button
-              variant="primary"
+              className="btn-modal-save"
               onClick={handleFormSubmit}
-              style={{
-                backgroundColor: '#27b2b6',
-                border: 'none',
-                color: '#fff',
-                padding: '6px 16px',
-              }}
               disabled={loading}
             >
-              {loading ? "Saving..." : (editId ? "Update" : "Save")}
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Saving...
+                </>
+              ) : (
+                editId ? "Update" : "Save"
+              )}
             </Button>
           </Modal.Footer>
         </Modal>
@@ -872,17 +907,17 @@ const UnitOfMeasure = () => {
           onHide={handleCloseUOMModal}
           onExited={handleUOMModalExited}
           centered
+          className="uom-modal"
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Unit Details</Modal.Title>
+          <Modal.Header closeButton className="modal-header-custom">
+            <Modal.Title>Create Unit</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className="modal-body-custom">
             <Form>
               <Form.Group className="mb-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <Form.Label className="mb-0">Measurement Category</Form.Label>
-                </div>
+                <Form.Label className="form-label-custom">Measurement Category</Form.Label>
                 <Form.Select
+                  className="form-select-custom"
                   value={selectedCategory}
                   onChange={(e) => {
                     const selectedValue = e.target.value;
@@ -898,7 +933,6 @@ const UnitOfMeasure = () => {
                       setDynamicLabel('Weight per Unit');
                     }
                   }}
-                  className="mt-2"
                   disabled={loading}
                   required
                 >
@@ -912,11 +946,11 @@ const UnitOfMeasure = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label className="mb-0">Unit of Measurement (UOM)</Form.Label>
+                <Form.Label className="form-label-custom">Unit of Measurement (UOM)</Form.Label>
                 <Form.Select
+                  className="form-select-custom"
                   value={selectedUnit}
                   onChange={(e) => setSelectedUnit(e.target.value)}
-                  className="mt-2"
                   required
                   disabled={loading || !selectedCategory}
                 >
@@ -930,8 +964,9 @@ const UnitOfMeasure = () => {
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>{dynamicLabel}</Form.Label>
+                <Form.Label className="form-label-custom">{dynamicLabel}</Form.Label>
                 <Form.Control
+                  className="form-control-custom"
                   type="text"
                   placeholder={`e.g. 0.5 ${selectedUnit || getCategoryDefaultUnit(selectedCategory)}`}
                   value={weightPerUnit}
@@ -942,31 +977,28 @@ const UnitOfMeasure = () => {
               </Form.Group>
             </Form>
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className="modal-footer-custom">
             <Button
               variant="secondary"
+              className="btn-modal-cancel"
               onClick={handleCloseUOMModal}
-              style={{
-                border: 'none',
-                color: '#fff',
-                padding: '6px 16px',
-              }}
               disabled={loading}
             >
-              Close
+              Cancel
             </Button>
             <Button
-              variant="primary"
+              className="btn-modal-save"
               onClick={handleSubmitUnitDetails}
-              style={{
-                backgroundColor: '#27b2b6',
-                border: 'none',
-                color: '#fff',
-                padding: '6px 16px',
-              }}
               disabled={loading}
             >
-              {loading ? "Saving..." : "Save"}
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
             </Button>
           </Modal.Footer>
         </Modal>
@@ -978,45 +1010,44 @@ const UnitOfMeasure = () => {
           onHide={handleCloseDeleteModal}
           onExited={handleDeleteModalExited}
           centered
+          className="uom-modal"
         >
-          <Modal.Header closeButton>
+          <Modal.Header closeButton className="modal-header-custom">
             <Modal.Title>Confirm Delete</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
-            <p>Are you sure you want to delete this unit?</p>
-            <p className="text-muted small">This action cannot be undone.</p>
+          <Modal.Body className="modal-body-custom text-center py-4">
+            <div className="mx-auto mb-3" style={{ width: 70, height: 70, background: "#FFF5F2", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FaTrash size={32} color="#F04438" />
+            </div>
+            <h4 className="fw-bold mb-2">Delete Unit</h4>
+            <p className="text-muted">Are you sure you want to delete this unit? This action cannot be undone.</p>
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary"
+          <Modal.Footer className="modal-footer-custom">
+            <Button
+              variant="secondary"
+              className="btn-modal-cancel"
               onClick={handleCloseDeleteModal}
               disabled={loading}
             >
               Cancel
             </Button>
             <Button
-              variant="danger"
+              className="btn-modal-delete"
               onClick={handleConfirmDelete}
               disabled={loading}
             >
-              {loading ? "Deleting..." : "Delete"}
+              {loading ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </Modal.Footer>
         </Modal>
       </div>
-
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-      />
     </>
   );
 };

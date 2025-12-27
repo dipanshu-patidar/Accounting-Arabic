@@ -3,7 +3,7 @@ import {
   Row, Col, Card, Container, Spinner, Alert
 } from 'react-bootstrap';
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
@@ -15,6 +15,7 @@ import {
   FaChartLine,
   FaClock
 } from 'react-icons/fa';
+import './DepartmentPerformanceSummary.css';
 
 const DepartmentPerformanceSummary = () => {
   const companyId = GetCompanyId();
@@ -57,28 +58,31 @@ const DepartmentPerformanceSummary = () => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', backgroundColor: '#f0f7f8' }}>
-        <Spinner animation="border" style={{ color: '#023347' }} />
+      <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+        <div className="text-center">
+          <Spinner animation="border" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading department performance data...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh', backgroundColor: '#f0f7f8' }}>
-        <Alert variant="danger">{error}</Alert>
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+        <Alert variant="danger" className="alert-custom">{error}</Alert>
       </div>
     );
   }
 
   // Prepare cards data
   const cards = [
-    { icon: <FaCheckCircle size={24} />, title: 'Completed Tasks', value: summary?.completedTasks || 0, color: '#28a745' },
-    { icon: <FaTasks size={24} />, title: 'In Progress Tasks', value: summary?.inProgressTasks || 0, color: '#17a2b8' },
-    { icon: <FaExclamationTriangle size={24} />, title: 'Overdue Tasks', value: summary?.overdueTasks || 0, color: '#dc3545' },
-    { icon: <FaUserFriends size={24} />, title: 'Active Employees', value: summary?.activeEmployees || 0, color: '#6f42c1' },
-    { icon: <FaChartLine size={24} />, title: 'Efficiency', value: `${summary?.efficiency || 0}%`, color: summary?.efficiency >= 80 ? '#28a745' : summary?.efficiency >= 60 ? '#ffc107' : '#dc3545' },
-    { icon: <FaClock size={24} />, title: 'Avg. Task Duration', value: `${summary?.avgTaskDuration || 0} days`, color: '#fd7e14' }
+    { icon: <FaCheckCircle />, title: 'Completed Tasks', value: summary?.completedTasks || 0, color: '#28a745' },
+    { icon: <FaTasks />, title: 'In Progress Tasks', value: summary?.inProgressTasks || 0, color: '#17a2b8' },
+    { icon: <FaExclamationTriangle />, title: 'Overdue Tasks', value: summary?.overdueTasks || 0, color: '#dc3545' },
+    { icon: <FaUserFriends />, title: 'Active Employees', value: summary?.activeEmployees || 0, color: '#505ece' },
+    { icon: <FaChartLine />, title: 'Efficiency', value: `${summary?.efficiency || 0}%`, color: summary?.efficiency >= 80 ? '#28a745' : summary?.efficiency >= 60 ? '#ffc107' : '#dc3545' },
+    { icon: <FaClock />, title: 'Avg. Task Duration', value: `${summary?.avgTaskDuration || 0} days`, color: '#505ece' }
   ];
 
   // Prepare pie chart data from statusDistribution
@@ -91,36 +95,30 @@ const DepartmentPerformanceSummary = () => {
     : [];
 
   const COLORS = ['#28a745', '#17a2b8', '#dc3545'];
+  const CHART_COLOR = '#505ece';
 
   return (
-    <Container fluid className="p-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
-      {/* Header */}
-      <div className="mb-4 text-center text-md-start">
-        <h2 style={{ color: '#023347', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+    <Container fluid className="p-4 department-summary-container">
+      {/* Header Section */}
+      <div className="mb-4">
+        <h3 className="department-summary-title">
+          <i className="fas fa-chart-bar me-2"></i>
           Department Performance Summary
-        </h2>
-        <p style={{ color: '#2a8e9c' }} className="text-center">
-          Real-time productivity and efficiency metrics for your company.
-        </p>
+        </h3>
+        <p className="department-summary-subtitle">Real-time productivity and efficiency metrics for your company</p>
       </div>
 
-      {/* Cards */}
+      {/* Stats Cards */}
       <Row className="mb-4 g-4">
         {cards.map((card, idx) => (
           <Col xs={12} sm={6} md={4} lg={4} xl={3} key={idx}>
-            <Card
-              className="h-100 shadow-sm"
-              style={{
-                border: 'none',
-                borderRadius: '16px',
-                backgroundColor: '#e6f3f5',
-                transition: 'transform 0.3s ease',
-              }}
-            >
-              <Card.Body className="text-center py-4">
-                <div className="fs-3 mb-2">{card.icon}</div>
-                <h6 className="fw-bold" style={{ color: '#023347' }}>{card.title}</h6>
-                <h4 className="fw-bold" style={{ color: card.color }}>{card.value}</h4>
+            <Card className="stats-card">
+              <Card.Body className="stats-card-body">
+                <div className="stats-card-icon" style={{ color: card.color }}>
+                  {card.icon}
+                </div>
+                <h6 className="stats-card-title">{card.title}</h6>
+                <h4 className="stats-card-value" style={{ color: card.color }}>{card.value}</h4>
               </Card.Body>
             </Card>
           </Col>
@@ -131,12 +129,12 @@ const DepartmentPerformanceSummary = () => {
       <Row className="g-4">
         {/* Pie Chart */}
         <Col lg={6}>
-          <Card className="shadow-sm border-0 h-100" style={{ borderRadius: '16px', backgroundColor: '#ffffff' }}>
-            <Card.Header className="bg-white py-3 border-0">
-              <h6 className="fw-bold mb-0" style={{ color: '#023347' }}>Task Status Distribution</h6>
+          <Card className="chart-card">
+            <Card.Header className="chart-card-header">
+              <h6>Task Status Distribution</h6>
             </Card.Header>
-            <Card.Body>
-              <div style={{ height: '250px' }}>
+            <Card.Body className="chart-card-body">
+              <div style={{ height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -144,9 +142,9 @@ const DepartmentPerformanceSummary = () => {
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
-                      outerRadius={90}
+                      outerRadius={100}
                       dataKey="value"
-                      paddingAngle={2}
+                      paddingAngle={5}
                       label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                     >
                       {pieData.map((entry, index) => (
@@ -154,6 +152,7 @@ const DepartmentPerformanceSummary = () => {
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => [value, 'Tasks']} />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -163,19 +162,37 @@ const DepartmentPerformanceSummary = () => {
 
         {/* Bar Chart */}
         <Col lg={6}>
-          <Card className="shadow-sm border-0 h-100" style={{ borderRadius: '16px', backgroundColor: '#ffffff' }}>
-            <Card.Header className="bg-white py-3 border-0">
-              <h6 className="fw-bold mb-0" style={{ color: '#023347' }}>Monthly Completed Tasks</h6>
+          <Card className="chart-card">
+            <Card.Header className="chart-card-header">
+              <h6>Monthly Completed Tasks</h6>
             </Card.Header>
-            <Card.Body>
-              <div style={{ height: '250px' }}>
+            <Card.Body className="chart-card-body">
+              <div style={{ height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyCompletion}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis dataKey="month" stroke="#023347" />
-                    <YAxis stroke="#023347" />
-                    <Tooltip />
-                    <Bar dataKey="completed" fill="#2a8e9c" barSize={40} radius={[10, 10, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="#495057"
+                      tick={{ fill: '#495057' }}
+                    />
+                    <YAxis 
+                      stroke="#495057"
+                      tick={{ fill: '#495057' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e9ecef',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="completed" 
+                      fill={CHART_COLOR} 
+                      barSize={40} 
+                      radius={[8, 8, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

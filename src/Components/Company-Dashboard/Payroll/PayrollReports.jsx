@@ -8,7 +8,11 @@ import {
     Row,
     Col,
     Card,
-    Modal
+    Modal,
+    Container,
+    Badge,
+    Spinner,
+    InputGroup
 } from 'react-bootstrap';
 import {
     FaFilePdf,
@@ -16,10 +20,16 @@ import {
     FaFileCsv,
     FaPrint,
     FaEye,
-    FaSearch
+    FaSearch,
+    FaFilter,
+    FaTimes,
+    FaCalendarAlt,
+    FaUsers,
+    FaUser
 } from 'react-icons/fa';
 import GetCompanyId from '../../../Api/GetCompanyId';
 import axiosInstance from '../../../Api/axiosInstance';
+import './PayrollReports.css';
 
 // Mapping short to full month
 const SHORT_TO_FULL = {
@@ -109,6 +119,7 @@ const PayrollReports = () => {
     const [months, setMonths] = useState([]);
     const [departments, setDepartments] = useState(['All']);
     const [loading, setLoading] = useState(true);
+    const [showFilters, setShowFilters] = useState(true);
 
     // Fetch main report
     useEffect(() => {
@@ -299,82 +310,141 @@ const PayrollReports = () => {
     });
 
     if (loading) {
-        return <div className="text-center py-5">Loading payroll reports...</div>;
+        return (
+            <div className="d-flex justify-content-center align-items-center loading-container" style={{ height: "100vh" }}>
+                <div className="text-center">
+                    <Spinner animation="border" className="spinner-custom" />
+                    <p className="mt-3 text-muted">Loading payroll reports...</p>
+                </div>
+            </div>
+        );
     }
 
+    const getStatusBadgeClass = (status) => {
+        return status === "Paid" ? "badge-status badge-paid" : "badge-status badge-pending";
+    };
+
     return (
-        <div className="container-fluid px-3 px-md-4 py-4" style={{ backgroundColor: '#f0f7f8', minHeight: '100vh' }}>
-            <h2 className="mb-4 text-center text-md-start" style={{ color: '#023347' }}>Payroll Reports</h2>
-            <Card className="mb-4" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-                <Card.Body>
-                    <Row className="align-items-center mb-3">
-                        <Col xs={12} md={7} className="mb-3 mb-md-0">
-                            <h4 className="mb-0" style={{ color: '#023347' }}>Reports Overview</h4>
-                        </Col>
-                        <Col xs={12} md={5} className="text-center text-md-end">
-                            <div className="d-flex flex-wrap justify-content-center justify-content-md-end gap-2">
-                                <Button variant="outline-primary" size="sm" className="d-flex align-items-center" style={{ borderColor: '#023347', color: '#023347' }}>
-                                    <FaFilePdf className="me-1" /> PDF
-                                </Button>
-                                <Button variant="outline-success" size="sm" className="d-flex align-items-center" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}>
-                                    <FaFileExcel className="me-1" /> Excel
-                                </Button>
-                                <Button variant="outline-info" size="sm" className="d-flex align-items-center" style={{ borderColor: '#2a8e9c', color: '#2a8e9c' }}>
-                                    <FaFileCsv className="me-1" /> CSV
-                                </Button>
-                                <Button variant="outline-secondary" size="sm" className="d-flex align-items-center" style={{ borderColor: '#ced4da', color: '#023347' }}>
-                                    <FaPrint className="me-1" /> Print
-                                </Button>
-                            </div>
-                        </Col>
-                    </Row>
-                    <Row className="mb-3">
-                        <Col xs={12} sm={6} md={4} className="mb-3 mb-md-0">
-                            <Form.Group>
-                                <Form.Label>Filter by Month</Form.Label>
-                                <Form.Select
-                                    value={selectedMonth}
-                                    onChange={(e) => setSelectedMonth(e.target.value)}
-                                    style={{ border: '1px solid #ced4da' }}
+        <Container fluid className="p-4 payroll-reports-container">
+            {/* Header Section */}
+            <div className="mb-4">
+                <Row className="align-items-center">
+                    <Col xs={12} md={8}>
+                        <h3 className="payroll-reports-title">
+                            <i className="fas fa-chart-line me-2"></i>
+                            Payroll Reports
+                        </h3>
+                        <p className="payroll-reports-subtitle">View and analyze payroll data by month, department, and employee</p>
+                    </Col>
+                    <Col xs={12} md={4} className="d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+                        <Button className="btn-export-pdf d-flex align-items-center">
+                            <FaFilePdf className="me-2" /> PDF ملف
+                        </Button>
+                        <Button className="btn-export-excel d-flex align-items-center">
+                            <FaFileExcel className="me-2" /> Excel ملف
+                        </Button>
+                    </Col>
+                </Row>
+            </div>
+
+            {/* Filter Card */}
+            <Card className="filter-card">
+                <Card.Header className="d-flex justify-content-between align-items-center bg-white border-0 pb-0">
+                    <div className="d-flex align-items-center">
+                        <FaFilter className="me-2" style={{ color: '#505ece' }} />
+                        <h6 className="mb-0 filter-title">Filters</h6>
+                    </div>
+                    <Button
+                        variant="link"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="p-0"
+                        style={{ color: '#505ece' }}
+                    >
+                        {showFilters ? <FaTimes /> : <FaFilter />}
+                    </Button>
+                </Card.Header>
+                {showFilters && (
+                    <Card.Body className="pt-3">
+                        <Row>
+                            <Col xs={12} md={4} className="mb-3 mb-md-0">
+                                <Form.Group>
+                                    <Form.Label className="form-label-custom d-flex align-items-center">
+                                        <FaCalendarAlt className="me-1" /> Month
+                                    </Form.Label>
+                                    <InputGroup className="input-group-custom">
+                                        <InputGroup.Text>
+                                            <FaCalendarAlt />
+                                        </InputGroup.Text>
+                                        <Form.Select
+                                            value={selectedMonth}
+                                            onChange={(e) => setSelectedMonth(e.target.value)}
+                                            className="form-select-custom"
+                                        >
+                                            {months.map(month => (
+                                                <option key={month} value={month}>{month}</option>
+                                            ))}
+                                        </Form.Select>
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                            <Col xs={12} md={4} className="mb-3 mb-md-0">
+                                <Form.Group>
+                                    <Form.Label className="form-label-custom d-flex align-items-center">
+                                        <FaUsers className="me-1" /> Department
+                                    </Form.Label>
+                                    <InputGroup className="input-group-custom">
+                                        <InputGroup.Text>
+                                            <FaUsers />
+                                        </InputGroup.Text>
+                                        <Form.Select
+                                            value={selectedDepartment}
+                                            onChange={(e) => setSelectedDepartment(e.target.value)}
+                                            className="form-select-custom"
+                                        >
+                                            {departments.map(dept => (
+                                                <option key={dept} value={dept}>{dept}</option>
+                                            ))}
+                                        </Form.Select>
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                            <Col xs={12} md={4} className="mb-3 mb-md-0">
+                                <Form.Group>
+                                    <Form.Label className="form-label-custom d-flex align-items-center">
+                                        <FaUser className="me-1" /> Employee
+                                    </Form.Label>
+                                    <InputGroup className="input-group-custom">
+                                        <InputGroup.Text>
+                                            <FaSearch />
+                                        </InputGroup.Text>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Search Employee..."
+                                            value={searchEmployee}
+                                            onChange={(e) => setSearchEmployee(e.target.value)}
+                                            className="form-control-custom"
+                                        />
+                                    </InputGroup>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col xs={12} className="text-end mt-3">
+                                <Button
+                                    className="btn-modal-cancel"
+                                    onClick={() => {
+                                        setSelectedMonth(months.length > 0 ? months[0] : '');
+                                        setSelectedDepartment('All');
+                                        setSearchEmployee('');
+                                    }}
                                 >
-                                    {months.map(month => (
-                                        <option key={month} value={month}>{month}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col xs={12} sm={6} md={4} className="mb-3 mb-md-0">
-                            <Form.Group>
-                                <Form.Label>Filter by Department</Form.Label>
-                                <Form.Select
-                                    value={selectedDepartment}
-                                    onChange={(e) => setSelectedDepartment(e.target.value)}
-                                    style={{ border: '1px solid #ced4da' }}
-                                >
-                                    {departments.map(dept => (
-                                        <option key={dept} value={dept}>{dept}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col xs={12} sm={6} md={4}>
-                            <Form.Group>
-                                <Form.Label>Search Employee</Form.Label>
-                                <div className="input-group">
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Employee name..."
-                                        value={searchEmployee}
-                                        onChange={(e) => setSearchEmployee(e.target.value)}
-                                        style={{ border: '1px solid #ced4da' }}
-                                    />
-                                    <Button variant="outline-secondary" style={{ borderColor: '#ced4da', color: '#023347' }}>
-                                        <FaSearch />
-                                    </Button>
-                                </div>
-                            </Form.Group>
-                        </Col>
-                    </Row>
+                                    <FaTimes className="me-1" /> Clear Filters
+                                </Button>
+                            </Col>
+                        </Row>
+                    </Card.Body>
+                )}
+            </Card>
 
                     <Tabs
                         id="payroll-reports-tabs"
@@ -385,279 +455,369 @@ const PayrollReports = () => {
                     >
                         {/* Monthly Tab */}
                         <Tab eventKey="monthly" title="Monthly Summary">
-                            <div className="d-none d-md-block">
-                                <Table striped bordered hover responsive>
-                                    <thead>
-                                        <tr>
-                                            <th>Month</th>
-                                            <th>Total Employees</th>
-                                            <th>Gross Pay</th>
-                                            <th>Deductions</th>
-                                            <th>Net Pay</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {monthlyData.map((data, index) => (
-                                            <tr key={index}>
-                                                <td>{data.month}</td>
-                                                <td>{data.totalEmployees}</td>
-                                                <td>{data.grossPay}</td>
-                                                <td>{data.deductions}</td>
-                                                <td>{data.netPay}</td>
-                                                <td>
-                                                    <Button
-                                                        variant="light"
-                                                        size="sm"
-                                                        onClick={() => handleMonthlyView(data)}
-                                                        style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                                                    >
-                                                        <FaEye className="me-1" />
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                            <div className="d-md-none">
-                                {monthlyData.map((data, index) => (
-                                    <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-                                        <Card.Body>
-                                            <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
-                                                <span>{data.month}</span>
-                                                <Button
-                                                    variant="light"
-                                                    size="sm"
-                                                    onClick={() => handleMonthlyView(data)}
-                                                    style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                                                >
-                                                    <FaEye />
-                                                </Button>
-                                            </Card.Title>
-                                            <Card.Text>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Employees:</span>
-                                                    <span>{data.totalEmployees}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Gross Pay:</span>
-                                                    <span>{data.grossPay}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Deductions:</span>
-                                                    <span>{data.deductions}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span>Net Pay:</span>
-                                                    <span>{data.netPay}</span>
-                                                </div>
-                                            </Card.Text>
-                                        </Card.Body>
-                                    </Card>
-                                ))}
-                            </div>
+                            <Card className="reports-table-card border-0 shadow-lg">
+                                <Card.Body className="p-0">
+                                    {/* Desktop Table */}
+                                    <div className="d-none d-md-block">
+                                        <div className="table-responsive">
+                                            <Table hover responsive className="payroll-reports-table">
+                                                <thead className="table-header">
+                                                    <tr>
+                                                        <th>Month</th>
+                                                        <th>Total Employees</th>
+                                                        <th>Gross Pay</th>
+                                                        <th>Deductions</th>
+                                                        <th>Net Pay</th>
+                                                        <th className="text-center">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {monthlyData.length > 0 ? (
+                                                        monthlyData.map((data, index) => (
+                                                            <tr key={index}>
+                                                                <td className="fw-semibold">{data.month}</td>
+                                                                <td>{data.totalEmployees}</td>
+                                                                <td className="fw-semibold text-success">{data.grossPay}</td>
+                                                                <td className="fw-semibold text-danger">{data.deductions}</td>
+                                                                <td className="fw-bold text-primary">{data.netPay}</td>
+                                                                <td className="text-center">
+                                                                    <Button
+                                                                        className="btn-action btn-view"
+                                                                        onClick={() => handleMonthlyView(data)}
+                                                                        title="View Details"
+                                                                    >
+                                                                        <FaEye />
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="6" className="text-center text-muted py-4">
+                                                                No monthly data available.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                    {/* Mobile Cards */}
+                                    <div className="d-md-none p-3">
+                                        {monthlyData.length > 0 ? (
+                                            monthlyData.map((data, index) => (
+                                                <Card key={index} className="mobile-card mb-3">
+                                                    <Card.Body className="mobile-card-body">
+                                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                                            <Card.Title className="h6 mb-0 fw-bold" style={{ color: '#505ece' }}>
+                                                                {data.month}
+                                                            </Card.Title>
+                                                            <Button
+                                                                className="btn-action btn-view"
+                                                                onClick={() => handleMonthlyView(data)}
+                                                                title="View"
+                                                            >
+                                                                <FaEye />
+                                                            </Button>
+                                                        </div>
+                                                        <div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Employees:</strong></span>
+                                                                <span>{data.totalEmployees}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Gross Pay:</strong></span>
+                                                                <span className="text-success">{data.grossPay}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Deductions:</strong></span>
+                                                                <span className="text-danger">{data.deductions}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between">
+                                                                <span><strong>Net Pay:</strong></span>
+                                                                <span className="fw-bold text-primary">{data.netPay}</span>
+                                                            </div>
+                                                        </div>
+                                                    </Card.Body>
+                                                </Card>
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-muted py-4">
+                                                No monthly data available.
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
                         </Tab>
 
                         {/* Department Tab */}
                         <Tab eventKey="department" title="Department Report">
-                            <div className="d-none d-md-block">
-                                <Table striped bordered hover responsive>
-                                    <thead style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-                                        <tr>
-                                            <th>Department</th>
-                                            <th>Employees</th>
-                                            <th>Total Salary</th>
-                                            <th>Avg Salary</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {departmentData.map((data, index) => (
-                                            <tr key={index}>
-                                                <td>{data.department}</td>
-                                                <td>{data.employees}</td>
-                                                <td>{data.totalSalary}</td>
-                                                <td>{data.avgSalary}</td>
-                                                <td>
-                                                    <Button
-                                                        variant="light"
-                                                        size="sm"
-                                                        onClick={() => handleDepartmentView(data)}
-                                                        style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                                                    >
-                                                        <FaEye className="me-1" />
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                            <div className="d-md-none">
-                                {departmentData.map((data, index) => (
-                                    <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-                                        <Card.Body>
-                                            <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
-                                                <span>{data.department}</span>
-                                                <Button
-                                                    variant="light"
-                                                    size="sm"
-                                                    onClick={() => handleDepartmentView(data)}
-                                                    style={{ color: '#023347', backgroundColor: '#e6f3f5' }}
-                                                >
-                                                    <FaEye />
-                                                </Button>
-                                            </Card.Title>
-                                            <Card.Text>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Employees:</span>
-                                                    <span>{data.employees}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Total Salary:</span>
-                                                    <span>{data.totalSalary}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span>Avg Salary:</span>
-                                                    <span>{data.avgSalary}</span>
-                                                </div>
-                                            </Card.Text>
-                                        </Card.Body>
-                                    </Card>
-                                ))}
-                            </div>
+                            <Card className="reports-table-card border-0 shadow-lg">
+                                <Card.Body className="p-0">
+                                    {/* Desktop Table */}
+                                    <div className="d-none d-md-block">
+                                        <div className="table-responsive">
+                                            <Table hover responsive className="payroll-reports-table">
+                                                <thead className="table-header">
+                                                    <tr>
+                                                        <th>Department</th>
+                                                        <th>Employees</th>
+                                                        <th>Total Salary</th>
+                                                        <th>Avg Salary</th>
+                                                        <th className="text-center">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {departmentData.length > 0 ? (
+                                                        departmentData.map((data, index) => (
+                                                            <tr key={index}>
+                                                                <td className="fw-semibold">{data.department}</td>
+                                                                <td>{data.employees}</td>
+                                                                <td className="fw-bold text-primary">{data.totalSalary}</td>
+                                                                <td className="fw-semibold">{data.avgSalary}</td>
+                                                                <td className="text-center">
+                                                                    <Button
+                                                                        className="btn-action btn-view"
+                                                                        onClick={() => handleDepartmentView(data)}
+                                                                        title="View Details"
+                                                                    >
+                                                                        <FaEye />
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="5" className="text-center text-muted py-4">
+                                                                No department data available.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                    {/* Mobile Cards */}
+                                    <div className="d-md-none p-3">
+                                        {departmentData.length > 0 ? (
+                                            departmentData.map((data, index) => (
+                                                <Card key={index} className="mobile-card mb-3">
+                                                    <Card.Body className="mobile-card-body">
+                                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                                            <Card.Title className="h6 mb-0 fw-bold" style={{ color: '#505ece' }}>
+                                                                {data.department}
+                                                            </Card.Title>
+                                                            <Button
+                                                                className="btn-action btn-view"
+                                                                onClick={() => handleDepartmentView(data)}
+                                                                title="View"
+                                                            >
+                                                                <FaEye />
+                                                            </Button>
+                                                        </div>
+                                                        <div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Employees:</strong></span>
+                                                                <span>{data.employees}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Total Salary:</strong></span>
+                                                                <span className="fw-bold text-primary">{data.totalSalary}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between">
+                                                                <span><strong>Avg Salary:</strong></span>
+                                                                <span>{data.avgSalary}</span>
+                                                            </div>
+                                                        </div>
+                                                    </Card.Body>
+                                                </Card>
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-muted py-4">
+                                                No department data available.
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
                         </Tab>
 
                         {/* Employee History */}
                         <Tab eventKey="employee" title="Employee History">
-                            <div className="d-none d-md-block">
-                                <Table striped bordered hover responsive>
-                                    <thead style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-                                        <tr>
-                                            <th>Employee</th>
-                                            <th>Month</th>
-                                            <th>Gross Pay</th>
-                                            <th>Deductions</th>
-                                            <th>Net Pay</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredEmployeeHistory.map((data, index) => (
-                                            <tr key={index}>
-                                                <td>{data.employee}</td>
-                                                <td>{data.month}</td>
-                                                <td>{data.grossPay}</td>
-                                                <td>{data.deductions}</td>
-                                                <td>{data.netPay}</td>
-                                                <td>
-                                                    <span className={`badge ${data.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
-                                                        {data.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                            <div className="d-md-none">
-                                {filteredEmployeeHistory.map((data, index) => (
-                                    <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-                                        <Card.Body>
-                                            <Card.Title className="d-flex justify-content-between align-items-center" style={{ color: '#023347' }}>
-                                                <span>{data.employee}</span>
-                                                <span className={`badge ${data.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
-                                                    {data.status}
-                                                </span>
-                                            </Card.Title>
-                                            <Card.Text>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Month:</span>
-                                                    <span>{data.month}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Gross Pay:</span>
-                                                    <span>{data.grossPay}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Deductions:</span>
-                                                    <span>{data.deductions}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span>Net Pay:</span>
-                                                    <span>{data.netPay}</span>
-                                                </div>
-                                            </Card.Text>
-                                        </Card.Body>
-                                    </Card>
-                                ))}
-                            </div>
+                            <Card className="reports-table-card border-0 shadow-lg">
+                                <Card.Body className="p-0">
+                                    {/* Desktop Table */}
+                                    <div className="d-none d-md-block">
+                                        <div className="table-responsive">
+                                            <Table hover responsive className="payroll-reports-table">
+                                                <thead className="table-header">
+                                                    <tr>
+                                                        <th>Employee</th>
+                                                        <th>Month</th>
+                                                        <th>Gross Pay</th>
+                                                        <th>Deductions</th>
+                                                        <th>Net Pay</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredEmployeeHistory.length > 0 ? (
+                                                        filteredEmployeeHistory.map((data, index) => (
+                                                            <tr key={index}>
+                                                                <td className="fw-semibold">{data.employee}</td>
+                                                                <td>{data.month}</td>
+                                                                <td className="fw-semibold text-success">{data.grossPay}</td>
+                                                                <td className="fw-semibold text-danger">{data.deductions}</td>
+                                                                <td className="fw-bold text-primary">{data.netPay}</td>
+                                                                <td>
+                                                                    <Badge className={getStatusBadgeClass(data.status)}>
+                                                                        {data.status}
+                                                                    </Badge>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="6" className="text-center text-muted py-4">
+                                                                No employee history found.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                    {/* Mobile Cards */}
+                                    <div className="d-md-none p-3">
+                                        {filteredEmployeeHistory.length > 0 ? (
+                                            filteredEmployeeHistory.map((data, index) => (
+                                                <Card key={index} className="mobile-card mb-3">
+                                                    <Card.Body className="mobile-card-body">
+                                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                                            <Card.Title className="h6 mb-0 fw-bold" style={{ color: '#505ece' }}>
+                                                                {data.employee}
+                                                            </Card.Title>
+                                                            <Badge className={getStatusBadgeClass(data.status)}>
+                                                                {data.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Month:</strong></span>
+                                                                <span>{data.month}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Gross Pay:</strong></span>
+                                                                <span className="text-success">{data.grossPay}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Deductions:</strong></span>
+                                                                <span className="text-danger">{data.deductions}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between">
+                                                                <span><strong>Net Pay:</strong></span>
+                                                                <span className="fw-bold text-primary">{data.netPay}</span>
+                                                            </div>
+                                                        </div>
+                                                    </Card.Body>
+                                                </Card>
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-muted py-4">
+                                                No employee history found.
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
                         </Tab>
 
                         {/* Tax & Deduction */}
                         <Tab eventKey="tax" title="Tax & Deduction Report">
-                            <div className="d-none d-md-block">
-                                <Table striped bordered hover responsive>
-                                    <thead style={{ backgroundColor: '#023347', color: '#ffffff' }}>
-                                        <tr>
-                                            <th>Month</th>
-                                            <th>Tax</th>
-                                            <th>PF</th>
-                                            <th>Insurance</th>
-                                            <th>Other</th>
-                                            <th>Total Deductions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {taxDeductionData.map((data, index) => (
-                                            <tr key={index}>
-                                                <td>{data.month}</td>
-                                                <td>{data.tax}</td>
-                                                <td>{data.pf}</td>
-                                                <td>{data.insurance}</td>
-                                                <td>{data.other}</td>
-                                                <td>{data.totalDeductions}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                            <div className="d-md-none">
-                                {taxDeductionData.map((data, index) => (
-                                    <Card key={index} className="mb-3" style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
-                                        <Card.Body>
-                                            <Card.Title style={{ color: '#023347' }}>{data.month}</Card.Title>
-                                            <Card.Text>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Tax:</span>
-                                                    <span>{data.tax}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>PF:</span>
-                                                    <span>{data.pf}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Insurance:</span>
-                                                    <span>{data.insurance}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span>Other:</span>
-                                                    <span>{data.other}</span>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span>Total Deductions:</span>
-                                                    <span>{data.totalDeductions}</span>
-                                                </div>
-                                            </Card.Text>
-                                        </Card.Body>
-                                    </Card>
-                                ))}
-                            </div>
+                            <Card className="reports-table-card border-0 shadow-lg">
+                                <Card.Body className="p-0">
+                                    {/* Desktop Table */}
+                                    <div className="d-none d-md-block">
+                                        <div className="table-responsive">
+                                            <Table hover responsive className="payroll-reports-table">
+                                                <thead className="table-header">
+                                                    <tr>
+                                                        <th>Month</th>
+                                                        <th>Tax</th>
+                                                        <th>PF</th>
+                                                        <th>Insurance</th>
+                                                        <th>Other</th>
+                                                        <th>Total Deductions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {taxDeductionData.length > 0 ? (
+                                                        taxDeductionData.map((data, index) => (
+                                                            <tr key={index}>
+                                                                <td className="fw-semibold">{data.month}</td>
+                                                                <td className="text-danger">{data.tax}</td>
+                                                                <td className="text-danger">{data.pf}</td>
+                                                                <td className="text-danger">{data.insurance}</td>
+                                                                <td className="text-danger">{data.other}</td>
+                                                                <td className="fw-bold text-danger">{data.totalDeductions}</td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="6" className="text-center text-muted py-4">
+                                                                No tax deduction data available.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                    {/* Mobile Cards */}
+                                    <div className="d-md-none p-3">
+                                        {taxDeductionData.length > 0 ? (
+                                            taxDeductionData.map((data, index) => (
+                                                <Card key={index} className="mobile-card mb-3">
+                                                    <Card.Body className="mobile-card-body">
+                                                        <Card.Title className="h6 mb-3 fw-bold" style={{ color: '#505ece' }}>
+                                                            {data.month}
+                                                        </Card.Title>
+                                                        <div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Tax:</strong></span>
+                                                                <span className="text-danger">{data.tax}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>PF:</strong></span>
+                                                                <span className="text-danger">{data.pf}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Insurance:</strong></span>
+                                                                <span className="text-danger">{data.insurance}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span><strong>Other:</strong></span>
+                                                                <span className="text-danger">{data.other}</span>
+                                                            </div>
+                                                            <div className="d-flex justify-content-between">
+                                                                <span><strong>Total Deductions:</strong></span>
+                                                                <span className="fw-bold text-danger">{data.totalDeductions}</span>
+                                                            </div>
+                                                        </div>
+                                                    </Card.Body>
+                                                </Card>
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-muted py-4">
+                                                No tax deduction data available.
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
                         </Tab>
                     </Tabs>
-                </Card.Body>
-            </Card>
 
             {/* Monthly Modal */}
             <Modal
@@ -666,40 +826,50 @@ const PayrollReports = () => {
                 onHide={handleCloseMonthlyModal}
                 onExited={handleMonthlyModalExited}
                 size="lg"
+                centered
+                className="payroll-reports-modal"
             >
-                <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+                <Modal.Header closeButton className="modal-header-custom">
                     <Modal.Title>Monthly Details - {selectedMonthlyData?.month}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+                <Modal.Body className="modal-body-custom">
                     {selectedMonthlyData && (
                         <div>
-                            <Row className="mb-3">
+                            <Row className="mb-4">
                                 <Col xs={12} md={6} className="mb-3 mb-md-0">
-                                    <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+                                    <Card className="info-card">
                                         <Card.Body>
-                                            <Card.Title style={{ color: '#023347' }}>Employee Information</Card.Title>
-                                            <p><strong>Total Employees:</strong> {selectedMonthlyData.totalEmployees}</p>
-                                            <p><strong>Month:</strong> {selectedMonthlyData.month}</p>
+                                            <Card.Title>Employee Information</Card.Title>
+                                            <Table borderless>
+                                                <tbody>
+                                                    <tr><td><strong>Total Employees:</strong></td><td>{selectedMonthlyData.totalEmployees}</td></tr>
+                                                    <tr><td><strong>Month:</strong></td><td>{selectedMonthlyData.month}</td></tr>
+                                                </tbody>
+                                            </Table>
                                         </Card.Body>
                                     </Card>
                                 </Col>
                                 <Col xs={12} md={6}>
-                                    <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+                                    <Card className="info-card">
                                         <Card.Body>
-                                            <Card.Title style={{ color: '#023347' }}>Financial Summary</Card.Title>
-                                            <p><strong>Gross Pay:</strong> {selectedMonthlyData.grossPay}</p>
-                                            <p><strong>Deductions:</strong> {selectedMonthlyData.deductions}</p>
-                                            <p><strong>Net Pay:</strong> {selectedMonthlyData.netPay}</p>
+                                            <Card.Title>Financial Summary</Card.Title>
+                                            <Table borderless>
+                                                <tbody>
+                                                    <tr><td><strong>Gross Pay:</strong></td><td className="text-success">{selectedMonthlyData.grossPay}</td></tr>
+                                                    <tr><td><strong>Deductions:</strong></td><td className="text-danger">{selectedMonthlyData.deductions}</td></tr>
+                                                    <tr><td><strong>Net Pay:</strong></td><td className="fw-bold text-primary">{selectedMonthlyData.netPay}</td></tr>
+                                                </tbody>
+                                            </Table>
                                         </Card.Body>
                                     </Card>
                                 </Col>
                             </Row>
-                            <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+                            <Card className="border-0 shadow-sm">
                                 <Card.Body>
-                                    <Card.Title style={{ color: '#023347' }}>Employee Breakdown</Card.Title>
+                                    <Card.Title className="fw-bold" style={{ color: '#505ece' }}>Employee Breakdown</Card.Title>
                                     <div className="table-responsive">
-                                        <Table striped bordered hover>
-                                            <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+                                        <Table hover responsive className="detail-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Employee Name</th>
                                                     <th>Department</th>
@@ -712,15 +882,15 @@ const PayrollReports = () => {
                                             <tbody>
                                                 {selectedMonthlyData.employeeBreakdown.map((emp, index) => (
                                                     <tr key={index}>
-                                                        <td>{emp.employee}</td>
+                                                        <td className="fw-semibold">{emp.employee}</td>
                                                         <td>{emp.department}</td>
-                                                        <td>{emp.grossPay}</td>
-                                                        <td>{emp.deductions}</td>
-                                                        <td>{emp.netPay}</td>
+                                                        <td className="text-success">{emp.grossPay}</td>
+                                                        <td className="text-danger">{emp.deductions}</td>
+                                                        <td className="fw-bold text-primary">{emp.netPay}</td>
                                                         <td>
-                                                            <span className={`badge ${emp.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
+                                                            <Badge className={getStatusBadgeClass(emp.status)}>
                                                                 {emp.status}
-                                                            </span>
+                                                            </Badge>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -732,12 +902,12 @@ const PayrollReports = () => {
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8' }}>
-                    <Button variant="secondary" onClick={handleCloseMonthlyModal} className="w-100 w-md-auto mb-2 mb-md-0">
+                <Modal.Footer className="modal-footer-custom">
+                    <Button className="btn-modal-cancel" onClick={handleCloseMonthlyModal}>
                         Close
                     </Button>
-                    <Button style={{ backgroundColor: '#023347', border: 'none' }} className="w-100 w-md-auto">
-                        Export Details
+                    <Button className="btn-modal-export">
+                        <FaFilePdf className="me-1" /> Export Details
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -749,39 +919,49 @@ const PayrollReports = () => {
                 onHide={handleCloseDepartmentModal}
                 onExited={handleDepartmentModalExited}
                 size="lg"
+                centered
+                className="payroll-reports-modal"
             >
-                <Modal.Header closeButton style={{ backgroundColor: '#023347', color: '#ffffff' }}>
+                <Modal.Header closeButton className="modal-header-custom">
                     <Modal.Title>Department Details - {selectedDepartmentData?.department}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body style={{ backgroundColor: '#f0f7f8' }}>
+                <Modal.Body className="modal-body-custom">
                     {selectedDepartmentData && (
                         <div>
-                            <Row className="mb-3">
+                            <Row className="mb-4">
                                 <Col xs={12} md={6} className="mb-3 mb-md-0">
-                                    <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+                                    <Card className="info-card">
                                         <Card.Body>
-                                            <Card.Title style={{ color: '#023347' }}>Department Information</Card.Title>
-                                            <p><strong>Department:</strong> {selectedDepartmentData.department}</p>
-                                            <p><strong>Employees:</strong> {selectedDepartmentData.employees}</p>
+                                            <Card.Title>Department Information</Card.Title>
+                                            <Table borderless>
+                                                <tbody>
+                                                    <tr><td><strong>Department:</strong></td><td>{selectedDepartmentData.department}</td></tr>
+                                                    <tr><td><strong>Employees:</strong></td><td>{selectedDepartmentData.employees}</td></tr>
+                                                </tbody>
+                                            </Table>
                                         </Card.Body>
                                     </Card>
                                 </Col>
                                 <Col xs={12} md={6}>
-                                    <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+                                    <Card className="info-card">
                                         <Card.Body>
-                                            <Card.Title style={{ color: '#023347' }}>Salary Information</Card.Title>
-                                            <p><strong>Total Salary:</strong> {selectedDepartmentData.totalSalary}</p>
-                                            <p><strong>Average Salary:</strong> {selectedDepartmentData.avgSalary}</p>
+                                            <Card.Title>Salary Information</Card.Title>
+                                            <Table borderless>
+                                                <tbody>
+                                                    <tr><td><strong>Total Salary:</strong></td><td className="fw-bold text-primary">{selectedDepartmentData.totalSalary}</td></tr>
+                                                    <tr><td><strong>Average Salary:</strong></td><td>{selectedDepartmentData.avgSalary}</td></tr>
+                                                </tbody>
+                                            </Table>
                                         </Card.Body>
                                     </Card>
                                 </Col>
                             </Row>
-                            <Card style={{ backgroundColor: '#e6f3f5', border: 'none' }}>
+                            <Card className="border-0 shadow-sm">
                                 <Card.Body>
-                                    <Card.Title style={{ color: '#023347' }}>Employees in {selectedDepartmentData.department}</Card.Title>
+                                    <Card.Title className="fw-bold" style={{ color: '#505ece' }}>Employees in {selectedDepartmentData.department}</Card.Title>
                                     <div className="table-responsive">
-                                        <Table striped bordered hover>
-                                            <thead style={{ backgroundColor: '#2a8e9c', color: '#ffffff' }}>
+                                        <Table hover responsive className="detail-table">
+                                            <thead>
                                                 <tr>
                                                     <th>Employee Name</th>
                                                     <th>Month</th>
@@ -796,15 +976,15 @@ const PayrollReports = () => {
                                                     const uiMonth = apiMonthToUIMonth(emp.month);
                                                     return (
                                                         <tr key={index}>
-                                                            <td>{emp.employee}</td>
+                                                            <td className="fw-semibold">{emp.employee}</td>
                                                             <td>{uiMonth}</td>
-                                                            <td>{emp.grossPay}</td>
-                                                            <td>{emp.deductions}</td>
-                                                            <td>{emp.netPay}</td>
+                                                            <td className="text-success">{emp.grossPay}</td>
+                                                            <td className="text-danger">{emp.deductions}</td>
+                                                            <td className="fw-bold text-primary">{emp.netPay}</td>
                                                             <td>
-                                                                <span className={`badge ${emp.status === 'Paid' ? 'bg-success' : 'bg-warning'}`}>
+                                                                <Badge className={getStatusBadgeClass(emp.status)}>
                                                                     {emp.status}
-                                                                </span>
+                                                                </Badge>
                                                             </td>
                                                         </tr>
                                                     );
@@ -817,16 +997,16 @@ const PayrollReports = () => {
                         </div>
                     )}
                 </Modal.Body>
-                <Modal.Footer className="flex-column flex-md-row" style={{ backgroundColor: '#f0f7f8' }}>
-                    <Button variant="secondary" onClick={handleCloseDepartmentModal} className="w-100 w-md-auto mb-2 mb-md-0">
+                <Modal.Footer className="modal-footer-custom">
+                    <Button className="btn-modal-cancel" onClick={handleCloseDepartmentModal}>
                         Close
                     </Button>
-                    <Button style={{ backgroundColor: '#023347', border: 'none' }} className="w-100 w-md-auto">
-                        Export Details
+                    <Button className="btn-modal-export">
+                        <FaFilePdf className="me-1" /> Export Details
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </div>
+        </Container>
     );
 };
 

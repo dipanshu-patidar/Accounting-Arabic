@@ -1,0 +1,317 @@
+/* Income Statement Report Page Container */
+.income-statement-container {
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Title Styling */
+.income-statement-title {
+  color: #505ece !important;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.income-statement-title i {
+  color: #505ece;
+}
+
+.income-statement-subtitle {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Summary Cards */
+.summary-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  padding: 1.5rem;
+  background: white !important;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.summary-card-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #343a40;
+}
+
+.summary-card-revenue .summary-card-value {
+  color: #28a745;
+}
+
+.summary-card-profit .summary-card-value {
+  color: #17a2b8;
+}
+
+.summary-card-income .summary-card-value {
+  color: #505ece;
+}
+
+.summary-card-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f8f9fa;
+  color: #495057;
+}
+
+/* Filter Section */
+.filter-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-select {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+  min-width: 180px;
+}
+
+.filter-select:focus {
+  border-color: #505ece;
+  box-shadow: 0 0 0 0.2rem rgba(80, 94, 206, 0.15);
+}
+
+.btn-filter,
+.btn-export-pdf,
+.btn-export-excel {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-filter {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: white;
+}
+
+.btn-filter:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-export-pdf {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white;
+}
+
+.btn-export-pdf:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.btn-export-excel {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: white;
+}
+
+.btn-export-excel:hover {
+  background-color: #218838 !important;
+  border-color: #218838 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+/* Table Cards */
+.table-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+  margin-bottom: 1.5rem;
+}
+
+.table-card-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+}
+
+.table-card-header h5 {
+  color: white;
+  font-weight: 600;
+  margin: 0;
+}
+
+.table-card-body {
+  padding: 1.5rem;
+}
+
+.income-statement-table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-header {
+  background: linear-gradient(90deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+}
+
+.table-header th {
+  color: white !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  border: none !important;
+  padding: 1rem 0.75rem;
+}
+
+.income-statement-table tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.income-statement-table tbody tr:hover {
+  background-color: rgba(80, 94, 206, 0.05);
+}
+
+.income-statement-table tbody td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+}
+
+.income-statement-table tbody td.amount-cell {
+  font-weight: 600;
+  color: #28a745;
+  text-align: right;
+}
+
+.income-statement-table tbody td.percentage-cell {
+  text-align: right;
+  color: #6c757d;
+}
+
+.income-statement-table tbody tr.total-row {
+  background-color: rgba(80, 94, 206, 0.1);
+  font-weight: 600;
+}
+
+/* Income Summary Card */
+.income-summary-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  background: white !important;
+  border: none;
+}
+
+.income-summary-header {
+  background: linear-gradient(135deg, #505ece 0%, #3d47b8 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border: none;
+}
+
+.income-summary-header h5 {
+  color: white;
+  font-weight: 600;
+  margin: 0;
+}
+
+.income-summary-body {
+  padding: 1.5rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-row-total {
+  border-top: 2px solid #505ece;
+  border-bottom: 2px solid #505ece;
+  font-weight: 600;
+  background-color: rgba(80, 94, 206, 0.05);
+  padding: 1rem 0;
+}
+
+.summary-label {
+  color: #495057;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #343a40;
+}
+
+.summary-value-negative {
+  color: #dc3545;
+}
+
+.summary-value-positive {
+  color: #28a745;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #adb5bd;
+  margin-bottom: 1rem;
+}
+
+/* Loading Spinner */
+.spinner-custom {
+  color: #505ece;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .income-statement-title {
+    font-size: 1.5rem;
+  }
+
+  .income-statement-table {
+    font-size: 14px;
+  }
+
+  .summary-card {
+    margin-bottom: 1rem;
+  }
+}
+
