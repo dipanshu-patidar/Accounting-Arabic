@@ -1,8 +1,10 @@
 // SuperAdminPasswordRequests.js
 import React, { useState, useEffect } from "react";
-import { Table, Button, Badge, Modal, Form, Alert } from "react-bootstrap";
+import { Container, Card, Table, Button, Badge, Modal, Form, Alert, Spinner } from "react-bootstrap";
+import { FaKey, FaUser, FaEnvelope, FaCalendarAlt, FaCheckCircle, FaTimesCircle, FaFileAlt } from "react-icons/fa";
 import { toast } from "react-toastify";
 import axiosInstance from "../../../Api/axiosInstance";
+import "./Managepassword.css";
 
 const SuperAdminPasswordRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -85,84 +87,101 @@ const SuperAdminPasswordRequests = () => {
   };
 
   const renderStatus = (status) => {
-    if (status === "Pending") return <Badge bg="warning">Pending</Badge>;
-    if (status === "Approved") return <Badge bg="success">Changed</Badge>;
-    if (status === "Rejected") return <Badge bg="danger">Rejected</Badge>;
-    return <Badge bg="secondary">{status}</Badge>;
+    if (status === "Pending") return <Badge className="status-badge badge-warning">Pending</Badge>;
+    if (status === "Approved") return <Badge className="status-badge badge-success">Changed</Badge>;
+    if (status === "Rejected") return <Badge className="status-badge badge-danger">Rejected</Badge>;
+    return <Badge className="status-badge badge-secondary">{status}</Badge>;
   };
 
   const renderEmailStatus = (emailSent) => {
-    return emailSent ? <Badge bg="info">Email Sent</Badge> : null;
+    return emailSent ? <Badge className="status-badge badge-info">Email Sent</Badge> : null;
   };
 
   return (
-    <div className="p-2">
-      <h4 className="mb-3">Manage Password Requests</h4>
+    <Container fluid className="manage-password-container py-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+      {/* Header Section */}
+      <div className="manage-password-header mb-4">
+        <h4 className="fw-bold d-flex align-items-center gap-2 manage-password-title">
+          <FaKey style={{ color: '#505ece' }} /> Manage Password Requests
+        </h4>
+        <p className="text-muted mb-0">Review and manage password change requests from companies</p>
+      </div>
 
       {showEmailSentAlert && (
         <Alert
           variant="success"
           onClose={() => setShowEmailSentAlert(false)}
           dismissible
+          className="mb-4"
         >
           New password has been sent to {selectedRequest?.email}
         </Alert>
       )}
 
-      <Table bordered hover className="shadow-sm">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Company</th>
-            <th>Email</th>
-            <th>Request Date</th>
-            <th>Status</th>
-            <th>Reason</th>
-            <th>Email Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
+      {/* Table Card */}
+      <Card className="manage-password-table-card">
+        <Card.Header className="manage-password-table-header">
+          <h6 className="mb-0 fw-bold">Password Change Requests</h6>
+        </Card.Header>
+        <Card.Body>
           {loading ? (
-            <tr>
-              <td colSpan="8" className="text-center">Loading...</td>
-            </tr>
+            <div className="text-center py-5">
+              <Spinner animation="border" variant="primary" className="spinner-custom" />
+              <p className="mt-3 text-muted">Loading requests...</p>
+            </div>
           ) : requests.length === 0 ? (
-            <tr>
-              <td colSpan="8" className="text-center text-muted">
-                No password change requests found.
-              </td>
-            </tr>
+            <div className="text-center py-5 empty-state">
+              <FaFileAlt style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+              <p className="text-muted mb-0">No password change requests found.</p>
+            </div>
           ) : (
-            requests.map((req) => (
-              <tr key={req.id}>
-                <td>{req.id}</td>
-                <td>{req.company}</td>
-                <td>{req.email}</td>
-                <td>{req.date}</td>
-                <td>{renderStatus(req.status)}</td>
-                <td>{req.reason}</td>
-                <td>{renderEmailStatus(req.emailSent)}</td>
-                <td>
-                  {req.status === "Pending" && (
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => {
-                        setSelectedRequest(req);
-                        setShowModal(true);
-                      }}
-                      disabled={loading}
-                    >
-                      Review
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))
+            <div className="table-responsive">
+              <Table className="manage-password-table" hover responsive>
+                <thead className="manage-password-table-thead">
+                  <tr>
+                    <th>#</th>
+                    <th>Company</th>
+                    <th>Email</th>
+                    <th>Request Date</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Email Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((req) => (
+                    <tr key={req.id}>
+                      <td>{req.id}</td>
+                      <td><strong>{req.company}</strong></td>
+                      <td>{req.email}</td>
+                      <td>{req.date}</td>
+                      <td>{renderStatus(req.status)}</td>
+                      <td>{req.reason || <span className="text-muted">—</span>}</td>
+                      <td>{renderEmailStatus(req.emailSent)}</td>
+                      <td>
+                        {req.status === "Pending" && (
+                          <Button
+                            className="btn-review"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRequest(req);
+                              setShowModal(true);
+                            }}
+                            disabled={loading}
+                          >
+                            Review
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
           )}
-        </tbody>
-      </Table>
+        </Card.Body>
+      </Card>
 
       {/* Approve/Reject Modal */}
       <Modal
@@ -172,40 +191,73 @@ const SuperAdminPasswordRequests = () => {
           setNewPassword("");
         }}
         centered
+        size="lg"
       >
-        <Modal.Header closeButton>
-          <Modal.Title>Review Password Change Request</Modal.Title>
+        <Modal.Header className="modal-header-gradient">
+          <Modal.Title className="text-white">Review Password Change Request</Modal.Title>
+          <button type="button" className="btn-close btn-close-white" onClick={() => {
+            setShowModal(false);
+            setNewPassword("");
+          }} aria-label="Close"></button>
         </Modal.Header>
-        <Modal.Body>
-          <p>
-            <b>Company:</b> {selectedRequest?.company}
-          </p>
-          <p>
-            <b>Email:</b> {selectedRequest?.email}
-          </p>
-          <p>
-            <b>Reason:</b> {selectedRequest?.reason}
-          </p>
-          <Form.Group className="mt-3">
-            <Form.Label>New Password</Form.Label>
-            <Form.Control
-              type="text"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
-            />
-          </Form.Group>
+        <Modal.Body className="modal-body-custom">
+          {selectedRequest && (
+            <div>
+              <div className="mb-3">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <FaUser style={{ color: '#505ece' }} />
+                  <strong>Company:</strong>
+                </div>
+                <p className="ms-4 mb-3">{selectedRequest.company}</p>
+              </div>
+              <div className="mb-3">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <FaEnvelope style={{ color: '#505ece' }} />
+                  <strong>Email:</strong>
+                </div>
+                <p className="ms-4 mb-3">{selectedRequest.email}</p>
+              </div>
+              <div className="mb-3">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <FaFileAlt style={{ color: '#505ece' }} />
+                  <strong>Reason:</strong>
+                </div>
+                <p className="ms-4 mb-3">{selectedRequest.reason || <span className="text-muted">No reason provided</span>}</p>
+              </div>
+              <Form.Group className="mt-4">
+                <Form.Label className="fw-bold">New Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="form-control-custom"
+                />
+              </Form.Group>
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={() => {
+              setShowModal(false);
+              setNewPassword("");
+            }}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
           <Button
             variant="danger"
             onClick={() => handleAction("reject")}
             disabled={loading}
+            className="btn-reject"
           >
-            Reject
+            {loading ? "Processing..." : "Reject"}
           </Button>
           <Button
-            variant="success"
+            className="btn-approve"
             onClick={() => handleAction("approve")}
             disabled={!newPassword.trim() || loading}
           >
@@ -213,7 +265,7 @@ const SuperAdminPasswordRequests = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

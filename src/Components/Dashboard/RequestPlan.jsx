@@ -2,10 +2,20 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
+  Container,
+  Card,
+  Table,
+  Button,
+  Badge,
+  Spinner,
+  Alert,
+} from "react-bootstrap";
+import {
   FaEnvelopeOpenText,
   FaCheck,
   FaTimes,
   FaEnvelope,
+  FaFileAlt,
 } from "react-icons/fa";
 import "./RequestPlan.css";
 import axiosInstance from "../../Api/axiosInstance"; // ✅ Use your shared axios instance
@@ -121,167 +131,148 @@ const RequestPlan = () => {
     switch (status) {
       case "Approved":
         return (
-          <span className="badge bg-success px-1 px-sm-2 py-1 rounded-pill">
+          <Badge className="status-badge badge-success">
             Approved
-          </span>
+          </Badge>
         );
       case "Pending":
         return (
-          <span className="badge bg-warning text-dark px-1 px-sm-2 py-1 rounded-pill">
+          <Badge className="status-badge badge-warning">
             Pending
-          </span>
+          </Badge>
         );
       case "Rejected":
         return (
-          <span className="badge bg-danger px-1 px-sm-2 py-1 rounded-pill">
+          <Badge className="status-badge badge-danger">
             Rejected
-          </span>
+          </Badge>
         );
       default:
         return (
-          <span className="badge bg-secondary px-1 px-sm-2 py-1 rounded-pill">
+          <Badge className="status-badge badge-secondary">
             {status}
-          </span>
+          </Badge>
         );
     }
   };
 
   const renderActionButtons = (status, index, id) => {
-    // ✅ Removed the actionLoading state. We don't need it anymore.
-    // The UI updates are instant and optimistic.
     return (
       <div className="d-flex gap-2 justify-content-center flex-nowrap">
-        <button
-          className={`btn ${
-            status === "Approved" ? "btn-success" : "btn-outline-success"
-          } btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center`}
-          disabled={status === "Approved"} // Disable button if already approved
+        <Button
+          className={`btn-approve-action ${
+            status === "Approved" ? "approved" : ""
+          }`}
+          size="sm"
+          disabled={status === "Approved"}
           onClick={() => handleAction(index, "Approved")}
-          style={{ minWidth: "90px", height: "32px" }}
         >
-          <FaCheck className="me-1" size={12} /> Approve
-        </button>
-        <button
-          className={`btn ${
-            status === "Rejected" ? "btn-danger" : "btn-outline-danger"
-          } btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center`}
-          disabled={status === "Rejected"} // Disable button if already rejected
+          <FaCheck className="me-1" /> Approve
+        </Button>
+        <Button
+          className={`btn-reject-action ${
+            status === "Rejected" ? "rejected" : ""
+          }`}
+          variant="danger"
+          size="sm"
+          disabled={status === "Rejected"}
           onClick={() => handleAction(index, "Rejected")}
-          style={{ minWidth: "90px", height: "32px" }}
         >
-          <FaTimes className="me-1" size={12} /> Reject
-        </button>
+          <FaTimes className="me-1" /> Reject
+        </Button>
       </div>
     );
   };
 
   if (loading) {
     return (
-      <div
-        className="container-fluid p-3 p-md-4 bg-light d-flex justify-content-center align-items-center"
-        style={{ height: "80vh" }}
-      >
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-2">Loading requested plans...</p>
+      <Container fluid className="request-plan-container py-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading requested plans...</p>
         </div>
-      </div>
+      </Container>
     );
   }
 
   return (
-    <div className="container-fluid p-3 p-md-4">
-      <div className="mb-4">
-        <div className="d-flex align-items-center mb-3">
-          <FaEnvelopeOpenText size={24} className="text-primary me-2" />
-          <h4 className="fw-bold m-0">Requested Plans</h4>
-        </div>
+    <Container fluid className="request-plan-container py-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+      {/* Header Section */}
+      <div className="request-plan-header mb-4">
+        <h4 className="fw-bold d-flex align-items-center gap-2 request-plan-title">
+          <FaEnvelopeOpenText style={{ color: '#505ece' }} /> Requested Plans
+        </h4>
+        <p className="text-muted mb-0">Review and manage plan requests from companies</p>
+      </div>
 
-        {/* ✅ Show a more specific error message */}
-        {apiError && (
-          <div
-            className="alert alert-danger alert-dismissible fade show mb-4"
-            role="alert"
-          >
-            There was a problem fetching your plan requests from the server. Please try refreshing the page or contact support if the issue persists.
-            <button
-              type="button"
-              className="btn-close"
-              data-bs-dismiss="alert"
-              aria-label="Close"
-            ></button>
-          </div>
-        )}
+      {/* Error Alert */}
+      {apiError && (
+        <Alert variant="danger" dismissible className="mb-4">
+          There was a problem fetching your plan requests from the server. Please try refreshing the page or contact support if the issue persists.
+        </Alert>
+      )}
 
-        <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
-          <div className="table-responsive">
-            <table className="table table-hover mb-0 align-middle">
-              <thead className="">
-                <tr>
-                  <th className="px-2 px-sm-3 py-3 d-none d-sm-table-cell">
-                    Company
-                  </th>
-                  <th className="px-2 px-sm-3 py-3 d-none d-md-table-cell">
-                    Email
-                  </th>
-                  <th className="px-2 px-sm-3 py-3">Plan</th>
-                  <th className="px-2 px-sm-3 py-3 d-none d-lg-table-cell">
-                    Billing
-                  </th>
-                  <th className="px-2 px-sm-3 py-3 d-none d-lg-table-cell">
-                    Date
-                  </th>
-                  <th className="px-2 px-sm-3 py-3">Status</th>
-                  <th className="px-2 px-sm-3 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {plans.length > 0 ? (
-                  plans.map((user, idx) => (
+      {/* Table Card */}
+      <Card className="request-plan-table-card">
+        <Card.Header className="request-plan-table-header">
+          <h6 className="mb-0 fw-bold">Plan Requests</h6>
+        </Card.Header>
+        <Card.Body>
+          {plans.length > 0 ? (
+            <div className="table-responsive">
+              <Table className="request-plan-table" hover responsive>
+                <thead className="request-plan-table-thead">
+                  <tr>
+                    <th className="d-none d-sm-table-cell">Company</th>
+                    <th className="d-none d-md-table-cell">Email</th>
+                    <th>Plan</th>
+                    <th className="d-none d-lg-table-cell">Billing</th>
+                    <th className="d-none d-lg-table-cell">Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {plans.map((user, idx) => (
                     <tr key={user.id || idx}>
-                      <td className="px-2 px-sm-3 py-3 d-none d-sm-table-cell">
-                        {user.company}
+                      <td className="d-none d-sm-table-cell">
+                        <strong>{user.company}</strong>
                       </td>
                       <td className="d-none d-md-table-cell">{user.email}</td>
                       <td>
                         <span
-                          className="px-2 px-sm-3 py-1 rounded-pill d-inline-block text-dark fw-semibold"
+                          className="plan-badge rounded-pill d-inline-block text-dark fw-semibold"
                           style={{
                             backgroundColor:
                               planMapping[user.plan]?.bgColor || "#dee2e6",
                             minWidth: "70px",
                             fontSize: "0.85rem",
+                            padding: "6px 12px",
                           }}
                         >
                           {planMapping[user.plan]?.display || user.plan}
                         </span>
                       </td>
                       <td className="d-none d-lg-table-cell">{user.billing}</td>
-                      <td className="px-2 px-sm-3 py-3">{user.date}</td>
+                      <td>{user.date}</td>
                       <td>{getStatusBadge(user.status)}</td>
                       <td>
-                        <div className="d-flex gap-2 align-items-center">
-                          {/* ✅ Use the new renderActionButtons function */}
-                          {renderActionButtons(user.status, idx, user.id)}
-                        </div>
+                        {renderActionButtons(user.status, idx, user.id)}
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="text-center py-4 text-muted">
-                      No requested plans found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-5 empty-state">
+              <FaFileAlt style={{ fontSize: "3rem", color: "#adb5bd", marginBottom: "1rem" }} />
+              <p className="text-muted mb-0">No requested plans found.</p>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+    </Container>
   );
 };
 

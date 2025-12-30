@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
+  Container,
+  Card,
+  Row,
+  Col,
+  Spinner,
+  Alert,
+  Button,
+  Badge,
+} from "react-bootstrap";
+import {
   LineChart,
   Line,
   BarChart,
@@ -13,6 +23,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import {
+  FaChartLine,
+  FaBuilding,
+  FaUsers,
+  FaDollarSign,
+  FaUserPlus,
+  FaCalendarAlt,
+} from "react-icons/fa";
 import {
   BsBuilding,
   BsPeople,
@@ -125,40 +143,54 @@ const Dashboardd = () => {
   };
 
   if (loading)
-    return <div className="text-center py-5">Loading dashboard...</div>;
+    return (
+      <Container fluid className="dashboard-container py-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" className="spinner-custom" />
+          <p className="mt-3 text-muted">Loading dashboard...</p>
+        </div>
+      </Container>
+    );
 
   return (
-    <div className="dashboard container-fluid py-4 px-3">
+    <Container fluid className="dashboard-container py-4" style={{ background: '#f8f9fa', minHeight: '100vh' }}>
+      {/* Header Section */}
+      <div className="dashboard-header mb-4">
+        <h4 className="fw-bold d-flex align-items-center gap-2 dashboard-title">
+          <FaChartLine style={{ color: '#505ece' }} /> Dashboard Overview
+        </h4>
+        <p className="text-muted mb-0">Welcome to your admin dashboard</p>
+      </div>
+
       {apiError && (
-        <div className="alert alert-warning alert-dismissible fade show" role="alert">
+        <Alert variant="warning" dismissible className="mb-4">
           Unable to fetch latest data. Showing cached or default values.
-          <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        </Alert>
       )}
 
-      {/* Cards Section */}
-      <div className="row g-4 mb-4">
+      {/* Stats Cards Section */}
+      <Row className="g-4 mb-4">
         {[
           {
-            icon: <BsBuilding />,
+            icon: <FaBuilding />,
             value: (dashboardData?.totalCompanies?.value || 0).toString(),
             label: "Total Company",
             growth: dashboardData?.totalCompanies?.growth
               ? `+${dashboardData.totalCompanies.growth}%`
               : "+0%",
-            bg: "success",
+            color: "#27ae60",
           },
           {
-            icon: <BsPeople />,
+            icon: <FaUsers />,
             value: (dashboardData?.totalRequests?.value || 0).toString(),
             label: "Total Request",
             growth: dashboardData?.totalRequests?.growth
               ? `+${dashboardData.totalRequests.growth}%`
               : "+0%",
-            bg: "success",
+            color: "#3498db",
           },
           {
-            icon: <BsCurrencyDollar />,
+            icon: <FaDollarSign />,
             value: `$${(dashboardData?.totalRevenue?.value || 0).toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -167,116 +199,137 @@ const Dashboardd = () => {
             growth: dashboardData?.totalRevenue?.growth
               ? `+${dashboardData.totalRevenue.growth}%`
               : "+0%",
-            bg: "success",
+            color: "#e74c3c",
           },
           {
-            icon: <BsPersonPlus />,
+            icon: <FaUserPlus />,
             value: (dashboardData?.newSignupsCompany?.value || 0).toString(),
             label: "New Signups Company",
             growth: "Today",
-            bg: "primary text-white",
+            color: "#505ece",
           },
         ].map((card, index) => (
-          <div className="col-12 col-sm-6 col-lg-3" key={index}>
-            <div className="card h-100 shadow-sm stat-card">
-              <div className="card-body d-flex justify-content-between align-items-start">
-                <div className="icon-box fs-4 text-dark">{card.icon}</div>
-                <div className={`badge bg-${card.bg} rounded-pill px-3 py-1 fw-semibold`}>
-                  {card.growth}
+          <Col xs={12} sm={6} lg={3} key={index}>
+            <Card className="dashboard-stats-card h-100">
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <div className="dashboard-icon-box" style={{ backgroundColor: `${card.color}15`, color: card.color }}>
+                    {card.icon}
+                  </div>
+                  <Badge className="dashboard-growth-badge" style={{ backgroundColor: card.color }}>
+                    {card.growth}
+                  </Badge>
                 </div>
-              </div>
-              <div className="card-body pt-0">
-                <h4 className="fw-bold mb-1">{card.value}</h4>
-                <p className="text-muted mb-0">{card.label}</p>
-              </div>
-            </div>
-          </div>
+                <h4 className="fw-bold mb-2 dashboard-stat-value">{card.value}</h4>
+                <p className="text-muted mb-0 dashboard-stat-label">{card.label}</p>
+              </Card.Body>
+            </Card>
+          </Col>
         ))}
-      </div>
+      </Row>
 
       {/* Charts Section */}
-      <div className="row g-4">
+      <Row className="g-4">
         {/* Line Chart - Growth */}
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm h-100">
-            <div className="card-header">
-              <h6 className="m-0 fw-bold">Total Growth</h6>
-            </div>
-            <div className="card-body">
+        <Col xs={12} md={6}>
+          <Card className="dashboard-chart-card h-100">
+            <Card.Header className="dashboard-chart-header">
+              <h6 className="mb-0 fw-bold">Total Growth</h6>
+            </Card.Header>
+            <Card.Body>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                  <XAxis dataKey="name" stroke="#6c757d" />
+                  <YAxis stroke="#6c757d" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e9ecef', 
+                      borderRadius: '8px' 
+                    }} 
+                  />
                   <Legend />
                   <Line
                     type="monotone"
                     dataKey="Growth"
                     name="Growth (%)"
-                    stroke="#3b82f6"
+                    stroke="#505ece"
                     strokeWidth={2}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+            </Card.Body>
+          </Card>
+        </Col>
 
         {/* Bar Chart - Signup */}
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm h-100">
-            <div className="card-header">
-              <h6 className="m-0 fw-bold">Signup Company</h6>
-            </div>
-            <div className="card-body">
+        <Col xs={12} md={6}>
+          <Card className="dashboard-chart-card h-100">
+            <Card.Header className="dashboard-chart-header">
+              <h6 className="mb-0 fw-bold">Signup Company</h6>
+            </Card.Header>
+            <Card.Body>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                  <XAxis dataKey="name" stroke="#6c757d" />
+                  <YAxis stroke="#6c757d" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e9ecef', 
+                      borderRadius: '8px' 
+                    }} 
+                  />
                   <Legend />
-                  <Bar dataKey="users" fill="#53b2a5" name="Signups" />
+                  <Bar dataKey="users" fill="#505ece" name="Signups" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+            </Card.Body>
+          </Card>
+        </Col>
 
         {/* Area Chart - Revenue */}
-        <div className="col-12">
-          <div className="card shadow-sm">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <h6 className="m-0 fw-bold">Revenue Trends</h6>
-              <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
-                <BsCalendar2 /> 2025
-              </button>
-            </div>
-            <div className="card-body">
+        <Col xs={12}>
+          <Card className="dashboard-chart-card">
+            <Card.Header className="dashboard-chart-header d-flex justify-content-between align-items-center">
+              <h6 className="mb-0 fw-bold">Revenue Trends</h6>
+              <Button variant="outline-light" size="sm" className="btn-year-filter d-flex align-items-center gap-2">
+                <FaCalendarAlt /> 2025
+              </Button>
+            </Card.Header>
+            <Card.Body>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e9ecef" />
+                  <XAxis dataKey="name" stroke="#6c757d" />
+                  <YAxis stroke="#6c757d" />
+                  <Tooltip 
+                    formatter={(value) => [`$${value.toLocaleString()}`, "Revenue"]}
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e9ecef', 
+                      borderRadius: '8px' 
+                    }} 
+                  />
                   <Legend />
                   <Area
                     type="monotone"
                     dataKey="revenue"
                     name="Revenue ($)"
-                    stroke="#8b5cf6"
-                    fill="#8b5cf6"
+                    stroke="#505ece"
+                    fill="#505ece"
                     fillOpacity={0.2}
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
