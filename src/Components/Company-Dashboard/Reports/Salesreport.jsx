@@ -250,7 +250,7 @@ const Salesreport = () => {
             <button
               type="submit"
               className="btn w-100"
-              style={{ backgroundColor: '#3daaaaff', color: '#fff' }}
+              style={{ backgroundColor: '#505ece', color: '#fff' }}
               disabled={loading}
             >
               {loading ? 'Loading...' : 'Generate Report'}
